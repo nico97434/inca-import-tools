@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Veille Produits Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4ff;--white:#fff;--border:#e2e8f8;--border2:#c7d2f0;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue3:#748ffc;--blue-soft:#eef2ff;
+  --green:#0ca678;--green2:#12b886;--green-soft:#e6fcf5;
+  --orange:#e8590c;--orange-soft:#fff4e6;
+  --amber:#e67700;--amber-soft:#fff8e1;
+  --red:#e03131;--red-soft:#fff5f5;
+  --purple:#7048e8;--purple-soft:#f3f0ff;
+  --pink:#d6336c;--pink-soft:#fff0f6;
+  --teal:#0891b2;--teal-soft:#ecfeff;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:16px;
+  --sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.06);
+  --sh2:0 4px 20px rgba(59,91,219,.14),0 1px 4px rgba(59,91,219,.08);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(59,91,219,.05)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 12px;border-radius:8px;text-transform:uppercase}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:1px;font-weight:500}
+.live-badge{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px;box-shadow:0 2px 12px rgba(220,38,38,.3)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:livepulse 1s infinite}
+@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.7)}}
+.layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 64px)}
+.sidebar{background:var(--white);border-right:1px solid var(--border);padding:1.5rem;overflow-y:auto;display:flex;flex-direction:column;gap:1.25rem}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:.65rem;display:flex;align-items:center;gap:6px}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.search-box{position:relative}
+.search-box input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:11px 14px 11px 40px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;transition:all .2s}
+.search-box input:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(59,91,219,.1)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cat-btn{padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.cat-btn:hover{border-color:var(--blue3);color:var(--blue)}
+.cat-btn.active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.filter-group{display:flex;flex-direction:column;gap:6px}
+.filter-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px}
+.filter-label{font-size:11px;font-weight:600;color:var(--text2)}
+.filter-select{background:transparent;border:none;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--blue);outline:none;cursor:pointer}
+.live-info{background:linear-gradient(135deg,#fff5f5,#fef2f2);border:1.5px solid rgba(220,38,38,.2);border-radius:var(--r);padding:12px}
+.li-title{font-size:11px;font-weight:800;color:#dc2626;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.li-row{font-size:10px;color:#991b1b;font-weight:500;line-height:1.9;display:flex;align-items:flex-start;gap:5px}
+.context-box{background:var(--blue-soft);border:1px solid rgba(59,91,219,.15);border-radius:var(--r);padding:12px}
+.ctx-title{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px}
+.ctx-tags{display:flex;flex-wrap:wrap;gap:5px}
+.ctx-tag{background:var(--white);border:1px solid rgba(59,91,219,.15);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;color:var(--blue2)}
+.go-btn{width:100%;padding:14px;background:linear-gradient(135deg,#dc2626,#ef4444,#f87171);border:none;border-radius:var(--r);color:#fff;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(220,38,38,.3);display:flex;align-items:center;justify-content:center;gap:8px}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(220,38,38,.4)}
+.go-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.loading .spin{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hist-item{padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.hist-item:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.main{padding:2rem;overflow-y:auto}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem}
+.welcome-icon{font-size:56px;opacity:.35}
+.welcome h2{font-size:24px;font-weight:800;color:var(--text2)}
+.welcome p{font-size:14px;color:var(--text3);max-width:440px;line-height:1.7}
+.tips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:.5rem}
+.tip{background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:7px 15px;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s}
+.tip:hover{border-color:#dc2626;color:#dc2626;background:#fff5f5}
+.loading-state{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:2rem}
+.loading-animation{display:flex;gap:6px}
+.ld{width:10px;height:10px;border-radius:50%;animation:bounce .8s infinite}
+.ld:nth-child(1){background:#dc2626}
+.ld:nth-child(2){background:var(--blue);animation-delay:.15s}
+.ld:nth-child(3){background:var(--green);animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.loading-steps{display:flex;flex-direction:column;gap:8px;min-width:320px}
+.lstep{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;transition:all .4s;background:var(--bg);color:var(--text4)}
+.lstep.active{background:var(--blue-soft);color:var(--blue);border:1px solid rgba(59,91,219,.2)}
+.lstep.done{background:var(--green-soft);color:var(--green);border:1px solid rgba(12,166,120,.2)}
+.results-wrap{display:none}
+.results-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;flex-wrap:wrap}
+.results-title{font-size:18px;font-weight:800}
+.results-meta{font-size:12px;color:var(--text3);font-weight:500;margin-top:3px}
+.btn-sm{padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:var(--sans);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all .2s}
+.btn-sm:hover{border-color:var(--blue);color:var(--blue)}
+.timestamp{display:inline-flex;align-items:center;gap:6px;background:#fff5f5;border:1px solid rgba(220,38,38,.2);color:#dc2626;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:1rem}
+.sources-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--sh)}
+.src-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.src-tag{background:var(--teal-soft);border:1px solid rgba(8,145,178,.2);color:var(--teal);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.analysis-box{background:linear-gradient(160deg,#1e3a8a,#3b5bdb,#4c6ef5);color:#fff;border-radius:var(--r2);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 8px 40px rgba(59,91,219,.3)}
+.ab-header{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+.ab-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.75}
+.ab-live{background:rgba(220,38,38,.85);font-size:8px;font-weight:800;letter-spacing:1px;padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.ab-content{font-size:13px;line-height:1.85;opacity:.92}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:1rem}
+.prod-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:1.25rem;box-shadow:var(--sh);transition:all .25s;position:relative;overflow:hidden;animation:fadeUp .35s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.prod-card:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.prod-accent-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r2) var(--r2) 0 0}
+.score-badge{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;border:2px solid}
+.prod-cat{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;display:inline-block;margin-bottom:.65rem}
+.prod-name{font-size:16px;font-weight:800;margin-bottom:.35rem;padding-right:54px;line-height:1.2}
+.prod-brand{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:.85rem}
+.prod-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.85rem}
+.ptag{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text3)}
+.ptag.hot{background:var(--orange-soft);border-color:rgba(232,89,12,.2);color:var(--orange)}
+.ptag.tiktok{background:var(--pink-soft);border-color:rgba(214,51,108,.2);color:var(--pink)}
+.ptag.new{background:var(--purple-soft);border-color:rgba(112,72,232,.2);color:var(--purple)}
+.ptag.halal{background:#f0fdf4;border-color:rgba(22,101,52,.2);color:#166534}
+.ptag.live{background:#fff5f5;border-color:rgba(220,38,38,.2);color:#dc2626}
+.prod-why{font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:.85rem;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:3px solid}
+.trend-meter{display:flex;align-items:center;gap:8px;margin-bottom:.85rem}
+.tm-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;min-width:60px}
+.tm-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.tm-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.tm-val{font-family:var(--mono);font-size:10px;font-weight:700;min-width:30px;text-align:right}
+.prod-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:.85rem}
+.pm{background:var(--bg);border-radius:7px;padding:7px 8px;text-align:center}
+.pm-v{font-family:var(--mono);font-size:11px;font-weight:700}
+.pm-l{font-size:8px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text4);margin-top:2px}
+.prod-supplier{font-size:11px;font-weight:600;color:var(--text3);display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-radius:8px;flex-wrap:wrap}
+.prod-supplier a{color:var(--blue);text-decoration:none;font-weight:700}
+.prod-supplier a:hover{text-decoration:underline}
+.dispo-tag{margin-left:auto;font-size:9px;background:var(--white);padding:2px 7px;border-radius:5px;border:1px solid var(--border);white-space:nowrap}
+@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid var(--border)}.products-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">INCA IMPORT</div>
+    <div>
+      <div class="hdr-title">Veille Produits</div>
+      <div class="hdr-sub">Tendances mondiales · Web search actif · Résultats à la minute</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div>LIVE — Web Search</div>
+</div>
+<div class="layout">
+<div class="sidebar">
+  <div>
+    <div class="sec-lbl">Recherche</div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="ex: energy drink viral 2025…" onkeydown="if(event.key==='Enter')launch()">
+    </div>
+  </div>
+  <div>
+    <div class="sec-lbl">Catégorie</div>
+    <div class="cat-grid">
+      <button class="cat-btn active" onclick="setCat(this,'all')">🌍 Tout</button>
+      <button class="cat-btn" onclick="setCat(this,'boissons')">🥤 Boissons</button>
+      <button class="cat-btn" onclick="setCat(this,'energy')">⚡ Energy</button>
+      <button class="cat-btn" onclick="setCat(this,'chips')">🍟 Chips</button>
+      <button class="cat-btn" onclick="setCat(this,'snacks')">🍜 Snacks</button>
+      <button class="cat-btn" onclick="setCat(this,'confiseries')">🍬 Confiseries</button>
+      <button class="cat-btn" onclick="setCat(this,'kfood')">🇰🇷 K-Food</button>
+      <button class="cat-btn" onclick="setCat(this,'healthy')">💚 Healthy</button>
+    </div>
+  </div>
+  <div>
+    <div class="sec-lbl">Filtres</div>
+    <div class="filter-group">
+      <div class="filter-row">
+        <span class="filter-label">Tendance</span>
+        <select class="filter-select" id="fTendance">
+          <option value="viral">Viral maintenant</option>
+          <option value="emerging">Émergent</option>
+          <option value="all">Tous</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Origine</span>
+        <select class="filter-select" id="fOrigine">
+          <option value="all">Toutes</option>
+          <option value="asia">Asie (KR/JP/TW/MY)</option>
+          <option value="usa">USA</option>
+          <option value="europe">Europe</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Halal certifié</span>
+        <select class="filter-select" id="fHalal">
+          <option value="all">Indifférent</option>
+          <option value="yes">Oui seulement</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="live-info">
+    <div class="li-title">🔴 Web Search activé</div>
+    <div class="li-row">🌐 Google · Reddit · FoodNavigator · BeverageDaily</div>
+    <div class="li-row">📱 TikTok trends · Instagram · YouTube viral</div>
+    <div class="li-row">🛒 Sites grossistes · Nouveaux lancements du jour</div>
+    <div class="li-row">📅 Données à la minute · <strong>Zéro cache</strong></div>
+  </div>
+  <div class="context-box">
+    <div class="ctx-title">🏝 Contexte : La Réunion</div>
+    <div class="ctx-tags">
+      <span class="ctx-tag">Stations OLA/TOTAL/VITO</span>
+      <span class="ctx-tag">DOM-TOM · DAAF</span>
+      <span class="ctx-tag">Gen Z · Jeune</span>
+      <span class="ctx-tag">Halal friendly</span>
+      <span class="ctx-tag">PV €1.50–€3.50</span>
+      <span class="ctx-tag">Conteneur 40' HC</span>
+    </div>
+  </div>
+  <button class="go-btn" id="goBtn" onclick="launch()">
+    <div class="spin"></div>
+    <span id="btnTxt">🔴 Lancer la veille live</span>
+  </button>
+  <div id="histSection" style="display:none">
+    <div class="sec-lbl">Historique</div>
+    <div id="histList"></div>
+  </div>
+</div>
+<div class="main" id="mainArea">
+  <div class="welcome" id="welcomeState">
+    <div class="welcome-icon">📡</div>
+    <h2>Veille en temps réel</h2>
+    <p>Recherche sur le web <strong>maintenant</strong> — nouveaux lancements, tendances TikTok, nouveautés grossistes. Résultats filtrés pour le marché Réunion.</p>
+    <div class="tips">
+      <div class="tip" onclick="quickSearch('new energy drink launch Europe 2025')">⚡ Nouveaux energy drinks</div>
+      <div class="tip" onclick="quickSearch('viral snack TikTok trending 2025')">📱 Snacks viraux TikTok</div>
+      <div class="tip" onclick="quickSearch('Korean food snack trending Europe 2025')">🇰🇷 K-Food tendance</div>
+      <div class="tip" onclick="quickSearch('healthy beverage no sugar new launch 2025')">💚 Boissons healthy</div>
+      <div class="tip" onclick="quickSearch('new chips flavor launch Europe 2025')">🍟 Nouvelles chips</div>
+      <div class="tip" onclick="quickSearch('bubble tea RTD canned drink new 2025')">🧋 Bubble Tea RTD</div>
+      <div class="tip" onclick="quickSearch('new halal snack FMCG launch 2025')">✅ Snacks halal</div>
+      <div class="tip" onclick="quickSearch('trending candy TikTok viral sweets 2025')">🍬 Confiseries virales</div>
+    </div>
+  </div>
+  <div class="loading-state" id="loadingState">
+    <div class="loading-animation">
+      <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+    </div>
+    <div class="loading-steps">
+      <div class="lstep" id="step1">🌐 Recherche web en cours…</div>
+      <div class="lstep" id="step2">📊 Analyse des tendances mondiales…</div>
+      <div class="lstep" id="step3">🏝 Filtrage pour le marché Réunion…</div>
+      <div class="lstep" id="step4">🔍 Vérification disponibilité fournisseurs…</div>
+      <div class="lstep" id="step5">✦ Génération des fiches produits…</div>
+    </div>
+  </div>
+  <div class="results-wrap" id="resultsWrap">
+    <div class="results-header">
+      <div>
+        <div class="results-title" id="resultsTitle">Résultats</div>
+        <div class="results-meta" id="resultsMeta"></div>
+      </div>
+      <button class="btn-sm" onclick="resetSearch()">↩ Nouvelle recherche</button>
+    </div>
+    <div class="timestamp" id="timestamp">🔴 LIVE</div>
+    <div class="sources-bar" id="sourcesBar" style="display:none">
+      <span class="src-label">Sources consultées :</span>
+      <div id="sourcesList" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="analysis-box" id="analysisBox" style="display:none">
+      <div class="ab-header">
+        <div class="ab-title">✦ Analyse — Tendances actuelles × Potentiel Réunion</div>
+        <div class="ab-live">LIVE</div>
+      </div>
+      <div class="ab-content" id="analysisContent"></div>
+    </div>
+    <div class="products-grid" id="productsGrid"></div>
+  </div>
+</div>
+</div>
+
+<script>
+let activeCat='all', hist=[];
+const SC={high:{bg:'var(--green-soft)',text:'var(--green)',border:'rgba(12,166,120,.3)'},med:{bg:'var(--amber-soft)',text:'var(--amber)',border:'rgba(230,119,0,.3)'},low:{bg:'var(--red-soft)',text:'var(--red)',border:'rgba(224,49,49,.3)'}};
+
+function setCat(btn,cat){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeCat=cat}
+function quickSearch(q){document.getElementById('searchInput').value=q;launch()}
+
+function animateSteps(){
+  const steps=['step1','step2','step3','step4','step5'];
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>0)document.getElementById(steps[i-1]).className='lstep done';
+    if(i<steps.length){document.getElementById(steps[i]).className='lstep active';i++;}
+    else clearInterval(iv);
+  },1800);
+  return iv;
+}
+
+function buildPrompt(){
+  const q=document.getElementById('searchInput').value.trim();
+  const tendance=document.getElementById('fTendance').value;
+  const origine=document.getElementById('fOrigine').value;
+  const halal=document.getElementById('fHalal').value;
+  const catMap={all:'all FMCG categories',boissons:'fresh beverages soft drinks',energy:'energy drinks functional beverages',chips:'chips crisps salty snacks',snacks:'asian snacks noodle snacks',confiseries:'candy confectionery sweets',kfood:'Korean food K-snacks',healthy:'healthy functional better-for-you'};
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  return`You are a FMCG product intelligence expert. Today is ${today}.
+
+MISSION: Search the web RIGHT NOW to find the most trending food & beverage products. Search for:
+- New product launches 2024-2025 (press releases, brand announcements)
+- Viral products on TikTok, Instagram, YouTube right now
+- FMCG news (FoodNavigator, BeverageDaily, Innova Market Insights)
+- European wholesale availability (Candy Market, Planet Foods, Big Brands Group Poland, Delidrinks)
+- Reddit FMCG communities, food trend reports
+
+CLIENT CONTEXT: INCA IMPORT, purchasing center in La Réunion (French DOM island), supplying 3 gas stations. Young clientele 15-40yo, TikTok-driven, large Asian and Mahorais community (halal important), on-the-go format, PV €1.20-€3.50, import via 40' container.
+
+SEARCH QUERY: "${q||'trending FMCG new products 2025'}"
+CATEGORY: ${catMap[activeCat]||'all categories'}
+TREND FILTER: ${tendance==='viral'?'Going viral right now':tendance==='emerging'?'Emerging trend':'All trends'}
+ORIGIN FILTER: ${origine==='all'?'All origins':origine}
+HALAL: ${halal==='yes'?'Halal certified required':'Not required'}
+
+INSTRUCTIONS:
+1. Use web search to find REAL trending products available NOW
+2. Identify 6 concrete products with real wholesale suppliers
+3. Evaluate specific potential for Réunion gas stations
+4. Include recent data from your web searches
+
+Respond ONLY with valid JSON (no markdown, no backticks, no text before or after):
+{"searchDate":"${today}","sources":["source1.com","source2.com","source3.com","source4.com"],"analysis":"3-4 sentences about trends found online TODAY and their relevance for Réunion gas stations","products":[{"nom":"Exact product name","marque":"Brand","categorie":"Short category","origine":"Country","annee_lancement":"2024 or 2025","score":82,"scoreLevel":"high","pourquoi":"Why this product is relevant for Réunion gas stations specifically. Cite concrete elements: current TikTok trend, sales data, European availability.","tags":["Viral TikTok","Nouveauté 2025"],"prixAchatEst":"€0.75 – €1.00","pvSuggere":"€2.00 – €2.50","margeEst":"45%","tendanceScore":88,"fournisseur":"Wholesale supplier name","fournisseurUrl":"supplier-site.com","disponibilite":"Europe","accentColor":"#3b5bdb"}]}
+scoreLevel: "high" score>=75, "med" 50-74, "low" <50. Use different accentColor for each: #3b5bdb, #0ca678, #e8590c, #7048e8, #d6336c, #e67700, #0891b2`;
+}
+
+async function launch(){
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;
+  btn.classList.add('loading');
+  document.getElementById('btnTxt').textContent='Recherche en cours…';
+  document.getElementById('welcomeState').style.display='none';
+  document.getElementById('resultsWrap').style.display='none';
+  const ls=document.getElementById('loadingState');
+  ls.style.display='flex';
+  ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep');
+  const iv=animateSteps();
+  const q=document.getElementById('searchInput').value.trim();
+  if(q&&!hist.includes(q)){hist.unshift(q);if(hist.length>6)hist.pop();renderHist();}
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:6000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:buildPrompt()}]
+      })
+    });
+    clearInterval(iv);
+    ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep done');
+    const data=await res.json();
+    let raw='';
+    if(data.content){for(const b of data.content){if(b.type==='text')raw+=b.text;}}
+    raw=raw.replace(/```json|```/g,'').trim();
+    const js=raw.indexOf('{'),je=raw.lastIndexOf('}')+1;
+    if(js>=0&&je>js)raw=raw.slice(js,je);
+    const parsed=JSON.parse(raw);
+    setTimeout(()=>{ls.style.display='none';renderResults(parsed,q);},400);
+  }catch(e){
+    clearInterval(iv);
+    ls.style.display='none';
+    document.getElementById('welcomeState').style.display='flex';
+    document.getElementById('welcomeState').innerHTML=`<div class="welcome-icon">⚠️</div><h2>Erreur</h2><p style="color:var(--red)">Impossible de contacter l'API Claude.<br><small style="font-family:var(--mono);font-size:10px">${e.message}</small></p><button class="go-btn" style="max-width:200px;margin-top:1rem" onclick="location.reload()">Réessayer</button>`;
+    console.error(e);
+  }
+  btn.disabled=false;btn.classList.remove('loading');document.getElementById('btnTxt').textContent='🔴 Lancer la veille live';
+}
+
+function renderResults(data,query){
+  document.getElementById('resultsWrap').style.display='block';
+  document.getElementById('resultsTitle').textContent=query?`Veille : "${query}"`:'Tendances FMCG Live';
+  document.getElementById('resultsMeta').textContent=`${data.products?.length||0} produits · Web search · Réunion`;
+  const now=new Date();
+  document.getElementById('timestamp').innerHTML=`🔴 LIVE — ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+  if(data.sources?.length){
+    document.getElementById('sourcesBar').style.display='flex';
+    document.getElementById('sourcesList').innerHTML=data.sources.map(s=>`<span class="src-tag">🌐 ${s}</span>`).join('');
+  }
+  if(data.analysis){document.getElementById('analysisBox').style.display='block';document.getElementById('analysisContent').textContent=data.analysis;}
+  document.getElementById('productsGrid').innerHTML=(data.products||[]).map((p,idx)=>{
+    const sl=p.scoreLevel||'med';const sc=SC[sl];const col=p.accentColor||'#3b5bdb';const ts=p.tendanceScore||p.score||70;
+    const tags=(p.tags||[]).map(t=>{let c='ptag';if(/tiktok|viral/i.test(t))c+=' tiktok';else if(/halal/i.test(t))c+=' halal';else if(/nouveau|2025|2024|launch/i.test(t))c+=' new';else if(/épicé|spicy|hot|piment/i.test(t))c+=' hot';else if(/live|tendance/i.test(t))c+=' live';return`<span class="${c}">${t}</span>`;}).join('');
+    return`<div class="prod-card" style="animation-delay:${idx*.07}s">
+      <div class="prod-accent-bar" style="background:linear-gradient(90deg,${col},${col}70)"></div>
+      <div class="score-badge" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}">${p.score}</div>
+      <div class="prod-cat" style="background:${col}15;color:${col}">${p.categorie}${p.annee_lancement?' · '+p.annee_lancement:''}</div>
+      <div class="prod-name">${p.nom}</div>
+      <div class="prod-brand">🏷 ${p.marque} · ${p.origine}</div>
+      <div class="prod-tags">${tags}</div>
+      <div class="prod-why" style="border-color:${col}">${p.pourquoi}</div>
+      <div class="trend-meter">
+        <span class="tm-label">Tendance</span>
+        <div class="tm-bar"><div class="tm-fill" style="width:${ts}%;background:${col}"></div></div>
+        <span class="tm-val" style="color:${col}">${ts}</span>
+      </div>
+      <div class="prod-metrics">
+        <div class="pm"><div class="pm-v" style="color:${col}">${p.prixAchatEst||'—'}</div><div class="pm-l">Achat</div></div>
+        <div class="pm"><div class="pm-v">${p.pvSuggere||'—'}</div><div class="pm-l">PV station</div></div>
+        <div class="pm"><div class="pm-v" style="color:var(--green)">${p.margeEst||'—'}</div><div class="pm-l">Marge est.</div></div>
+      </div>
+      <div class="prod-supplier">📦 ${p.fournisseur||'À identifier'}${p.fournisseurUrl?` <a href="https://${p.fournisseurUrl}" target="_blank" rel="noopener">→ ${p.fournisseurUrl}</a>`:''}<span class="dispo-tag">${p.disponibilite||''}</span></div>
+    </div>`;
+  }).join('');
+}
+function renderHist(){
+  const s=document.getElementById('histSection'),l=document.getElementById('histList');
+  if(!hist.length){s.style.display='none';return;}
+  s.style.display='block';
+  l.innerHTML=hist.map(h=>`<div class="hist-item" onclick="quickSearch('${h.replace(/'/g,"\\'")}')">↩ ${h}</div>`).join('');
+}
+function resetSearch(){
+  document.getElementById('resultsWrap').style.display='none';
+  document.getElementById('welcomeState').style.display='flex';
+  document.getElementById('searchInput').value='';
+  document.querySelectorAll('.cat-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  activeCat='all';
+  ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep');
+}
+</script>
+</body>
+</html>
