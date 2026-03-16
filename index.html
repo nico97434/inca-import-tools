@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>INCA IMPORT — Outils</title>
+<title>INCA IMPORT — Outils de pilotage</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -13,162 +13,204 @@
   --green:#0ca678;--green-soft:#e6fcf5;
   --purple:#7048e8;--purple-soft:#f3f0ff;
   --amber:#e67700;--amber-soft:#fff8e1;
-  --text:#0f172a;--text2:#334155;--text3:#64748b;
+  --red:#dc2626;--red-soft:#fff5f5;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
   --sans:'Plus Jakarta Sans',sans-serif;
   --mono:'JetBrains Mono',monospace;
+  --r:12px;--r2:20px;
+  --sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.05);
+  --sh2:0 8px 40px rgba(59,91,219,.16),0 2px 8px rgba(59,91,219,.08);
 }
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-
+ 
 /* HEADER */
-header{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;height:68px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(59,91,219,.06)}
-.logo{display:flex;align-items:center;gap:14px}
+header{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;height:68px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(59,91,219,.05);position:sticky;top:0;z-index:10}
+.logo-wrap{display:flex;align-items:center;gap:14px}
 .logo-badge{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:800;font-size:12px;letter-spacing:2px;padding:7px 14px;border-radius:9px;text-transform:uppercase}
-.logo-name{font-size:18px;font-weight:800;color:var(--text)}
+.logo-name{font-size:18px;font-weight:800}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:1px;font-weight:500}
 .status{display:flex;align-items:center;gap:7px;background:var(--green-soft);border:1px solid rgba(12,166,120,.2);padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;color:var(--green)}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
-
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.5)}}
+ 
 /* HERO */
-.hero{text-align:center;padding:4rem 2rem 2.5rem;max-width:700px;margin:0 auto}
-.hero-label{display:inline-block;background:var(--blue-soft);border:1px solid rgba(59,91,219,.15);color:var(--blue);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:1.25rem}
-.hero h1{font-size:38px;font-weight:800;line-height:1.15;margin-bottom:1rem;letter-spacing:-1px}
+.hero{text-align:center;padding:4rem 2rem 2rem;max-width:680px;margin:0 auto}
+.hero-pill{display:inline-block;background:var(--blue-soft);border:1px solid rgba(59,91,219,.15);color:var(--blue);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:5px 16px;border-radius:20px;margin-bottom:1.25rem}
+.hero h1{font-size:40px;font-weight:800;line-height:1.15;margin-bottom:1rem;letter-spacing:-1px}
 .hero h1 span{background:linear-gradient(135deg,var(--blue),var(--blue2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero p{font-size:16px;color:var(--text3);font-weight:500;line-height:1.7;max-width:520px;margin:0 auto}
-
-/* TOOLS GRID */
-.tools{padding:0 2rem 4rem;max-width:1000px;margin:0 auto;width:100%}
-.tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem}
-
-.tool-card{background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:2rem;text-decoration:none;color:var(--text);transition:all .25s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:.75rem;box-shadow:0 1px 3px rgba(59,91,219,.06),0 4px 16px rgba(59,91,219,.04)}
-.tool-card:hover{transform:translateY(-4px);box-shadow:0 8px 40px rgba(59,91,219,.18),0 2px 8px rgba(59,91,219,.1);border-color:var(--blue)}
-.tool-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:20px 20px 0 0;opacity:0;transition:opacity .25s}
-.tool-card:hover::before{opacity:1}
-
-.card-blue::before{background:linear-gradient(90deg,var(--blue),var(--blue2))}
-.card-green::before{background:linear-gradient(90deg,var(--green),#0891b2)}
-.card-purple::before{background:linear-gradient(90deg,var(--purple),var(--blue2))}
-
-.tool-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.hero p{font-size:15px;color:var(--text3);font-weight:500;line-height:1.7;max-width:500px;margin:0 auto}
+ 
+/* TOOLS */
+.tools{padding:0 2rem 3rem;max-width:1060px;margin:0 auto;width:100%}
+.tools-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text4);text-align:center;margin-bottom:1.5rem}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+ 
+.tool-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:2rem 1.75rem;text-decoration:none;color:var(--text);transition:all .28s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:.85rem;box-shadow:var(--sh)}
+.tool-card:hover{transform:translateY(-5px);box-shadow:var(--sh2)}
+.tool-card::after{content:'';position:absolute;top:0;left:0;right:0;height:4px;border-radius:var(--r2) var(--r2) 0 0;opacity:0;transition:opacity .25s}
+.tool-card:hover::after{opacity:1}
+ 
+.card-blue:hover{border-color:rgba(59,91,219,.3)}
+.card-blue::after{background:linear-gradient(90deg,var(--blue),var(--blue2))}
+ 
+.card-green:hover{border-color:rgba(12,166,120,.3)}
+.card-green::after{background:linear-gradient(90deg,var(--green),#0891b2)}
+ 
+.card-red:hover{border-color:rgba(220,38,38,.3)}
+.card-red::after{background:linear-gradient(90deg,var(--red),#f97316)}
+ 
+.tool-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
 .ic-b{background:var(--blue-soft)}
 .ic-g{background:var(--green-soft)}
-.ic-p{background:var(--purple-soft)}
-
-.tool-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;width:fit-content}
-.badge-blue{background:var(--blue-soft);color:var(--blue)}
-.badge-green{background:var(--green-soft);color:var(--green)}
-.badge-purple{background:var(--purple-soft);color:var(--purple)}
-
-.tool-title{font-size:20px;font-weight:800;line-height:1.2}
-.tool-desc{font-size:13px;color:var(--text3);font-weight:500;line-height:1.6}
-
+.ic-r{background:var(--red-soft)}
+ 
+.tool-tag{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px;width:fit-content}
+.tag-b{background:var(--blue-soft);color:var(--blue)}
+.tag-g{background:var(--green-soft);color:var(--green)}
+.tag-r{background:var(--red-soft);color:var(--red)}
+ 
+.tool-title{font-size:21px;font-weight:800;line-height:1.2}
+.tool-desc{font-size:13px;color:var(--text3);font-weight:500;line-height:1.65;flex:1}
+ 
 .tool-features{display:flex;flex-direction:column;gap:5px;margin-top:.25rem}
-.feat{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);font-weight:500}
-.feat::before{content:'✓';font-size:10px;font-weight:800;color:var(--green);flex-shrink:0}
-
-.tool-cta{display:flex;align-items:center;justify-content:space-between;margin-top:.5rem;padding-top:1rem;border-top:1px solid var(--border)}
-.cta-text{font-size:12px;font-weight:700;color:var(--blue)}
-.cta-arrow{width:32px;height:32px;background:var(--blue-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .25s}
-.tool-card:hover .cta-arrow{background:var(--blue);color:#fff;transform:translateX(3px)}
-
-/* COMING SOON */
-.tool-card.soon{opacity:.65;cursor:default;pointer-events:none}
-.soon-tag{position:absolute;top:16px;right:16px;background:var(--amber-soft);border:1px solid rgba(230,119,0,.2);color:var(--amber);font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px}
-
+.feat{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text2);font-weight:500;line-height:1.4}
+.feat-check{font-size:10px;font-weight:800;margin-top:1px;flex-shrink:0}
+.fc-b{color:var(--blue)}
+.fc-g{color:var(--green)}
+.fc-r{color:var(--red)}
+ 
+.tool-footer{display:flex;align-items:center;justify-content:space-between;margin-top:.25rem;padding-top:1rem;border-top:1px solid var(--border)}
+.footer-txt{font-size:12px;font-weight:700}
+.arrow-btn{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .25s}
+.tool-card.card-blue .footer-txt{color:var(--blue)}
+.tool-card.card-blue .arrow-btn{background:var(--blue-soft)}
+.tool-card.card-blue:hover .arrow-btn{background:var(--blue);color:#fff;transform:translateX(3px)}
+.tool-card.card-green .footer-txt{color:var(--green)}
+.tool-card.card-green .arrow-btn{background:var(--green-soft)}
+.tool-card.card-green:hover .arrow-btn{background:var(--green);color:#fff;transform:translateX(3px)}
+.tool-card.card-red .footer-txt{color:var(--red)}
+.tool-card.card-red .arrow-btn{background:var(--red-soft)}
+.tool-card.card-red:hover .arrow-btn{background:var(--red);color:#fff;transform:translateX(3px)}
+ 
+/* LIVE BADGE on veille card */
+.live-pill{display:inline-flex;align-items:center;gap:5px;background:var(--red-soft);border:1px solid rgba(220,38,38,.2);color:var(--red);font-size:9px;font-weight:800;letter-spacing:1px;padding:3px 9px;border-radius:20px;text-transform:uppercase;margin-left:6px}
+.live-dot-sm{width:5px;height:5px;border-radius:50%;background:var(--red);animation:pulse 1s infinite}
+ 
+/* STATS BAR */
+.stats{display:flex;align-items:center;justify-content:center;gap:2rem;padding:1.5rem 2rem;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:2rem}
+.stat{text-align:center}
+.stat-v{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--blue)}
+.stat-l{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+.stat-sep{width:1px;height:36px;background:var(--border)}
+ 
 /* FOOTER */
-footer{margin-top:auto;border-top:1px solid var(--border);background:var(--white);padding:1.5rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:gap}
-.footer-logo{font-size:12px;font-weight:700;color:var(--text3)}
-.footer-info{font-size:11px;color:var(--text3);font-weight:500;font-family:var(--mono)}
-.footer-route{font-size:11px;color:var(--text3)}
+footer{margin-top:auto;border-top:1px solid var(--border);background:var(--white);padding:1.25rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.footer-l{font-size:11px;color:var(--text3);font-weight:600}
+.footer-r{font-size:11px;color:var(--text4);font-family:var(--mono)}
+ 
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+@media(max-width:600px){.hero h1{font-size:28px}.stats{flex-wrap:wrap;gap:1rem}.stat-sep{display:none}}
 </style>
 </head>
 <body>
-
+ 
 <header>
-  <div class="logo">
+  <div class="logo-wrap">
     <div class="logo-badge">INCA IMPORT</div>
     <div>
       <div class="logo-name">Outils de pilotage</div>
-      <div class="logo-sub">Centrale d'achat · La Réunion · 29 Route des Premiers Français, Saint-Paul</div>
+      <div class="logo-sub">Centrale d'achat · La Réunion · Groupe INCANA</div>
     </div>
   </div>
-  <div class="status">
-    <div class="dot"></div>
-    Outils en ligne
-  </div>
+  <div class="status"><div class="dot"></div>3 outils en ligne</div>
 </header>
-
+ 
 <div class="hero">
-  <div class="hero-label">Groupe INCANA — OLA · TOTAL · VITO</div>
-  <h1>Pilotez vos imports<br><span>en temps réel</span></h1>
-  <p>Calculez vos coûts de revient, optimisez vos conteneurs et maximisez vos marges — basés sur vos données 2024 et votre cotation DSG Transit.</p>
+  <div class="hero-pill">Groupe INCANA — OLA · TOTAL · VITO</div>
+  <h1>Pilotez vos imports<br><span>intelligemment</span></h1>
+  <p>Calculez vos coûts, optimisez vos conteneurs et repérez les prochaines tendances — tout en un seul endroit.</p>
 </div>
-
+ 
 <div class="tools">
-  <div class="tools-grid">
-
-    <!-- OUTIL 1 -->
+  <div class="tools-label">Sélectionne un outil</div>
+  <div class="grid">
+ 
+    <!-- OUTIL 1 : CALCULATEUR CRR -->
     <a href="calculateur_crr_reunion.html" class="tool-card card-blue">
       <div class="tool-icon ic-b">🧮</div>
-      <div class="tool-badge badge-blue">Calcul · Import</div>
+      <div class="tool-tag tag-b">Calcul · Import · Taxes</div>
       <div class="tool-title">Calculateur CRR Réunion</div>
-      <div class="tool-desc">Prix EXW ou FOB → coût de revient exact rendu La Possession, toutes taxes incluses.</div>
+      <div class="tool-desc">Prix EXW ou FOB → coût de revient exact DDP La Possession, toutes taxes incluses.</div>
       <div class="tool-features">
-        <div class="feat">Basé sur cotation DSG Transit MI251003405</div>
-        <div class="feat">OM 25.5% + OMR 2.5% + TVA 2.1%</div>
-        <div class="feat">Taxe sucre PLFSS 2025 intégrée</div>
-        <div class="feat">Marge automatique vs PV inter-groupe</div>
+        <div class="feat"><span class="feat-check fc-b">✓</span>Basé sur cotation DSG Transit MI251003405</div>
+        <div class="feat"><span class="feat-check fc-b">✓</span>OM 25.5% + OMR 2.5% + TVA 2.1% intégrés</div>
+        <div class="feat"><span class="feat-check fc-b">✓</span>Taxe sucre PLFSS 2025 par palier</div>
+        <div class="feat"><span class="feat-check fc-b">✓</span>Marge automatique vs PV inter-groupe</div>
+        <div class="feat"><span class="feat-check fc-b">✓</span>Tableau détaillé ligne par ligne</div>
       </div>
-      <div class="tool-cta">
-        <span class="cta-text">Ouvrir l'outil</span>
-        <div class="cta-arrow">→</div>
+      <div class="tool-footer">
+        <span class="footer-txt">Ouvrir le calculateur</span>
+        <div class="arrow-btn">→</div>
       </div>
     </a>
-
-    <!-- OUTIL 2 -->
+ 
+    <!-- OUTIL 2 : OPTIMISEUR CONTENEUR -->
     <a href="optimiseur_conteneur_v3.html" class="tool-card card-green">
       <div class="tool-icon ic-g">🚢</div>
-      <div class="tool-badge badge-green">Optimisation · 40' HC</div>
+      <div class="tool-tag tag-g">Optimisation · 40' HC · Mix produits</div>
       <div class="tool-title">Optimiseur Conteneur</div>
-      <div class="tool-desc">Remplissage optimal d'un 40' HC pour maximiser la marge brute par chargement.</div>
+      <div class="tool-desc">Remplissage optimal d'un 40' HC pour maximiser la marge brute, basé sur tes ventes 2024.</div>
       <div class="tool-features">
-        <div class="feat">Rotation de stock cible ajustable (3.5 mois)</div>
-        <div class="feat">Mix produits avec contraintes min/max palettes</div>
-        <div class="feat">Ventes annuelles 2024 intégrées (63k Monster...)</div>
-        <div class="feat">ROI vs logistique en temps réel</div>
+        <div class="feat"><span class="feat-check fc-g">✓</span>Rotation de stock cible ajustable (défaut 3.5 mois)</div>
+        <div class="feat"><span class="feat-check fc-g">✓</span>Palettes recommandées calculées automatiquement</div>
+        <div class="feat"><span class="feat-check fc-g">✓</span>Ventes annuelles 2024 pré-chargées (63k Monster…)</div>
+        <div class="feat"><span class="feat-check fc-g">✓</span>Visualisation palette par palette</div>
+        <div class="feat"><span class="feat-check fc-g">✓</span>ROI vs logistique en temps réel</div>
       </div>
-      <div class="tool-cta">
-        <span class="cta-text">Ouvrir l'outil</span>
-        <div class="cta-arrow">→</div>
+      <div class="tool-footer">
+        <span class="footer-txt">Ouvrir l'optimiseur</span>
+        <div class="arrow-btn">→</div>
       </div>
     </a>
-
-    <!-- OUTIL 3 — COMING SOON -->
-    <div class="tool-card card-purple soon">
-      <div class="soon-tag">Bientôt</div>
-      <div class="tool-icon ic-p">📧</div>
-      <div class="tool-badge badge-purple">Prospection · Export</div>
-      <div class="tool-title">Emails Fournisseurs</div>
-      <div class="tool-desc">Modèles d'emails professionnels en anglais prêts à envoyer à chaque fournisseur identifié.</div>
+ 
+    <!-- OUTIL 3 : VEILLE PRODUITS -->
+    <a href="veille_produits.html" class="tool-card card-red">
+      <div class="tool-icon ic-r">📡</div>
+      <div class="tool-tag tag-r">Veille <span class="live-pill"><span class="live-dot-sm"></span>LIVE</span></div>
+      <div class="tool-title">Veille Produits</div>
+      <div class="tool-desc">Détecte les nouveaux produits tendance dans le monde — résultats à la minute via web search IA.</div>
       <div class="tool-features">
-        <div class="feat">Dabex · ALEO · Mamee · Celsius · Takis</div>
-        <div class="feat">Demande de proforma + négociation prix</div>
-        <div class="feat">Clauses étiquetage FR et DAAF</div>
+        <div class="feat"><span class="feat-check fc-r">✓</span>Web search Google actif en temps réel</div>
+        <div class="feat"><span class="feat-check fc-r">✓</span>Tendances TikTok · K-Food · Energy · Healthy</div>
+        <div class="feat"><span class="feat-check fc-r">✓</span>Score de potentiel filtré pour le marché Réunion</div>
+        <div class="feat"><span class="feat-check fc-r">✓</span>Fournisseur grossiste identifié pour chaque produit</div>
+        <div class="feat"><span class="feat-check fc-r">✓</span>Halal · Prix achat · PV suggéré · Marge estimée</div>
       </div>
-      <div class="tool-cta">
-        <span class="cta-text">En préparation</span>
-        <div class="cta-arrow">⋯</div>
+      <div class="tool-footer">
+        <span class="footer-txt">Lancer la veille</span>
+        <div class="arrow-btn">→</div>
       </div>
-    </div>
-
+    </a>
+ 
   </div>
 </div>
-
+ 
+<div class="stats">
+  <div class="stat"><div class="stat-v">3</div><div class="stat-l">Stations INCANA</div></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><div class="stat-v">28%</div><div class="stat-l">Octroi de mer total</div></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><div class="stat-v">~22j</div><div class="stat-l">Transit Fos → Réunion</div></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><div class="stat-v">40' HC</div><div class="stat-l">Format conteneur</div></div>
+  <div class="stat-sep"></div>
+  <div class="stat"><div class="stat-v">2.1%</div><div class="stat-l">TVA Réunion</div></div>
+</div>
+ 
 <footer>
-  <div class="footer-logo">INCA IMPORT SAS — SIREN 945112753</div>
-  <div class="footer-info">FOB/FCA → Fos-sur-Mer → La Possession · ~22 jours · CMA CGM / MSC</div>
-  <div class="footer-route">Cotation DSG Transit Repiquet · Valid. 31/12/2025</div>
+  <div class="footer-l">INCA IMPORT SAS · SIREN 945112753 · 29 Route des Premiers Français, Saint-Paul, La Réunion</div>
+  <div class="footer-r">DSG Transit Repiquet MI251003405 · Valid. 31/12/2025</div>
 </footer>
-
+ 
 </body>
 </html>
