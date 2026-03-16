@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Optimiseur Conteneur v3</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4ff;--bg2:#e8eeff;--white:#fff;--card:#fff;
+  --border:#e2e8f8;--border2:#c7d2f0;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue3:#748ffc;--blue-soft:#eef2ff;
+  --green:#0ca678;--green2:#12b886;--green-soft:#e6fcf5;
+  --orange:#e8590c;--orange-soft:#fff4e6;
+  --amber:#e67700;--amber-soft:#fff8e1;
+  --red:#e03131;--red-soft:#fff5f5;
+  --purple:#7048e8;--purple-soft:#f3f0ff;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:16px;
+  --sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.06);
+  --sh2:0 2px 8px rgba(59,91,219,.12),0 8px 32px rgba(59,91,219,.08);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* HEADER */
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border),0 4px 16px rgba(59,91,219,.05)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 12px;border-radius:8px;text-transform:uppercase}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:1px;font-weight:500}
+.route-pill{background:var(--blue-soft);border:1px solid rgba(59,91,219,.15);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;color:var(--blue);display:flex;align-items:center;gap:7px}
+.dot-pulse{width:6px;height:6px;border-radius:50%;background:var(--green2);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+
+/* ROTATION BANNER */
+.rot-banner{background:linear-gradient(135deg,var(--purple-soft),var(--blue-soft));border:1.5px solid rgba(112,72,232,.2);border-radius:var(--r2);padding:16px 20px;margin-bottom:1.5rem;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.rot-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--purple),var(--blue2));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.rot-text{flex:1}
+.rot-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.rot-desc{font-size:11px;color:var(--text3);font-weight:500}
+.rot-ctrl{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.rot-slider-wrap{display:flex;align-items:center;gap:10px}
+.rot-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--purple);min-width:60px;text-align:center}
+.rot-unit{font-size:11px;color:var(--text3);font-weight:600;text-align:center;margin-top:1px}
+input[type=range]{-webkit-appearance:none;width:180px;height:6px;border-radius:3px;background:var(--border2);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue2));cursor:pointer;box-shadow:0 2px 6px rgba(112,72,232,.35)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 400px;min-height:calc(100vh - 64px)}
+.left{padding:2rem;overflow-y:auto}
+.right{background:var(--white);border-left:1px solid var(--border);padding:1.5rem;overflow-y:auto;position:sticky;top:64px;height:calc(100vh - 64px)}
+
+/* SECTION */
+.sec{display:flex;align-items:center;gap:10px;margin-bottom:1rem;margin-top:1.25rem}
+.sec:first-child{margin-top:0}
+.sec-ico{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--blue2));display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.sec-t{font-size:13px;font-weight:700}
+.sec-l{flex:1;height:1px;background:var(--border)}
+
+/* CONFIG */
+.cfg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.cfg{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh);transition:border-color .2s}
+.cfg:hover{border-color:var(--blue3)}
+.cfg-lbl{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.cfg-inp{width:100%;background:transparent;border:none;color:var(--blue);font-family:var(--mono);font-size:16px;font-weight:600;outline:none}
+select.cfg-inp{font-size:13px;cursor:pointer}
+option{background:var(--white)}
+.cfg-hint{font-size:10px;color:var(--text4);margin-top:2px;font-weight:500}
+
+/* PRODUCT CARDS */
+.prod-list{display:flex;flex-direction:column;gap:10px;margin-bottom:1rem}
+.pcard{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:16px;box-shadow:var(--sh);transition:all .2s}
+.pcard:hover{border-color:var(--blue3);box-shadow:var(--sh2);transform:translateY(-1px)}
+.pcard.in-ctnr{border-color:var(--green2);background:linear-gradient(to right,#f0fdf9,var(--white))}
+.pcard.overstock{border-color:var(--amber);background:linear-gradient(to right,var(--amber-soft),var(--white))}
+
+.pc-top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.pc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pc-name{font-size:14px;font-weight:700;flex:1}
+.pc-badge{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 8px;border-radius:20px}
+.b-ok{background:var(--blue-soft);color:var(--blue)}
+.b-new{background:var(--orange-soft);color:var(--orange)}
+.b-asie{background:#f0fdf4;color:#166534}
+
+.pc-body{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:start}
+.pc-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.met{background:var(--bg);border-radius:8px;padding:8px 10px}
+.met-v{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)}
+.met-v.g{color:var(--green)}.met-v.b{color:var(--blue)}.met-v.p{color:var(--purple)}
+.met-l{font-size:8.5px;color:var(--text3);margin-top:2px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+
+/* ROTATION ROW */
+.rot-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 10px;background:var(--bg);border-radius:8px;flex-wrap:wrap}
+.rot-seg{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);font-weight:600}
+.rot-seg strong{font-family:var(--mono);font-weight:700}
+.rot-sep{color:var(--border2);font-size:14px}
+.pal-rec-pill{background:var(--purple-soft);border:1px solid rgba(112,72,232,.2);color:var(--purple);font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px}
+.pal-rec-pill.over{background:var(--amber-soft);border-color:rgba(230,119,0,.2);color:var(--amber)}
+.rot-bar-wrap{flex:1;min-width:80px}
+.rot-bar{height:4px;background:var(--border);border-radius:2px}
+.rot-bar-f{height:4px;border-radius:2px;transition:width .4s}
+.rot-note{font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px}
+.note-ok{background:var(--green-soft);color:var(--green)}
+.note-over{background:var(--amber-soft);color:var(--amber)}
+.note-zero{background:var(--bg2);color:var(--text3)}
+
+/* CONTROLS */
+.pc-ctrl{display:flex;flex-direction:column;gap:8px;align-items:flex-end;min-width:90px}
+.lbl-ctrl{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);text-align:right}
+.min-inp{width:52px;background:var(--bg);border:1.5px solid var(--border);border-radius:7px;padding:5px 7px;text-align:center;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--text);outline:none;transition:all .2s}
+.min-inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,91,219,.1)}
+.inp-pair{display:flex;gap:6px;align-items:center}
+.inp-sep{font-size:10px;color:var(--text4);font-weight:600}
+.btn-del{background:var(--red-soft);border:1px solid rgba(224,49,49,.15);color:var(--red);border-radius:6px;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s}
+.btn-del:hover{background:var(--red);color:#fff}
+
+/* ADD FORM */
+.add-btn{width:100%;padding:12px;background:var(--white);border:2px dashed var(--border2);border-radius:var(--r2);color:var(--text3);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.add-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.add-form{background:var(--white);border:1.5px solid var(--blue3);border-radius:var(--r2);padding:1.25rem;margin-top:10px;box-shadow:0 4px 24px rgba(59,91,219,.15);display:none}
+.add-form.open{display:block;animation:sd .2s ease}
+@keyframes sd{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.ff{grid-column:1/-1}
+.fl label{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);display:block;margin-bottom:5px}
+.fl input,.fl select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;transition:all .2s}
+.fl input:focus,.fl select:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(59,91,219,.1)}
+.fa{display:flex;gap:8px}
+.btn-ok{flex:1;padding:10px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:8px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(59,91,219,.3)}
+.btn-ok:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,91,219,.4)}
+.btn-ko{padding:10px 14px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;color:var(--text3);font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer}
+
+/* RIGHT PANEL */
+.opt-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--blue),var(--blue2),#6d83f5);border:none;border-radius:var(--r2);color:#fff;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(59,91,219,.35);position:relative;overflow:hidden;margin-bottom:1.5rem}
+.opt-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#fff2,transparent);opacity:0;transition:opacity .2s}
+.opt-btn:hover::before{opacity:1}
+.opt-btn:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(59,91,219,.45)}
+
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1.25rem}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:13px;box-shadow:var(--sh)}
+.kpi.hl{background:linear-gradient(135deg,var(--blue-soft),var(--white));border-color:rgba(59,91,219,.2)}
+.kpi.hl2{background:linear-gradient(135deg,var(--green-soft),var(--white));border-color:rgba(12,166,120,.2)}
+.kpi-v{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--blue);line-height:1;margin-bottom:4px}
+.kpi-v.g{color:var(--green)}.kpi-v.o{color:var(--orange)}.kpi-v.p{color:var(--purple)}
+.kpi-l{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+
+/* CONTAINER VIZ */
+.ctnr-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:1rem;margin-bottom:1.25rem;box-shadow:var(--sh)}
+.ctnr-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.ctnr-t{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3)}
+.ctnr-s{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue)}
+.pal-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:8px}
+.pc{aspect-ratio:1;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:6px;font-family:var(--mono);font-weight:700;transition:all .3s;letter-spacing:.2px}
+.pe{background:var(--bg2);border:1px dashed var(--border2)}
+.pf{border:none}
+.lb-wrap{display:flex;align-items:center;gap:8px}
+.lb{flex:1;height:6px;background:var(--bg2);border-radius:3px;overflow:hidden}
+.lb-f{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.lb-pct{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--blue);min-width:36px;text-align:right}
+.legend{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.leg{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;color:var(--text3)}
+.leg-d{width:8px;height:8px;border-radius:2px}
+
+/* RESULT CARDS */
+.res-cards{display:flex;flex-direction:column;gap:8px}
+.rc{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh);transition:all .2s;animation:fu .3s ease both}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.rc:hover{box-shadow:var(--sh2);transform:translateX(2px)}
+.rc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.rc-name{font-size:12px;font-weight:700}
+.rc-pal{background:var(--bg);border:1px solid var(--border);font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;color:var(--text2)}
+.rc-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:6px}
+.rs{text-align:center;background:var(--bg);border-radius:6px;padding:6px 4px}
+.rs-v{font-family:var(--mono);font-size:11px;font-weight:700}
+.rs-l{font-size:8px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text4);margin-top:1px}
+.rc-rot{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:600;color:var(--text3);padding:5px 8px;background:var(--bg);border-radius:6px}
+.rc-rot span{font-family:var(--mono);font-weight:700}
+.rc-bar{flex:1;height:3px;background:var(--border);border-radius:2px}
+.rc-bar-f{height:3px;border-radius:2px}
+.empty{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:12px;font-weight:500}
+.empty-ico{font-size:28px;margin-bottom:8px;opacity:.4}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">INCA IMPORT</div>
+    <div>
+      <div class="hdr-title">Optimiseur Conteneur</div>
+      <div class="hdr-sub">Mix produits · Rotation de stock · Maximisation marge</div>
+    </div>
+  </div>
+  <div class="route-pill">
+    <div class="dot-pulse"></div>
+    FOB/FCA → Fos-sur-Mer → La Possession · ~22 jours
+  </div>
+</div>
+
+<div class="layout">
+<div class="left">
+
+  <!-- ROTATION BANNER -->
+  <div class="rot-banner">
+    <div class="rot-icon">🔄</div>
+    <div class="rot-text">
+      <div class="rot-title">Rotation de stock cible</div>
+      <div class="rot-desc">L'optimiseur calcule automatiquement les palettes recommandées pour ne pas dépasser cette durée de stock par produit. Basé sur tes ventes annuelles réelles 2024.</div>
+    </div>
+    <div class="rot-ctrl">
+      <div class="rot-slider-wrap">
+        <input type="range" id="rotSlider" min="1" max="12" step="0.5" value="3.5" oninput="setRot(this.value)">
+        <div>
+          <div class="rot-val" id="rotVal">3.5</div>
+          <div class="rot-unit">mois</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="sec-ico">⚙</div><div class="sec-t">Configuration conteneur</div><div class="sec-l"></div></div>
+  <div class="cfg-grid">
+    <div class="cfg">
+      <div class="cfg-lbl">Type</div>
+      <select class="cfg-inp" id="cType" onchange="updateCfg()">
+        <option value="40">40' HC DRY</option>
+        <option value="20">20' DRY</option>
+      </select>
+      <div class="cfg-hint">Capacité CMA CGM</div>
+    </div>
+    <div class="cfg">
+      <div class="cfg-lbl">Palettes max</div>
+      <input class="cfg-inp" type="number" id="maxPal" value="24" min="1" max="33" onchange="updateCfg()">
+      <div class="cfg-hint">Positions disponibles</div>
+    </div>
+    <div class="cfg">
+      <div class="cfg-lbl">Fret maritime €</div>
+      <input class="cfg-inp" type="number" id="fretV" value="3850" onchange="updateCfg()">
+      <div class="cfg-hint">CFR Le Port estimé</div>
+    </div>
+    <div class="cfg">
+      <div class="cfg-lbl">Douane + transit €</div>
+      <input class="cfg-inp" type="number" id="douaneV" value="800" onchange="updateCfg()">
+      <div class="cfg-hint">Frais fixes</div>
+    </div>
+  </div>
+
+  <div class="sec"><div class="sec-ico">📦</div><div class="sec-t">Produits — ventes & contraintes palettes</div><div class="sec-l"></div></div>
+  <div class="prod-list" id="prodList"></div>
+
+  <button class="add-btn" onclick="toggleForm()">＋ &nbsp;Ajouter un produit</button>
+  <div class="add-form" id="addForm">
+    <div class="fg">
+      <div class="fl ff"><label>Nom du produit</label><input type="text" id="nNom" placeholder="ex: Celsius Energy 355ml"></div>
+      <div class="fl"><label>Prix achat FCA/FOB €</label><input type="number" id="nAchat" step="0.01" placeholder="0.80"></div>
+      <div class="fl"><label>CRR Réunion € (tout inclus)</label><input type="number" id="nCrr" step="0.01" placeholder="1.40"></div>
+      <div class="fl"><label>PV inter-groupe €</label><input type="number" id="nPv" step="0.01" placeholder="2.50"></div>
+      <div class="fl"><label>Unités par palette</label><input type="number" id="nUpp" placeholder="1296"></div>
+      <div class="fl"><label>Ventes annuelles (un/an)</label><input type="number" id="nVentes" placeholder="5000"></div>
+      <div class="fl"><label>Catégorie</label>
+        <select id="nTag">
+          <option value="ok">Validé</option>
+          <option value="new">Nouveauté</option>
+          <option value="asie">Asiatique</option>
+        </select>
+      </div>
+    </div>
+    <div class="fa">
+      <button class="btn-ko" onclick="toggleForm()">Annuler</button>
+      <button class="btn-ok" onclick="addProd()">✓ &nbsp;Ajouter</button>
+    </div>
+  </div>
+
+</div><!-- /left -->
+
+<div class="right">
+
+  <button class="opt-btn" onclick="optimize()"><span>▶ &nbsp;&nbsp;OPTIMISER LE CONTENEUR</span></button>
+
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi hl"><div class="kpi-v g" id="k1">— €</div><div class="kpi-l">Marge brute totale</div></div>
+    <div class="kpi"><div class="kpi-v" id="k2">—</div><div class="kpi-l">Unités chargées</div></div>
+    <div class="kpi hl2"><div class="kpi-v p" id="k3">— mois</div><div class="kpi-l">Rotation stock moy.</div></div>
+    <div class="kpi"><div class="kpi-v" id="k4">— %</div><div class="kpi-l">ROI vs logistique</div></div>
+  </div>
+
+  <div class="ctnr-card">
+    <div class="ctnr-hdr">
+      <span class="ctnr-t">Chargement conteneur</span>
+      <span class="ctnr-s" id="palStat">0 / 24 palettes</span>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="pal-grid" id="palGrid"></div>
+    <div class="lb-wrap">
+      <div class="lb"><div class="lb-f" id="lbFill" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--green2))"></div></div>
+      <div class="lb-pct" id="lbPct">0%</div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:0"><div class="sec-ico">📊</div><div class="sec-t">Répartition optimale</div><div class="sec-l"></div></div>
+  <div class="res-cards" id="resCards">
+    <div class="empty"><div class="empty-ico">🚢</div>Configure tes produits et lance l'optimisation</div>
+  </div>
+
+</div><!-- /right -->
+</div><!-- /layout -->
+
+<script>
+const COLS=['#3b5bdb','#0ca678','#e8590c','#7048e8','#1098ad','#d6336c','#2f9e44','#e67700','#5c7cfa','#099268','#c92a2a','#1864ab'];
+let rot=3.5;
+let cfg={maxPal:24,fret:3850,douane:800};
+let lastAlloc=[];
+let nid=11;
+
+let prods=[
+  {id:1,nom:'Monster Energy 500ml',achat:.77,crr:1.21,pv:1.77,upp:1728,ventesAn:63204,min:0,max:99,tag:'ok'},
+  {id:2,nom:'Tiger Energy 250ml',achat:.286,crr:.591,pv:.828,upp:2880,ventesAn:5000,min:0,max:99,tag:'ok'},
+  {id:3,nom:'Black Energy 250ml',achat:.368,crr:.696,pv:.974,upp:2880,ventesAn:3000,min:0,max:99,tag:'ok'},
+  {id:4,nom:'ALEO Premium 500ml',achat:.33,crr:.68,pv:1.00,upp:1580,ventesAn:21055,min:0,max:99,tag:'ok'},
+  {id:5,nom:'Oasis 50cl',achat:.50,crr:.905,pv:1.202,upp:1440,ventesAn:17155,min:0,max:99,tag:'ok'},
+  {id:6,nom:'Granini Jus 25cl',achat:.40,crr:.785,pv:1.009,upp:2880,ventesAn:19098,min:0,max:99,tag:'ok'},
+  {id:7,nom:'Celsius Energy 355ml',achat:1.00,crr:1.40,pv:2.50,upp:1296,ventesAn:5000,min:0,max:99,tag:'new'},
+  {id:8,nom:'Takis Fuego 100g',achat:.80,crr:1.30,pv:2.20,upp:2160,ventesAn:3000,min:0,max:99,tag:'new'},
+  {id:9,nom:'Samyang Buldak 140g',achat:.75,crr:1.25,pv:2.20,upp:2400,ventesAn:2000,min:0,max:99,tag:'asie'},
+  {id:10,nom:'Fanta Asia 33cl',achat:.38,crr:.80,pv:1.50,upp:2640,ventesAn:2000,min:0,max:99,tag:'new'},
+];
+
+const f0=n=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n);
+const f2=n=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const f1=n=>new Intl.NumberFormat('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1}).format(n);
+const fE=n=>'€'+f2(n);
+const mg=p=>p.pv-p.crr;
+const mgPal=p=>mg(p)*p.upp;
+
+// Palettes recommandées par rotation
+function palRec(p){
+  const unitsNeeded=p.ventesAn/12*rot;
+  return Math.max(1,Math.ceil(unitsNeeded/p.upp));
+}
+
+function setRot(v){
+  rot=+v;
+  document.getElementById('rotVal').textContent=v;
+  renderProds();
+}
+function updateCfg(){
+  cfg.maxPal=+document.getElementById('maxPal').value||24;
+  cfg.fret=+document.getElementById('fretV').value||0;
+  cfg.douane=+document.getElementById('douaneV').value||0;
+  renderProds();
+}
+
+function tagBadge(t){
+  if(t==='ok')return'<span class="pc-badge b-ok">Validé</span>';
+  if(t==='new')return'<span class="pc-badge b-new">Nouveauté</span>';
+  return'<span class="pc-badge b-asie">Asie</span>';
+}
+
+function renderProds(){
+  const maxM=Math.max(...prods.map(p=>mgPal(p)),1);
+  const inOpt=id=>lastAlloc.find(a=>a.id===id&&a.pal>0);
+
+  document.getElementById('prodList').innerHTML=prods.map((p,i)=>{
+    const col=COLS[i%COLS.length];
+    const m=mg(p);
+    const mp=mgPal(p);
+    const pct=Math.max(0,Math.min(100,mp/maxM*100));
+    const rec=palRec(p);
+    const isIn=inOpt(p.id);
+    const allocPal=isIn?isIn.pal:0;
+    const isOver=allocPal>rec;
+    const rotActual=allocPal>0?(allocPal*p.upp/p.ventesAn*12):0;
+    const rotPct=Math.min(100,rotActual/rot*100);
+
+    return`<div class="pcard${isIn?' in-ctnr':''}${isOver?' overstock':''}" id="pc-${p.id}">
+      <div class="pc-top">
+        <div class="pc-dot" style="background:${col}"></div>
+        <span class="pc-name">${p.nom}</span>
+        ${tagBadge(p.tag)}
+      </div>
+      <div class="pc-body">
+        <div>
+          <div class="pc-metrics">
+            <div class="met"><div class="met-v b">${fE(p.achat)}</div><div class="met-l">Achat</div></div>
+            <div class="met"><div class="met-v">${fE(p.crr)}</div><div class="met-l">CRR Réunion</div></div>
+            <div class="met"><div class="met-v">${fE(p.pv)}</div><div class="met-l">PV client</div></div>
+            <div class="met"><div class="met-v g">+${fE(m)}</div><div class="met-l">Marge/unit</div></div>
+          </div>
+          <div class="rot-row">
+            <div class="rot-seg">📦 <strong>${f0(p.ventesAn)}</strong> un/an</div>
+            <div class="rot-sep">→</div>
+            <div class="rot-seg">🔄 <strong>${f1(rot)}</strong> mois</div>
+            <div class="rot-sep">=</div>
+            <div class="rot-seg">Recommandé :</div>
+            <span class="pal-rec-pill${isOver?' over':''}">${rec} pal.</span>
+            ${isIn?`<div class="rot-bar-wrap"><div class="rot-bar"><div class="rot-bar-f" style="width:${rotPct}%;background:${isOver?'var(--amber)':col}"></div></div></div>
+            <span class="rot-note ${isOver?'note-over':'note-ok'}">${isOver?'Surstock':'OK'}</span>`:'<span class="rot-note note-zero">Non chargé</span>'}
+          </div>
+        </div>
+        <div class="pc-ctrl">
+          <div class="lbl-ctrl">PALETTES</div>
+          <div class="inp-pair">
+            <div>
+              <div style="font-size:8px;color:var(--text4);text-align:center;margin-bottom:3px">MIN</div>
+              <input class="min-inp" type="number" min="0" value="${p.min}"
+                onchange="prods[${i}].min=+this.value;renderProds()">
+            </div>
+            <div class="inp-sep">/</div>
+            <div>
+              <div style="font-size:8px;color:var(--text4);text-align:center;margin-bottom:3px">MAX</div>
+              <input class="min-inp" type="number" min="0" value="${p.max}"
+                onchange="prods[${i}].max=+this.value;renderProds()">
+            </div>
+          </div>
+          <button class="btn-del" onclick="delProd(${p.id})" title="Supprimer">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderPalViz(lastAlloc);
+}
+
+function renderPalViz(alloc){
+  const max=cfg.maxPal;
+  const pals=[];
+  alloc.forEach((a)=>{
+    const pi=prods.findIndex(p=>p.id===a.id);
+    const col=COLS[pi%COLS.length];
+    const label=a.nom.substring(0,4).toUpperCase();
+    for(let j=0;j<a.pal;j++) pals.push({col,label});
+  });
+  const used=pals.length;
+  let cells='';
+  for(let i=0;i<max;i++){
+    if(i<pals.length){
+      const {col,label}=pals[i];
+      cells+=`<div class="pc pf" style="background:${col}18;border:1.5px solid ${col};color:${col}" title="${label}">${label}</div>`;
+    } else cells+=`<div class="pc pe"></div>`;
+  }
+  document.getElementById('palGrid').innerHTML=cells;
+  document.getElementById('palStat').textContent=`${used} / ${max} palettes`;
+  const pct=Math.min(100,used/max*100);
+  const fill=document.getElementById('lbFill');
+  fill.style.width=pct+'%';
+  fill.style.background=pct>90?'linear-gradient(90deg,#e8590c,#e03131)':pct>60?'linear-gradient(90deg,var(--blue),var(--green2))':'linear-gradient(90deg,var(--blue),var(--blue3))';
+  document.getElementById('lbPct').textContent=Math.round(pct)+'%';
+  // legend
+  document.getElementById('legend').innerHTML=alloc.filter(a=>a.pal>0).map((a)=>{
+    const pi=prods.findIndex(p=>p.id===a.id);
+    const col=COLS[pi%COLS.length];
+    return`<div class="leg"><div class="leg-d" style="background:${col}"></div>${a.nom.split(' ').slice(0,2).join(' ')}</div>`;
+  }).join('');
+}
+
+function delProd(id){
+  prods=prods.filter(p=>p.id!==id);
+  lastAlloc=lastAlloc.filter(a=>a.id!==id);
+  renderProds();
+}
+
+function toggleForm(){document.getElementById('addForm').classList.toggle('open')}
+
+function addProd(){
+  const nom=document.getElementById('nNom').value.trim();
+  const achat=+document.getElementById('nAchat').value;
+  const crr=+document.getElementById('nCrr').value;
+  const pv=+document.getElementById('nPv').value;
+  const upp=+document.getElementById('nUpp').value;
+  const ventesAn=+document.getElementById('nVentes').value||1000;
+  const tag=document.getElementById('nTag').value;
+  if(!nom||!crr||!pv||!upp){alert('Remplis les champs obligatoires.');return;}
+  prods.push({id:nid++,nom,achat:achat||crr,crr,pv,upp,ventesAn,min:0,max:99,tag});
+  toggleForm();
+  ['nNom','nAchat','nCrr','nPv','nUpp','nVentes'].forEach(id=>document.getElementById(id).value='');
+  renderProds();
+}
+
+function optimize(){
+  const max=cfg.maxPal;
+  const logistique=cfg.fret+cfg.douane;
+  const valid=prods.filter(p=>mg(p)>0&&p.ventesAn>0);
+  if(!valid.length){alert('Aucun produit rentable avec ventes > 0.');return;}
+
+  // Calcul plafond rotation : max palettes selon rotation cible
+  const alloc={};
+  valid.forEach(p=>{
+    const recPal=palRec(p);
+    const effectiveMax=Math.min(p.max===99?recPal:Math.min(p.max,recPal),max);
+    alloc[p.id]={id:p.id,nom:p.nom,pal:Math.min(p.min,effectiveMax),effectiveMax};
+  });
+
+  let rem=max-Object.values(alloc).reduce((s,e)=>s+e.pal,0);
+
+  // Sort by marge/palette desc
+  const sorted=[...valid].sort((a,b)=>mgPal(b)-mgPal(a));
+  for(const p of sorted){
+    if(rem<=0)break;
+    const e=alloc[p.id];
+    const add=Math.min(e.effectiveMax-e.pal,rem);
+    if(add>0){e.pal+=add;rem-=add;}
+  }
+
+  lastAlloc=Object.values(alloc).filter(e=>e.pal>0).sort((a,b)=>{
+    const pa=prods.find(p=>p.id===a.id),pb=prods.find(p=>p.id===b.id);
+    return mgPal(pb)-mgPal(pa);
+  });
+
+  const totalPal=lastAlloc.reduce((s,e)=>s+e.pal,0);
+  const totalUnits=lastAlloc.reduce((s,e)=>{const p=prods.find(x=>x.id===e.id);return s+e.pal*p.upp;},0);
+  const totalMg=lastAlloc.reduce((s,e)=>{const p=prods.find(x=>x.id===e.id);return s+e.pal*p.upp*mg(p);},0);
+  const roi=logistique>0?totalMg/logistique*100:0;
+
+  // Rotation moyenne pondérée
+  const rotMoy=lastAlloc.reduce((s,e)=>{
+    const p=prods.find(x=>x.id===e.id);
+    const r=e.pal*p.upp/p.ventesAn*12;
+    return s+r*e.pal;
+  },0)/Math.max(totalPal,1);
+
+  document.getElementById('k1').textContent=fE(totalMg);
+  document.getElementById('k2').textContent=f0(totalUnits)+' un.';
+  document.getElementById('k3').textContent=f1(rotMoy)+' mois';
+  document.getElementById('k4').textContent=Math.round(roi)+'%';
+  document.getElementById('k4').className='kpi-v '+(roi>300?'g':roi>150?'':'o');
+
+  renderProds();
+
+  document.getElementById('resCards').innerHTML=lastAlloc.map((e,ii)=>{
+    const p=prods.find(x=>x.id===e.id);
+    const pi=prods.indexOf(p);
+    const col=COLS[pi%COLS.length];
+    const m=mg(p);
+    const units=e.pal*p.upp;
+    const mgt=units*m;
+    const share=totalMg>0?mgt/totalMg*100:0;
+    const rotEff=p.ventesAn>0?e.pal*p.upp/p.ventesAn*12:0;
+    const recPal=palRec(p);
+    const isOver=e.pal>recPal;
+    return`<div class="rc" style="border-left:3px solid ${col};animation-delay:${ii*.05}s">
+      <div class="rc-top">
+        <span class="rc-name" style="color:${col}">${p.nom}</span>
+        <span class="rc-pal">${e.pal} pal. / rec. ${recPal}</span>
+      </div>
+      <div class="rc-stats">
+        <div class="rs"><div class="rs-v" style="color:${col}">${fE(mgt)}</div><div class="rs-l">Marge</div></div>
+        <div class="rs"><div class="rs-v">${f0(units)}</div><div class="rs-l">Unités</div></div>
+        <div class="rs"><div class="rs-v">${share.toFixed(1)}%</div><div class="rs-l">Part</div></div>
+      </div>
+      <div class="rc-rot">
+        🔄 Rotation effective : <span style="color:${isOver?'var(--amber)':col}">${f1(rotEff)} mois</span>
+        <div class="rc-bar"><div class="rc-bar-f" style="width:${Math.min(100,rotEff/rot*100)}%;background:${isOver?'var(--amber)':col}"></div></div>
+        <span style="font-size:10px;font-weight:700;color:${isOver?'var(--amber)':'var(--green)'}">${isOver?'⚠':'✓'}</span>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty"><div class="empty-ico">🚢</div>Aucun produit optimisé</div>';
+}
+
+renderProds();
+renderPalViz([]);
+</script>
+</body>
+</html>
