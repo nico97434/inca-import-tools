@@ -137,10 +137,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="logo">INCA IMPORT</div>
     <div>
       <div class="hdr-title">Veille Produits</div>
-      <div class="hdr-sub">Tendances mondiales · Gemini Flash · Gratuit · Google AI Studio</div>
+      <div class="hdr-sub">Tendances mondiales · Claude Haiku · Web search actif · Résultats live</div>
     </div>
   </div>
-  <div class="live-badge"><div class="live-dot"></div>LIVE — Gemini Gratuit</div>
+  <div class="live-badge"><div class="live-dot"></div>LIVE — Claude + Web Search</div>
 </div>
 <div class="layout">
 <div class="sidebar">
@@ -194,11 +194,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
   <div class="live-info">
-    <div class="li-title">✅ Gemini Flash — 100% Gratuit</div>
-    <div class="li-row">🆓 1 500 requêtes/jour offertes par Google</div>
-    <div class="li-row">🌐 Modèle Gemini 2.0 Flash (dernière version)</div>
-    <div class="li-row">🔑 Clé API via aistudio.google.com</div>
-    <div class="li-row">💰 <strong>Zéro coût · Aucune carte requise</strong></div>
+    <div class="li-title">🔴 Claude + Web Search activé</div>
+    <div class="li-row">🌐 Recherche Google en temps réel</div>
+    <div class="li-row">📱 TikTok trends · Reddit · FMCG news</div>
+    <div class="li-row">🛒 Sites grossistes · Nouveaux lancements</div>
+    <div class="li-row">💰 <strong>~$0.009 par recherche · Claude Haiku</strong></div>
   </div>
   <div class="context-box">
     <div class="ctx-title">🏝 Contexte : La Réunion</div>
@@ -273,25 +273,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 </div>
- 
+
 <script>
-// CLÉ API GEMINI — gratuite sur aistudio.google.com
-let API_KEY = localStorage.getItem('inca_gemini_key') || '';
+// CLÉ API CLAUDE — console.anthropic.com → API Keys
+let API_KEY = localStorage.getItem('inca_claude_key') || '';
 function checkApiKey(){
   if(!API_KEY){
-    const k=prompt('Entre ta clé API Gemini (AIza...) — gratuite sur aistudio.google.com → Get API Key :');
-    if(k && k.startsWith('AIza')){API_KEY=k;localStorage.setItem('inca_gemini_key',k);return true;}
-    if(k && k.length > 10){API_KEY=k;localStorage.setItem('inca_gemini_key',k);return true;}
-    alert('Clé invalide. Va sur aistudio.google.com → Get API Key (gratuit, aucune carte requise).');return false;
+    const k=prompt('Entre ta clé API Anthropic (sk-ant-...) \nOù la trouver : console.anthropic.com → API Keys');
+    if(k && k.startsWith('sk-')){API_KEY=k;localStorage.setItem('inca_claude_key',k);return true;}
+    alert('Clé invalide. Elle doit commencer par sk-ant-\nVa sur console.anthropic.com → API Keys');return false;
   }
   return true;
 }
 let activeCat='all', hist=[];
 const SC={high:{bg:'var(--green-soft)',text:'var(--green)',border:'rgba(12,166,120,.3)'},med:{bg:'var(--amber-soft)',text:'var(--amber)',border:'rgba(230,119,0,.3)'},low:{bg:'var(--red-soft)',text:'var(--red)',border:'rgba(224,49,49,.3)'}};
- 
+
 function setCat(btn,cat){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeCat=cat}
 function quickSearch(q){document.getElementById('searchInput').value=q;launch()}
- 
+
 function animateSteps(){
   const steps=['step1','step2','step3','step4','step5'];
   let i=0;
@@ -302,7 +301,7 @@ function animateSteps(){
   },1800);
   return iv;
 }
- 
+
 function buildPrompt(){
   const q=document.getElementById('searchInput').value.trim();
   const tendance=document.getElementById('fTendance').value;
@@ -311,33 +310,33 @@ function buildPrompt(){
   const catMap={all:'all FMCG categories',boissons:'fresh beverages soft drinks',energy:'energy drinks functional beverages',chips:'chips crisps salty snacks',snacks:'asian snacks noodle snacks',confiseries:'candy confectionery sweets',kfood:'Korean food K-snacks',healthy:'healthy functional better-for-you'};
   const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
   return`You are a FMCG product intelligence expert. Today is ${today}.
- 
+
 MISSION: Search the web RIGHT NOW to find the most trending food & beverage products. Search for:
 - New product launches 2024-2025 (press releases, brand announcements)
 - Viral products on TikTok, Instagram, YouTube right now
 - FMCG news (FoodNavigator, BeverageDaily, Innova Market Insights)
 - European wholesale availability (Candy Market, Planet Foods, Big Brands Group Poland, Delidrinks)
 - Reddit FMCG communities, food trend reports
- 
+
 CLIENT CONTEXT: INCA IMPORT, purchasing center in La Réunion (French DOM island), supplying 3 gas stations. Young clientele 15-40yo, TikTok-driven, large Asian and Mahorais community (halal important), on-the-go format, PV €1.20-€3.50, import via 40' container.
- 
+
 SEARCH QUERY: "${q||'trending FMCG new products 2025'}"
 CATEGORY: ${catMap[activeCat]||'all categories'}
 TREND FILTER: ${tendance==='viral'?'Going viral right now':tendance==='emerging'?'Emerging trend':'All trends'}
 ORIGIN FILTER: ${origine==='all'?'All origins':origine}
 HALAL: ${halal==='yes'?'Halal certified required':'Not required'}
- 
+
 INSTRUCTIONS:
 1. Use web search to find REAL trending products available NOW
 2. Identify 6 concrete products with real wholesale suppliers
 3. Evaluate specific potential for Réunion gas stations
 4. Include recent data from your web searches
- 
+
 Respond ONLY with valid JSON (no markdown, no backticks, no text before or after):
 {"searchDate":"${today}","sources":["source1.com","source2.com","source3.com","source4.com"],"analysis":"3-4 sentences about trends found online TODAY and their relevance for Réunion gas stations","products":[{"nom":"Exact product name","marque":"Brand","categorie":"Short category","origine":"Country","annee_lancement":"2024 or 2025","score":82,"scoreLevel":"high","pourquoi":"Why this product is relevant for Réunion gas stations specifically. Cite concrete elements: current TikTok trend, sales data, European availability.","tags":["Viral TikTok","Nouveauté 2025"],"prixAchatEst":"€0.75 – €1.00","pvSuggere":"€2.00 – €2.50","margeEst":"45%","tendanceScore":88,"fournisseur":"Wholesale supplier name","fournisseurUrl":"supplier-site.com","disponibilite":"Europe","accentColor":"#3b5bdb"}]}
 scoreLevel: "high" score>=75, "med" 50-74, "low" <50. Use different accentColor for each: #3b5bdb, #0ca678, #e8590c, #7048e8, #d6336c, #e67700, #0891b2`;
 }
- 
+
 async function launch(){if(!checkApiKey())return;
   const btn=document.getElementById('goBtn');
   btn.disabled=true;
@@ -352,19 +351,27 @@ async function launch(){if(!checkApiKey())return;
   const q=document.getElementById('searchInput').value.trim();
   if(q&&!hist.includes(q)){hist.unshift(q);if(hist.length>6)hist.pop();renderHist();}
   try{
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body:JSON.stringify({
-        contents:[{parts:[{text:buildPrompt()}]}],
-        generationConfig:{temperature:0.7,maxOutputTokens:4000}
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:4000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:buildPrompt()}]
       })
     });
     clearInterval(iv);
     ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep done');
     const data=await res.json();
-    if(data.error){throw new Error(data.error.message||'Erreur Gemini API');}
-    let raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    if(data.error){throw new Error(data.error.message||JSON.stringify(data.error));}
+    let raw='';
+    if(data.content){for(const b of data.content){if(b.type==='text')raw+=b.text;}}
     raw=raw.replace(/```json|```/g,'').trim();
     const js=raw.indexOf('{'),je=raw.lastIndexOf('}')+1;
     if(js>=0&&je>js)raw=raw.slice(js,je);
@@ -379,7 +386,7 @@ async function launch(){if(!checkApiKey())return;
   }
   btn.disabled=false;btn.classList.remove('loading');document.getElementById('btnTxt').textContent='🔴 Lancer la veille live';
 }
- 
+
 function renderResults(data,query){
   document.getElementById('resultsWrap').style.display='block';
   document.getElementById('resultsTitle').textContent=query?`Veille : "${query}"`:'Tendances FMCG Live';
@@ -422,7 +429,7 @@ function renderHist(){
   s.style.display='block';
   l.innerHTML=hist.map(h=>`<div class="hist-item" onclick="quickSearch('${h.replace(/'/g,"\\'")}')">↩ ${h}</div>`).join('');
 }
-function resetKey(){localStorage.removeItem('inca_gemini_key');API_KEY='';alert('Clé Gemini supprimée. Elle te sera redemandée au prochain lancement.');}
+function resetKey(){localStorage.removeItem('inca_claude_key');API_KEY='';alert('Clé Claude supprimée. Elle te sera redemandée au prochain lancement.');}
 function resetSearch(){
   document.getElementById('resultsWrap').style.display='none';
   document.getElementById('welcomeState').style.display='flex';
@@ -434,4 +441,3 @@ function resetSearch(){
 </script>
 </body>
 </html>
- 
