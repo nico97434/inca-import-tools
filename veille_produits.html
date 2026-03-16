@@ -137,10 +137,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="logo">INCA IMPORT</div>
     <div>
       <div class="hdr-title">Veille Produits</div>
-      <div class="hdr-sub">Tendances mondiales · Web search actif · Résultats à la minute</div>
+      <div class="hdr-sub">Tendances mondiales · Gemini Flash · Gratuit · Google AI Studio</div>
     </div>
   </div>
-  <div class="live-badge"><div class="live-dot"></div>LIVE — Web Search</div>
+  <div class="live-badge"><div class="live-dot"></div>LIVE — Gemini Gratuit</div>
 </div>
 <div class="layout">
 <div class="sidebar">
@@ -194,11 +194,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
   </div>
   <div class="live-info">
-    <div class="li-title">🔴 Web Search activé</div>
-    <div class="li-row">🌐 Google · Reddit · FoodNavigator · BeverageDaily</div>
-    <div class="li-row">📱 TikTok trends · Instagram · YouTube viral</div>
-    <div class="li-row">🛒 Sites grossistes · Nouveaux lancements du jour</div>
-    <div class="li-row">📅 Données à la minute · <strong>Zéro cache</strong></div>
+    <div class="li-title">✅ Gemini Flash — 100% Gratuit</div>
+    <div class="li-row">🆓 1 500 requêtes/jour offertes par Google</div>
+    <div class="li-row">🌐 Modèle Gemini 2.0 Flash (dernière version)</div>
+    <div class="li-row">🔑 Clé API via aistudio.google.com</div>
+    <div class="li-row">💰 <strong>Zéro coût · Aucune carte requise</strong></div>
   </div>
   <div class="context-box">
     <div class="ctx-title">🏝 Contexte : La Réunion</div>
@@ -275,13 +275,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </div>
  
 <script>
-// CLÉ API — stockée localement dans ton navigateur
-let API_KEY = localStorage.getItem('inca_api_key') || '';
+// CLÉ API GEMINI — gratuite sur aistudio.google.com
+let API_KEY = localStorage.getItem('inca_gemini_key') || '';
 function checkApiKey(){
   if(!API_KEY){
-    const k=prompt('Clé API Anthropic (sk-ant-...) — va sur console.anthropic.com :');
-    if(k && k.startsWith('sk-')){API_KEY=k;localStorage.setItem('inca_api_key',k);return true;}
-    alert('Clé invalide.');return false;
+    const k=prompt('Entre ta clé API Gemini (AIza...) — gratuite sur aistudio.google.com → Get API Key :');
+    if(k && k.startsWith('AIza')){API_KEY=k;localStorage.setItem('inca_gemini_key',k);return true;}
+    if(k && k.length > 10){API_KEY=k;localStorage.setItem('inca_gemini_key',k);return true;}
+    alert('Clé invalide. Va sur aistudio.google.com → Get API Key (gratuit, aucune carte requise).');return false;
   }
   return true;
 }
@@ -351,26 +352,19 @@ async function launch(){if(!checkApiKey())return;
   const q=document.getElementById('searchInput').value.trim();
   if(q&&!hist.includes(q)){hist.unshift(q);if(hist.length>6)hist.pop();renderHist();}
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`,{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:6000,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        messages:[{role:'user',content:buildPrompt()}]
+        contents:[{parts:[{text:buildPrompt()}]}],
+        generationConfig:{temperature:0.7,maxOutputTokens:4000}
       })
     });
     clearInterval(iv);
     ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep done');
     const data=await res.json();
-    let raw='';
-    if(data.content){for(const b of data.content){if(b.type==='text')raw+=b.text;}}
+    if(data.error){throw new Error(data.error.message||'Erreur Gemini API');}
+    let raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
     raw=raw.replace(/```json|```/g,'').trim();
     const js=raw.indexOf('{'),je=raw.lastIndexOf('}')+1;
     if(js>=0&&je>js)raw=raw.slice(js,je);
@@ -428,7 +422,7 @@ function renderHist(){
   s.style.display='block';
   l.innerHTML=hist.map(h=>`<div class="hist-item" onclick="quickSearch('${h.replace(/'/g,"\\'")}')">↩ ${h}</div>`).join('');
 }
-function resetKey(){localStorage.removeItem('inca_api_key');API_KEY='';alert('Clé supprimée. Elle te sera redemandée au prochain lancement.');}
+function resetKey(){localStorage.removeItem('inca_gemini_key');API_KEY='';alert('Clé Gemini supprimée. Elle te sera redemandée au prochain lancement.');}
 function resetSearch(){
   document.getElementById('resultsWrap').style.display='none';
   document.getElementById('welcomeState').style.display='flex';
@@ -440,3 +434,4 @@ function resetSearch(){
 </script>
 </body>
 </html>
+ 
