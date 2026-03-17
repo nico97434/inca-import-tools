@@ -99,11 +99,29 @@ input[type=file]{display:none}
 .imp-alert{background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;font-size:12px;font-weight:600;color:#6ba3f8;line-height:1.6}
 @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 ::-webkit-scrollbar{width:4px}
+.search-bar-wrap{position:relative;margin-bottom:1rem}
+.search-bar-wrap input{width:100%;background:var(--bg2);border:1.5px solid var(--border2);border-radius:12px;padding:12px 16px 12px 44px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;transition:all .2s}
+.search-bar-wrap input:focus{border-color:#4f8ef7;box-shadow:0 0 0 3px rgba(79,142,247,.15)}
+.search-bar-wrap input::placeholder{color:var(--text3)}
+.search-ico{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px;transition:all .2s;display:none}
+.search-clear:hover{color:var(--text);background:var(--bg3)}
+.search-results{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.sr-header{display:grid;grid-template-columns:1fr repeat(4,auto);gap:8px;padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.sr-row{display:grid;grid-template-columns:1fr repeat(4,auto);gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s}
+.sr-row:last-child{border-bottom:none}
+.sr-row:hover{background:var(--bg3)}
+.sr-name{font-size:13px;font-weight:600}
+.sr-val{font-family:var(--mono);font-size:12px;font-weight:600;text-align:right;white-space:nowrap}
+.sr-empty{padding:2rem;text-align:center;color:var(--text3);font-size:13px;font-weight:500}
+.sr-total{display:grid;grid-template-columns:1fr repeat(4,auto);gap:8px;padding:10px 14px;background:rgba(79,142,247,.08);border-top:1px solid rgba(79,142,247,.2);font-weight:700}
+.highlight{background:rgba(79,142,247,.25);border-radius:3px;padding:0 2px}
+.badge-st{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;text-transform:uppercase}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 </style>
 </head>
 <body>
-
+ 
 <div class="hdr">
   <div class="hdr-l">
     <div class="logo">INCA IMPORT</div>
@@ -118,7 +136,7 @@ input[type=file]{display:none}
     <span class="sbadge vito">VITO</span>
   </div>
 </div>
-
+ 
 <div class="drop-wrap" id="dropWrap">
   <div class="drop-zone" id="dropZone">
     <div class="drop-icon">📊</div>
@@ -135,7 +153,7 @@ input[type=file]{display:none}
     <button class="analyze-btn" id="analyzeBtn" onclick="buildDashboard()">✓ Analyser les ventes →</button>
   </div>
 </div>
-
+ 
 <div class="dashboard" id="dashboard">
   <div class="dash-header">
     <div>
@@ -152,6 +170,14 @@ input[type=file]{display:none}
       <button class="btn-reset" onclick="resetDB()">↩ Nouveau fichier</button>
     </div>
   </div>
+  <!-- BARRE DE RECHERCHE PRODUIT -->
+  <div class="search-bar-wrap">
+    <span class="search-ico">🔍</span>
+    <input type="text" id="searchInput" placeholder="Recherche un produit... ex: Monster, Pokka, Pringles" oninput="searchProduct(this.value)" autocomplete="off">
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+  </div>
+  <div id="searchResults" style="display:none;margin-bottom:1.5rem"></div>
+ 
   <div class="kpi-grid" id="kpiGrid"></div>
   <div class="grid2">
     <div class="card"><div class="card-title ct-b">Top 10 produits — volume</div><div id="topVol"></div></div>
@@ -172,7 +198,7 @@ input[type=file]{display:none}
     <div id="impOpps"></div>
   </div>
 </div>
-
+ 
 <script>
 const FAM_COLORS=['#4f8ef7','#10b981','#f59e0b','#a78bfa','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#8b5cf6','#14b8a6','#fb7185'];
 const EXCLU=['CARBURANTS','CARBURANT','LOTO TIRAGE','LOTO GRATTAGE','JEUX GRATTAGE','CAFE','ADBLUE','PRESTATIONS','PRESSE','TELECARTE','CHARBON','CHARBONS'];
@@ -187,16 +213,16 @@ let AD={};let AS='all';let PC=null,MC=null;
 const f0=n=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n);
 const fE=n=>'€'+new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n);
 const fE2=n=>'€'+new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
-
+ 
 const dz=document.getElementById('dropZone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
 dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFiles(e.dataTransfer.files)});
-
+ 
 function handleFiles(files){Array.from(files).forEach(f=>{const r=new FileReader();r.onload=e=>parseXL(e.target.result,f.name);r.readAsArrayBuffer(f)});}
-
+ 
 function detectSt(name){const n=name.toUpperCase();if(n.includes('OLA'))return'ola';if(n.includes('TOTAL'))return'total';if(n.includes('VITO'))return'vito';return'st'+Date.now();}
-
+ 
 function parseXL(buf,fname){
   try{
     const wb=XLSX.read(buf,{type:'array'});
@@ -225,7 +251,7 @@ function parseXL(buf,fname){
     if(Object.keys(AD).length>=1)document.getElementById('analyzeBtn').classList.add('show');
   }catch(e){addFileUI(fname,'err',0);console.error(e);}
 }
-
+ 
 function addFileUI(name,status,rows){
   const fl=document.getElementById('filesLoaded');
   const id='fi_'+name.replace(/\W/g,'');
@@ -233,13 +259,13 @@ function addFileUI(name,status,rows){
   const html=`<div class="file-item" id="${id}"><span>${status==='ok'?'✅':'❌'}</span><span class="file-name">${name}</span><span class="file-status ${status==='ok'?'st-ok':'st-err'}">${status==='ok'?rows+' familles':'Erreur'}</span></div>`;
   if(ex)ex.outerHTML=html;else fl.insertAdjacentHTML('beforeend',html);
 }
-
+ 
 function buildDashboard(){
   document.getElementById('dropWrap').style.display='none';
   document.getElementById('dashboard').style.display='block';
   renderAll();
 }
-
+ 
 function getData(){
   if(AS==='all'){
     const mf={};const ma={};
@@ -254,7 +280,7 @@ function getData(){
   }
   return AD[AS]||{familles:[],articles:[]};
 }
-
+ 
 function renderAll(){
   const data=getData();
   const fams=data.familles.filter(f=>!EXCLU.includes(f.famille.trim()));
@@ -264,7 +290,7 @@ function renderAll(){
   const tQt=fams.reduce((s,f)=>s+f.qte,0);
   const tRev=fams.reduce((s,f)=>s+f.revient,0);
   const avgMg=tCA>0?tMg/tCA*100:0;
-
+ 
   document.getElementById('kpiGrid').innerHTML=`
     <div class="kpi" style="animation-delay:.05s"><div class="kpi-ico">💰</div><div class="kpi-l">CA HT total</div><div class="kpi-v" style="color:#4f8ef7">${fE(tCA)}</div><span class="kpi-delta db">${AS==='all'?'3 stations':AS.toUpperCase()}</span></div>
     <div class="kpi" style="animation-delay:.1s"><div class="kpi-ico">📈</div><div class="kpi-l">Marge brute</div><div class="kpi-v" style="color:#10b981">${fE(tMg)}</div><span class="kpi-delta dg">${avgMg.toFixed(1)}%</span></div>
@@ -272,28 +298,28 @@ function renderAll(){
     <div class="kpi" style="animation-delay:.2s"><div class="kpi-ico">💸</div><div class="kpi-l">Coût achat</div><div class="kpi-v" style="color:#f59e0b">${fE(tRev)}</div><span class="kpi-delta db">${tCA>0?(tRev/tCA*100).toFixed(1):0}% du CA</span></div>
     <div class="kpi" style="animation-delay:.25s"><div class="kpi-ico">🏷</div><div class="kpi-l">Familles actives</div><div class="kpi-v">${fams.length}</div><span class="kpi-delta db">catégories</span></div>
   `;
-
+ 
   const excluArt=/CARBURANT|GAZOLE|SANS PLOMB|GNR|ADBLUE/i;
   const tv=arts.filter(a=>!excluArt.test(a.article)).sort((a,b)=>b.qte-a.qte).slice(0,10);
   const mv=tv[0]?.qte||1;
   document.getElementById('topVol').innerHTML=tv.map((a,i)=>`<div class="prod-row"><span class="prod-rank">${i+1}</span><span class="prod-name">${a.article.substring(0,36)}</span><div class="prod-bar"><div class="prod-bar-f" style="width:${a.qte/mv*100}%;background:#4f8ef7"></div></div><span class="prod-val" style="color:#4f8ef7">${f0(a.qte)}</span></div>`).join('');
-
+ 
   const tm=arts.filter(a=>!excluArt.test(a.article)).sort((a,b)=>b.marge-a.marge).slice(0,10);
   const mm=tm[0]?.marge||1;
   document.getElementById('topMg').innerHTML=tm.map((a,i)=>`<div class="prod-row"><span class="prod-rank">${i+1}</span><span class="prod-name">${a.article.substring(0,36)}</span><div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div><span class="prod-val" style="color:#10b981">${fE(a.marge)}</span></div>`).join('');
-
+ 
   const fs=fams.sort((a,b)=>b.ca-a.ca).slice(0,12);
   const mc=fs[0]?.ca||1;
   document.getElementById('famRows').innerHTML=fs.map((f,i)=>`<div class="fam-row"><div class="fam-dot" style="background:${FAM_COLORS[i%FAM_COLORS.length]}"></div><span class="fam-name">${f.famille}</span><div class="fam-bar"><div class="fam-bar-f" style="width:${f.ca/mc*100}%;background:${FAM_COLORS[i%FAM_COLORS.length]}"></div></div><span class="fam-ca">${fE(f.ca)}</span><span class="fam-mg" style="color:${f.margePct>40?'#10b981':f.margePct>20?'#f59e0b':'#94a3b8'}">${f.margePct.toFixed(1)}%</span></div>`).join('');
-
+ 
   if(PC)PC.destroy();
   const top8=fs.slice(0,8);
   PC=new Chart(document.getElementById('pieC'),{type:'doughnut',data:{labels:top8.map(f=>f.famille),datasets:[{data:top8.map(f=>f.ca),backgroundColor:FAM_COLORS.slice(0,8),borderWidth:0,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>`${i.label}: ${fE(i.raw)}`}}},cutout:'65%'}});
-
+ 
   if(MC)MC.destroy();
   const fmg=fs.slice(0,8).sort((a,b)=>b.margePct-a.margePct);
   MC=new Chart(document.getElementById('mgC'),{type:'bar',data:{labels:fmg.map(f=>f.famille.substring(0,14)),datasets:[{data:fmg.map(f=>+f.margePct.toFixed(1)),backgroundColor:fmg.map(f=>f.margePct>45?'#10b981':f.margePct>25?'#4f8ef7':'#f59e0b'),borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>i.raw+'%'}}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{size:9},maxRotation:35}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#64748b',font:{size:10},callback:v=>v+'%'}}}}});
-
+ 
   if(AS==='all'&&Object.keys(AD).length>1){
     document.getElementById('stCard').style.display='block';
     document.getElementById('stCompare').innerHTML=['ola','total','vito'].map(s=>{
@@ -304,29 +330,154 @@ function renderAll(){
       return`<div class="st-card"><div class="st-card-name" style="color:${col}">${s.toUpperCase()}</div><div class="st-card-val" style="color:${col}">${fE(ca)}</div><div class="st-card-sub">CA HT</div><div style="margin-top:6px;font-family:var(--mono);font-size:14px;font-weight:700;color:#10b981">${fE(mg)}</div><div class="st-card-sub">${ca>0?(mg/ca*100).toFixed(1):0}% marge</div></div>`;
     }).join('');
   } else document.getElementById('stCard').style.display='none';
-
+ 
   document.getElementById('impOpps').innerHTML=OPPS.map((o,i)=>{
     const a=arts.find(x=>x.article.toUpperCase().includes(o.n.split(' ')[0].toUpperCase()));
     const gain=a?Math.round(a.qte*o.mg):null;
     return`<div class="prod-row"><span class="prod-rank">${i+1}</span><div style="flex:1"><div style="font-size:12px;font-weight:700">${o.n}</div><div style="font-size:10px;color:#94a3b8;margin-top:2px">${o.f} · PV local ${fE2(o.pl)} → CRR ${fE2(o.crr)}</div></div>${a?`<span style="font-family:var(--mono);font-size:11px;color:#94a3b8;margin-right:8px">${f0(a.qte)} un.</span>`:''}${gain?`<span style="font-family:var(--mono);font-size:12px;font-weight:700;color:#10b981">+${fE(gain)}/an</span>`:`<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:#10b981">+${fE2(o.mg)}/u (${o.pct}%)</span>`}</div>`;
   }).join('');
 }
-
+ 
 function filterSt(st,btn){
   AS=st;
   document.querySelectorAll('.st-btn').forEach(b=>b.classList.remove('act'));
   btn.classList.add('act');
   renderAll();
 }
-
+ 
+function searchProduct(q){
+  const inp=document.getElementById('searchInput');
+  const clr=document.getElementById('searchClear');
+  const res=document.getElementById('searchResults');
+  clr.style.display=q.length>0?'block':'none';
+  if(q.trim().length<2){res.style.display='none';return;}
+  
+  const qUp=q.trim().toUpperCase();
+  // Chercher dans toutes les données articles
+  const matches=[];
+  const stNames={ola:'OLA',total:'TOTAL',vito:'VITO'};
+  const stCols={ola:'#4f8ef7',total:'#10b981',vito:'#f59e0b'};
+  
+  const stationsToSearch = AS==='all' ? Object.keys(AD) : (AD[AS]?[AS]:[]);
+  
+  stationsToSearch.forEach(st=>{
+    if(!AD[st])return;
+    (AD[st].articles||[]).forEach(a=>{
+      if(a.article.toUpperCase().includes(qUp)){
+        matches.push({...a, station:st});
+      }
+    });
+  });
+  
+  if(matches.length===0){
+    res.style.display='block';
+    res.innerHTML=`<div class="search-results"><div class="sr-empty">Aucun produit trouvé pour "<strong>${q}</strong>"</div></div>`;
+    return;
+  }
+  
+  // Grouper par article puis par station
+  const byArt={};
+  matches.forEach(m=>{
+    if(!byArt[m.article])byArt[m.article]={article:m.article,stations:{},totQte:0,totCA:0,totMg:0};
+    byArt[m.article].stations[m.station]={qte:m.qte,ca:m.ca,marge:m.marge,margePct:m.margePct};
+    byArt[m.article].totQte+=m.qte;
+    byArt[m.article].totCA+=m.ca;
+    byArt[m.article].totMg+=m.marge;
+  });
+  
+  const arts=Object.values(byArt).sort((a,b)=>b.totQte-a.totQte);
+  
+  function hl(str){
+    const idx=str.toUpperCase().indexOf(qUp);
+    if(idx<0)return str;
+    return str.substring(0,idx)+'<span class="highlight">'+str.substring(idx,idx+qUp.length)+'</span>'+str.substring(idx+qUp.length);
+  }
+  
+  const allSts=AS==='all'?Object.keys(AD):[AS];
+  const hasManyStations = allSts.length>1;
+  
+  let html=`<div class="search-results">
+    <div class="sr-header">
+      <span>Produit${hasManyStations?' / Station':''}</span>
+      <span>Quantité</span>
+      <span>CA HT</span>
+      <span>Marge €</span>
+      <span>Marge %</span>
+    </div>`;
+  
+  arts.forEach(art=>{
+    const stKeys=Object.keys(art.stations);
+    const totMgPct=art.totCA>0?art.totMg/art.totCA*100:0;
+    const mgCol=totMgPct>45?'#10b981':totMgPct>25?'#4f8ef7':'#f59e0b';
+    
+    if(hasManyStations && stKeys.length>1){
+      // Ligne total
+      html+=`<div class="sr-row" style="background:rgba(79,142,247,.06)">
+        <span class="sr-name">${hl(art.article)}<span style="font-size:10px;color:#94a3b8;margin-left:6px;font-weight:500">— toutes stations</span></span>
+        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span>
+        <span class="sr-val">${fE(art.totCA)}</span>
+        <span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
+        <span class="sr-val" style="color:${mgCol}">${totMgPct.toFixed(1)}%</span>
+      </div>`;
+      // Lignes par station
+      stKeys.forEach(st=>{
+        const s=art.stations[st];
+        const col=stCols[st]||'#94a3b8';
+        html+=`<div class="sr-row">
+          <span class="sr-name" style="padding-left:16px;font-size:12px;color:#94a3b8">
+            <span style="color:${col};font-weight:700;font-size:10px;letter-spacing:.5px">${(stNames[st]||st).toUpperCase()}</span>
+          </span>
+          <span class="sr-val" style="color:${col}">${f0(s.qte)}</span>
+          <span class="sr-val">${fE(s.ca)}</span>
+          <span class="sr-val" style="color:#10b981">${fE(s.marge)}</span>
+          <span class="sr-val" style="color:${s.margePct>45?'#10b981':s.margePct>25?'#4f8ef7':'#f59e0b'}">${s.margePct.toFixed(1)}%</span>
+        </div>`;
+      });
+    } else {
+      html+=`<div class="sr-row">
+        <span class="sr-name">${hl(art.article)}</span>
+        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span>
+        <span class="sr-val">${fE(art.totCA)}</span>
+        <span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
+        <span class="sr-val" style="color:${mgCol}">${totMgPct.toFixed(1)}%</span>
+      </div>`;
+    }
+  });
+  
+  // Total si plusieurs résultats
+  if(arts.length>1){
+    const tQ=arts.reduce((s,a)=>s+a.totQte,0);
+    const tC=arts.reduce((s,a)=>s+a.totCA,0);
+    const tM=arts.reduce((s,a)=>s+a.totMg,0);
+    html+=`<div class="sr-total">
+      <span style="font-size:12px;color:#4f8ef7">${arts.length} références trouvées</span>
+      <span class="sr-val" style="color:#4f8ef7">${f0(tQ)}</span>
+      <span class="sr-val">${fE(tC)}</span>
+      <span class="sr-val" style="color:#10b981">${fE(tM)}</span>
+      <span class="sr-val" style="color:#10b981">${tC>0?(tM/tC*100).toFixed(1):0}%</span>
+    </div>`;
+  }
+  
+  html+='</div>';
+  res.innerHTML=html;
+  res.style.display='block';
+}
+ 
+function clearSearch(){
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchClear').style.display='none';
+  document.getElementById('searchResults').style.display='none';
+}
+ 
 function resetDB(){
   AD={};AS='all';PC=null;MC=null;
   document.getElementById('dashboard').style.display='none';
   document.getElementById('dropWrap').style.display='flex';
   document.getElementById('filesLoaded').innerHTML='';
   document.getElementById('analyzeBtn').classList.remove('show');
-  document.getElementById('fi').value='';
+  document.getElementById('fi').value='';clearSearch();
 }
 </script>
 </body>
 </html>
+ 
