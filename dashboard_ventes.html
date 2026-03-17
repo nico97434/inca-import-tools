@@ -99,6 +99,19 @@ input[type=file]{display:none}
 .imp-alert{background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;font-size:12px;font-weight:600;color:#6ba3f8;line-height:1.6}
 @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 ::-webkit-scrollbar{width:4px}
+.cat-filter-wrap{margin-bottom:1rem}
+.cat-filter-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;display:block}
+.cat-btns{display:flex;gap:6px;flex-wrap:wrap}
+.cat-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.cat-btn:hover{border-color:var(--border2);color:var(--text)}
+.cat-btn.cat-act{background:rgba(167,139,250,.15);border-color:#a78bfa;color:#a78bfa}
+.cat-panel{background:var(--bg2);border:1px solid rgba(167,139,250,.2);border-radius:var(--r2);padding:1.25rem;margin-bottom:1rem;animation:fi .3s ease;display:none}
+.cat-panel.show{display:block}
+.cat-panel-title{font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
+.cat-panel-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px}
+.cat-panel-close:hover{color:var(--text);background:var(--bg3)}
+.cat-grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:700px){.cat-grid2{grid-template-columns:1fr}}
 .search-bar-wrap{position:relative;margin-bottom:1rem}
 .search-bar-wrap input{width:100%;background:var(--bg2);border:1.5px solid var(--border2);border-radius:12px;padding:12px 16px 12px 44px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;transition:all .2s}
 .search-bar-wrap input:focus{border-color:#4f8ef7;box-shadow:0 0 0 3px rgba(79,142,247,.15)}
@@ -170,6 +183,22 @@ input[type=file]{display:none}
       <button class="btn-reset" onclick="resetDB()">↩ Nouveau fichier</button>
     </div>
   </div>
+  <!-- FILTRE PAR CATÉGORIE -->
+  <div class="cat-filter-wrap">
+    <span class="cat-filter-label">Filtrer par catégorie</span>
+    <div class="cat-btns" id="catBtns"></div>
+  </div>
+  <div class="cat-panel" id="catPanel">
+    <div class="cat-panel-title">
+      <span id="catPanelTitle">Top 10 — Catégorie</span>
+      <button class="cat-panel-close" onclick="clearCat()">✕</button>
+    </div>
+    <div class="cat-grid2">
+      <div><div class="card-title ct-b" style="margin-bottom:.75rem">Volume (unités)</div><div id="catTopVol"></div></div>
+      <div><div class="card-title ct-g" style="margin-bottom:.75rem">Marge €</div><div id="catTopMg"></div></div>
+    </div>
+  </div>
+ 
   <!-- BARRE DE RECHERCHE PRODUIT -->
   <div class="search-bar-wrap">
     <span class="search-ico">🔍</span>
@@ -245,8 +274,25 @@ function parseXL(buf,fname){
         if(qte>0&&ca>0)arts.push({article:art,qte,revient:rev,ca,marge:mg,margePct:ca>0?mg/ca*100:0});
       }
     });
+    // Construire l'index famille→articles depuis les données brutes
+    const famArticles={};
+    // On va mapper les articles aux familles via l'ordre dans le fichier
+    let currentFam=null;
+    raw.forEach(row=>{
+      const id=parseFloat(row[0]);
+      if(!isNaN(id)&&id>0&&row[1]&&typeof row[1]==='string'&&row[1].trim().length>1){
+        currentFam=row[1].toString().trim();
+        if(!famArticles[currentFam])famArticles[currentFam]=[];
+      }
+      const id2=parseFloat(row[11]);
+      if(!isNaN(id2)&&currentFam&&row[3]&&typeof row[3]==='string'){
+        const art=row[3].toString().trim();
+        const qte=parseFloat(row[4])||0;const ca=parseFloat(row[6])||0;const mg=parseFloat(row[8])||0;
+        if(qte>0&&ca>0)famArticles[currentFam].push({article:art,qte,ca,marge:mg,margePct:ca>0?mg/ca*100:0});
+      }
+    });
     const st=detectSt(fname);
-    AD[st]={familles:fams,articles:arts,fname};
+    AD[st]={familles:fams,articles:arts,famArticles,fname};
     addFileUI(fname,fams.length>0?'ok':'err',fams.length);
     if(Object.keys(AD).length>=1)document.getElementById('analyzeBtn').classList.add('show');
   }catch(e){addFileUI(fname,'err',0);console.error(e);}
@@ -299,6 +345,8 @@ function renderAll(){
     <div class="kpi" style="animation-delay:.25s"><div class="kpi-ico">🏷</div><div class="kpi-l">Familles actives</div><div class="kpi-v">${fams.length}</div><span class="kpi-delta db">catégories</span></div>
   `;
  
+  buildCatBtns();
+  if(AC)clearCat();
   const excluArt=/CARBURANT|GAZOLE|SANS PLOMB|GNR|ADBLUE/i;
   const tv=arts.filter(a=>!excluArt.test(a.article)).sort((a,b)=>b.qte-a.qte).slice(0,10);
   const mv=tv[0]?.qte||1;
@@ -343,6 +391,84 @@ function filterSt(st,btn){
   document.querySelectorAll('.st-btn').forEach(b=>b.classList.remove('act'));
   btn.classList.add('act');
   renderAll();
+}
+ 
+let AC=null; // Active Category
+ 
+function buildCatBtns(){
+  const data=getData();
+  const fams=[...new Set(data.familles.map(f=>f.famille.trim()))].filter(f=>!EXCLU.includes(f)).sort();
+  const wrap=document.getElementById('catBtns');
+  wrap.innerHTML=fams.map(f=>`<button class="cat-btn" onclick="selectCat('${f.replace(/'/g,"\\'")}',this)">${f}</button>`).join('');
+}
+ 
+function selectCat(fam,btn){
+  if(AC===fam){clearCat();return;}
+  AC=fam;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('cat-act'));
+  btn.classList.add('cat-act');
+  
+  const data=getData();
+  const arts=(data.articles||[]);
+  
+  // Trouver les articles qui appartiennent à cette famille
+  // On cherche par correspondance article/famille via les données familles
+  // Stratégie : chercher dans les articles bruts de chaque station
+  const famArts=[];
+  const stationsToSearch=AS==='all'?Object.keys(AD):(AD[AS]?[AS]:[]);
+  const artMerged={};
+  
+  stationsToSearch.forEach(st=>{
+    if(!AD[st])return;
+    const stRaw=AD[st];
+    // Récupérer les articles de cette famille depuis les données brutes
+    // On utilise la correspondance famille→articles stockée
+    if(stRaw.famArticles&&stRaw.famArticles[fam]){
+      stRaw.famArticles[fam].forEach(a=>{
+        if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0};
+        artMerged[a.article].qte+=a.qte;
+        artMerged[a.article].ca+=a.ca;
+        artMerged[a.article].marge+=a.marge;
+      });
+    }
+  });
+  
+  let topArts=Object.values(artMerged);
+  
+  // Fallback si famArticles pas disponible : chercher par mots-clés famille dans les articles
+  if(topArts.length===0){
+    const famKw=fam.toUpperCase().split(/[\s\/]+/).filter(w=>w.length>2);
+    topArts=arts.filter(a=>{
+      const art=a.article.toUpperCase();
+      return famKw.some(kw=>art.includes(kw));
+    }).map(a=>({...a}));
+  }
+  
+  // Si encore vide, prendre les top articles en cherchant dans les familles
+  if(topArts.length===0){
+    topArts=arts.slice();
+  }
+  
+  topArts.sort((a,b)=>b.qte-a.qte);
+  const top10Vol=topArts.slice(0,10);
+  const top10Mg=[...topArts].sort((a,b)=>b.marge-a.marge).slice(0,10);
+  
+  const mv=top10Vol[0]?.qte||1;
+  const mm=top10Mg[0]?.marge||1;
+  
+  document.getElementById('catTopVol').innerHTML=top10Vol.length?top10Vol.map((a,i)=>`<div class="prod-row"><span class="prod-rank">${i+1}</span><span class="prod-name">${a.article.substring(0,34)}</span><div class="prod-bar"><div class="prod-bar-f" style="width:${a.qte/mv*100}%;background:#a78bfa"></div></div><span class="prod-val" style="color:#a78bfa">${f0(a.qte)}</span></div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:1rem;text-align:center">Aucun article trouvé</div>';
+  
+  document.getElementById('catTopMg').innerHTML=top10Mg.length?top10Mg.map((a,i)=>`<div class="prod-row"><span class="prod-rank">${i+1}</span><span class="prod-name">${a.article.substring(0,34)}</span><div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div><span class="prod-val" style="color:#10b981">${fE(a.marge)}</span></div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:1rem;text-align:center">Aucun article trouvé</div>';
+  
+  document.getElementById('catPanelTitle').textContent=`Top 10 — ${fam}`;
+  document.getElementById('catPanel').classList.add('show');
+  document.getElementById('catPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+ 
+function clearCat(){
+  AC=null;
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('cat-act'));
+  document.getElementById('catPanel').classList.remove('show');
 }
  
 function searchProduct(q){
@@ -475,7 +601,7 @@ function resetDB(){
   document.getElementById('dropWrap').style.display='flex';
   document.getElementById('filesLoaded').innerHTML='';
   document.getElementById('analyzeBtn').classList.remove('show');
-  document.getElementById('fi').value='';clearSearch();
+  document.getElementById('fi').value='';clearSearch();clearCat();
 }
 </script>
 </body>
