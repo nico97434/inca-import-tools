@@ -43,7 +43,7 @@ header{background:var(--white);border-bottom:1px solid var(--border);padding:0 2
 /* TOOLS */
 .tools{padding:0 2rem 3rem;max-width:1060px;margin:0 auto;width:100%}
 .tools-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text4);text-align:center;margin-bottom:1.5rem}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem}
  
 .tool-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:2rem 1.75rem;text-decoration:none;color:var(--text);transition:all .28s;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:.85rem;box-shadow:var(--sh)}
 .tool-card:hover{transform:translateY(-5px);box-shadow:var(--sh2)}
@@ -58,6 +58,15 @@ header{background:var(--white);border-bottom:1px solid var(--border);padding:0 2
  
 .card-red:hover{border-color:rgba(220,38,38,.3)}
 .card-red::after{background:linear-gradient(90deg,var(--red),#f97316)}
+ 
+.card-purple:hover{border-color:rgba(112,72,232,.3)}
+.card-purple::after{background:linear-gradient(90deg,var(--purple),var(--blue2))}
+.ic-p{background:var(--purple-soft)}
+.tag-p{background:var(--purple-soft);color:var(--purple)}
+.feat-check.fc-p{color:var(--purple)}
+.tool-card.card-purple .footer-txt{color:var(--purple)}
+.tool-card.card-purple .arrow-btn{background:var(--purple-soft)}
+.tool-card.card-purple:hover .arrow-btn{background:var(--purple);color:#fff;transform:translateX(3px)}
  
 .tool-icon{width:54px;height:54px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
 .ic-b{background:var(--blue-soft)}
@@ -122,7 +131,7 @@ footer{margin-top:auto;border-top:1px solid var(--border);background:var(--white
       <div class="logo-sub">Centrale d'achat · La Réunion · Groupe INCANA</div>
     </div>
   </div>
-  <div class="status"><div class="dot"></div>3 outils en ligne</div>
+  <div class="status"><div class="dot"></div>4 outils en ligne</div>
 </header>
  
 <div class="hero">
@@ -173,7 +182,26 @@ footer{margin-top:auto;border-top:1px solid var(--border);background:var(--white
       </div>
     </a>
  
-    <!-- OUTIL 3 : VEILLE PRODUITS -->
+    <!-- OUTIL 3 : DASHBOARD VENTES -->
+    <a href="dashboard_ventes.html" class="tool-card card-purple">
+      <div class="tool-icon ic-p">📊</div>
+      <div class="tool-tag tag-p">Analyse · Ventes · Stations</div>
+      <div class="tool-title">Dashboard Ventes</div>
+      <div class="tool-desc">Glisse tes exports Excel — il analyse tout en 10 secondes. Consolidé 3 stations.</div>
+      <div class="tool-features">
+        <div class="feat"><span class="feat-check fc-p">✓</span>Import Excel drag &amp; drop — OLA, TOTAL, VITO</div>
+        <div class="feat"><span class="feat-check fc-p">✓</span>Top produits volume et marge en temps réel</div>
+        <div class="feat"><span class="feat-check fc-p">✓</span>Comparaison 3 stations côte à côte</div>
+        <div class="feat"><span class="feat-check fc-p">✓</span>Opportunités import avec gain €/an estimé</div>
+        <div class="feat"><span class="feat-check fc-p">✓</span>Filtre par station en un clic</div>
+      </div>
+      <div class="tool-footer">
+        <span class="footer-txt">Ouvrir le dashboard</span>
+        <div class="arrow-btn">→</div>
+      </div>
+    </a>
+ 
+    <!-- OUTIL 4 : VEILLE PRODUITS -->
     <a href="veille_produits.html" class="tool-card card-red">
       <div class="tool-icon ic-r">📡</div>
       <div class="tool-tag tag-r">Veille <span class="live-pill"><span class="live-dot-sm"></span>LIVE</span></div>
@@ -196,7 +224,7 @@ footer{margin-top:auto;border-top:1px solid var(--border);background:var(--white
 </div>
  
 <div class="stats">
-  <div class="stat"><div class="stat-v">3</div><div class="stat-l">Stations INCANA</div></div>
+  <div class="stat"><div class="stat-v">4</div><div class="stat-l">Outils disponibles</div></div>
   <div class="stat-sep"></div>
   <div class="stat"><div class="stat-v">28%</div><div class="stat-l">Octroi de mer total</div></div>
   <div class="stat-sep"></div>
@@ -214,3 +242,4 @@ footer{margin-top:auto;border-top:1px solid var(--border);background:var(--white
  
 </body>
 </html>
+ 
