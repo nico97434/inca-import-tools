@@ -396,10 +396,18 @@ function filterSt(st,btn){
 let AC=null; // Active Category
  
 function buildCatBtns(){
-  const data=getData();
-  const fams=[...new Set(data.familles.map(f=>f.famille.trim()))].filter(f=>!EXCLU.includes(f)).sort();
   const wrap=document.getElementById('catBtns');
-  wrap.innerHTML=fams.map(f=>`<button class="cat-btn" onclick="selectCat('${f.replace(/'/g,"\\'")}',this)">${f}</button>`).join('');
+  if(!wrap)return;
+  const data=getData();
+  const fams=[...new Set((data.familles||[]).map(f=>f.famille.trim()))].filter(f=>f&&!EXCLU.includes(f)).sort();
+  wrap.innerHTML='';
+  fams.forEach(f=>{
+    const btn=document.createElement('button');
+    btn.className='cat-btn';
+    btn.textContent=f;
+    btn.addEventListener('click',function(){selectCat(f,this);});
+    wrap.appendChild(btn);
+  });
 }
  
 function selectCat(fam,btn){
@@ -407,24 +415,15 @@ function selectCat(fam,btn){
   AC=fam;
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('cat-act'));
   btn.classList.add('cat-act');
-  
-  const data=getData();
-  const arts=(data.articles||[]);
-  
-  // Trouver les articles qui appartiennent à cette famille
-  // On cherche par correspondance article/famille via les données familles
-  // Stratégie : chercher dans les articles bruts de chaque station
-  const famArts=[];
+ 
   const stationsToSearch=AS==='all'?Object.keys(AD):(AD[AS]?[AS]:[]);
   const artMerged={};
-  
+ 
   stationsToSearch.forEach(st=>{
     if(!AD[st])return;
-    const stRaw=AD[st];
-    // Récupérer les articles de cette famille depuis les données brutes
-    // On utilise la correspondance famille→articles stockée
-    if(stRaw.famArticles&&stRaw.famArticles[fam]){
-      stRaw.famArticles[fam].forEach(a=>{
+    // Priorité 1 : index famArticles construit au parsing
+    if(AD[st].famArticles&&AD[st].famArticles[fam]){
+      AD[st].famArticles[fam].forEach(a=>{
         if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0};
         artMerged[a.article].qte+=a.qte;
         artMerged[a.article].ca+=a.ca;
@@ -432,21 +431,27 @@ function selectCat(fam,btn){
       });
     }
   });
-  
+ 
   let topArts=Object.values(artMerged);
-  
-  // Fallback si famArticles pas disponible : chercher par mots-clés famille dans les articles
+ 
+  // Fallback si index vide : chercher dans les articles de la station avec tous les mots de la famille
   if(topArts.length===0){
-    const famKw=fam.toUpperCase().split(/[\s\/]+/).filter(w=>w.length>2);
-    topArts=arts.filter(a=>{
-      const art=a.article.toUpperCase();
-      return famKw.some(kw=>art.includes(kw));
-    }).map(a=>({...a}));
-  }
-  
-  // Si encore vide, prendre les top articles en cherchant dans les familles
-  if(topArts.length===0){
-    topArts=arts.slice();
+    const allArts=getData().articles||[];
+    // Chercher via les famArticles de toutes stations (clés inexactes)
+    stationsToSearch.forEach(st=>{
+      if(!AD[st]||!AD[st].famArticles)return;
+      Object.keys(AD[st].famArticles).forEach(k=>{
+        if(k.trim().toUpperCase()===fam.trim().toUpperCase()){
+          AD[st].famArticles[k].forEach(a=>{
+            if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0};
+            artMerged[a.article].qte+=a.qte;
+            artMerged[a.article].ca+=a.ca;
+            artMerged[a.article].marge+=a.marge;
+          });
+        }
+      });
+    });
+    topArts=Object.values(artMerged);
   }
   
   topArts.sort((a,b)=>b.qte-a.qte);
