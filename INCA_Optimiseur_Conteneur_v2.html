@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Optimiseur Conteneur</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f7ff;--white:#fff;--border:#e2e8f8;--border2:#c7d2f0;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue-soft:#eef2ff;
+  --green:#0ca678;--green2:#12b886;--green-soft:#e6fcf5;
+  --orange:#e8590c;--orange-soft:#fff4e6;
+  --amber:#e67700;--amber-soft:#fff8e1;
+  --red:#e03131;--red-soft:#fff5f5;
+  --purple:#7048e8;--purple-soft:#f3f0ff;
+  --teal:#0891b2;--teal-soft:#ecfeff;
+  --gold:#f59f00;--gold-soft:#fff9db;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
+  --mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:16px;--sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.06);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#1e3a8a,var(--blue));color:#fff;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(59,91,219,.25)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:rgba(255,255,255,.2);font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 12px;border-radius:8px;text-transform:uppercase}
+.wrap{max-width:1600px;margin:0 auto;padding:1.5rem 2rem}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:1.5rem;align-items:start}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem 1.5rem;box-shadow:var(--sh);margin-bottom:1.25rem}
+.card-title{font-size:13px;font-weight:700;margin-bottom:.85rem;display:flex;align-items:center;gap:8px}
+
+/* FIELDS */
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:.6rem}
+.field label{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.field-hint{font-size:10px;color:var(--text4);font-weight:500}
+.inp-wrap{position:relative;display:flex;align-items:center}
+.inp-wrap input,.inp-wrap select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);outline:none;transition:all .2s}
+.inp-wrap.sf input{padding-right:36px}
+.inp-wrap input:focus,.inp-wrap select:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(59,91,219,.1)}
+.sfx{position:absolute;right:10px;font-size:10px;font-weight:700;color:var(--text4);pointer-events:none;font-family:var(--mono)}
+.ig2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* UPLOAD */
+.upload-zone{background:var(--bg);border:2.5px dashed var(--border2);border-radius:var(--r);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .25s;margin-bottom:.75rem}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:var(--blue-soft)}
+.upload-zone.loaded{border-color:var(--green);background:var(--green-soft);border-style:solid}
+#fi{display:none}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border-radius:9px;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;border:none;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;box-shadow:0 2px 8px rgba(59,91,219,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(59,91,219,.4)}
+.btn-gold{background:linear-gradient(135deg,#f59f00,#fd7e14);color:#fff;box-shadow:0 2px 8px rgba(245,159,0,.3)}
+.btn-gold:hover{transform:translateY(-1px)}
+.btn-green{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff}
+.btn-green:hover{transform:translateY(-1px)}
+.btn-sm{padding:5px 12px;font-size:11px}
+.btn-sec{background:var(--white);border:1.5px solid var(--border);color:var(--text2)}
+.btn-sec:hover{border-color:var(--blue);color:var(--blue)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem}
+.kpi{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:.85rem 1rem;box-shadow:var(--sh)}
+.kpi-v{font-family:var(--mono);font-size:20px;font-weight:800;line-height:1;color:var(--blue)}
+.kpi-l{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-top:4px}
+.kpi-v.g{color:var(--green)}.kpi-v.gl{color:var(--gold)}.kpi-v.o{color:var(--orange)}
+
+/* CONTAINER BAR */
+.cbar{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem;margin-bottom:1.5rem;box-shadow:var(--sh)}
+.cbar-track{background:var(--bg);border-radius:8px;height:28px;overflow:hidden;position:relative;margin:8px 0}
+.cbar-fill{height:100%;border-radius:8px;transition:width .5s;background:linear-gradient(90deg,var(--green),var(--green2))}
+.cbar-fill.warn{background:linear-gradient(90deg,var(--amber),var(--orange))}
+.cbar-fill.over{background:linear-gradient(90deg,var(--red),#c92a2a)}
+.cbar-lbl{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--text2)}
+
+/* TABLE */
+.tbl-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;box-shadow:var(--sh)}
+.tbl-hdr{padding:.85rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.search{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:7px 12px 7px 32px;font-size:13px;width:200px;outline:none;font-family:var(--sans)}
+.search:focus{border-color:var(--blue)}
+.search-wrap{position:relative}
+.search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--bg);padding:9px 10px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--blue)}
+thead th.asc::after{content:' ▲';color:var(--blue)}
+thead th.desc::after{content:' ▼';color:var(--blue)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s}
+tbody tr:hover{background:var(--blue-soft)}
+tbody tr.sel{background:var(--green-soft);border-left:3px solid var(--green)}
+tbody tr:last-child{border-bottom:none}
+td{padding:9px 10px;vertical-align:middle}
+
+/* MISC */
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700}
+.tag-d{background:var(--teal-soft);color:var(--teal)}
+.tag-c{background:var(--purple-soft);color:var(--purple)}
+.tag-s{background:var(--orange-soft);color:var(--orange)}
+.tag-b{background:var(--amber-soft);color:var(--amber)}
+.tag-o{background:var(--bg);color:var(--text3);border:1px solid var(--border)}
+.tag-match{background:var(--green-soft);color:var(--green)}
+.tag-nomatch{background:var(--border);color:var(--text3)}
+
+.qty-inp{width:72px;background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:4px 8px;font-family:var(--mono);font-size:12px;font-weight:700;text-align:center;outline:none;transition:all .15s}
+.qty-inp:focus{border-color:var(--blue);background:var(--white)}
+.qty-inp.over{border-color:var(--red);background:var(--red-soft)}
+
+.score-bar{width:50px;height:5px;background:var(--border);border-radius:3px;display:inline-block;vertical-align:middle;overflow:hidden}
+.score-fill{height:100%;border-radius:3px}
+
+/* RESULT PANEL */
+.rp{background:linear-gradient(160deg,#1e3a8a,var(--blue));border-radius:var(--r2);padding:1.5rem;color:#fff;position:sticky;top:80px;box-shadow:0 8px 40px rgba(59,91,219,.35)}
+.rp-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,.1);margin-bottom:5px}
+.rp-div{height:1px;background:rgba(255,255,255,.15);margin:10px 0}
+.pm{height:6px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden;margin-top:6px}
+.pm-fill{height:100%;border-radius:3px;background:rgba(255,255,255,.6);transition:width .5s}
+
+/* STATUS */
+.sts{padding:9px 14px;border-radius:var(--r);margin-bottom:.75rem;font-size:12px;font-weight:600}
+.sts.ok{background:var(--green-soft);border:1px solid rgba(12,166,120,.2);color:var(--green)}
+.sts.err{background:var(--red-soft);border:1px solid rgba(224,49,49,.2);color:var(--red)}
+.sts.info{background:var(--blue-soft);border:1px solid rgba(59,91,219,.2);color:var(--blue)}
+.sts.warn{background:var(--amber-soft);border:1px solid rgba(230,119,0,.2);color:var(--amber)}
+
+.empty{text-align:center;padding:4rem 2rem;color:var(--text3)}
+
+.bbd-ok{color:var(--green);font-weight:700}
+.bbd-warn{color:var(--amber);font-weight:700}
+.bbd-urgent{color:var(--red);font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">INCA IMPORT</div>
+    <div>
+      <div style="font-size:17px;font-weight:700">🚢 Optimiseur Conteneur</div>
+      <div style="font-size:11px;opacity:.75;margin-top:1px">Offre fournisseur × Ventes stations 2024 × CRR La Possession</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-gold" id="optBtn" onclick="autoOptimize()" disabled>⚡ Mix Optimal Auto</button>
+    <button class="btn btn-green" id="expBtn" onclick="exportPlan()" disabled>⬇ Exporter Plan</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- KPI STRIP -->
+<div class="kpis" id="kpis" style="display:none">
+  <div class="kpi"><div class="kpi-v" id="k0">0</div><div class="kpi-l">Produits fournisseur</div></div>
+  <div class="kpi"><div class="kpi-v" id="k1">0</div><div class="kpi-l">Matchés stations</div></div>
+  <div class="kpi"><div class="kpi-v g" id="k2">—</div><div class="kpi-l">Marge totale plan</div></div>
+  <div class="kpi"><div class="kpi-v gl" id="k3">—</div><div class="kpi-l">CA potentiel</div></div>
+  <div class="kpi"><div class="kpi-v o" id="k4">0 u</div><div class="kpi-l">Unités sélectionnées</div></div>
+</div>
+
+<!-- CONTAINER BAR -->
+<div class="cbar" id="cbarVis" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+    <div style="font-size:12px;font-weight:700">Remplissage conteneur 40' HC</div>
+    <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue)" id="cPct">0%</div>
+  </div>
+  <div class="cbar-track">
+    <div class="cbar-fill" id="cFill" style="width:0%"></div>
+    <div class="cbar-lbl" id="cLbl">0 / 34 560 unités</div>
+  </div>
+  <div style="display:flex;gap:1rem;font-size:10px;color:var(--text3);font-weight:600;margin-top:4px">
+    <span>🟢 &lt;80% optimal</span><span>🟡 80–95% bien chargé</span><span>🔴 &gt;95% plein</span>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- LEFT -->
+<div>
+
+<!-- UPLOAD — PRIORITÉ 1 -->
+<div class="card" style="border:2px solid var(--blue);border-radius:var(--r2)">
+  <div class="card-title" style="color:var(--blue)">📂 1. Charger l'offre fournisseur</div>
+  <div class="upload-zone" id="upZone"
+    onclick="document.getElementById('fi').click()"
+    ondragover="ev.preventDefault();this.classList.add('drag')"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="ev.preventDefault();this.classList.remove('drag');loadFile(ev.dataTransfer.files[0])">
+    <div style="font-size:32px;margin-bottom:8px">📄</div>
+    <div style="font-size:14px;font-weight:700;color:var(--text)">Glisser votre Excel ici</div>
+    <div style="font-size:11px;color:var(--text3);margin-top:5px">Format Dabex (.xlsx) ou tout tableau fournisseur</div>
+    <div id="fnDisplay" style="display:none;margin-top:10px;font-size:11px;font-weight:700;color:var(--green)"></div>
+  </div>
+  <input type="file" id="fi" accept=".xlsx,.xls,.csv" onchange="loadFile(this.files[0])">
+  <div id="upSts" class="sts info">👆 Chargez d'abord votre offre fournisseur — les produits s'afficheront avec leur CRR et leur demande estimée en station</div>
+</div>
+
+<!-- CRR PARAMS -->
+<div class="card">
+  <div class="card-title">⚙️ 2. Paramètres CRR Réunion</div>
+  <div class="ig2">
+    <div class="field"><label>OM V395</label><div class="inp-wrap sf"><input type="number" id="p_om" value="25.5" step="0.1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
+    <div class="field"><label>OM Régional</label><div class="inp-wrap sf"><input type="number" id="p_omr" value="2.5" step="0.1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
+    <div class="field"><label>Droit douane</label><div class="inp-wrap sf"><input type="number" id="p_dd" value="9.6" step="0.1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
+    <div class="field"><label>TVA import</label><div class="inp-wrap sf"><input type="number" id="p_tva" value="2.1" step="0.1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
+    <div class="field"><label>Fret 40' total</label><div class="inp-wrap sf"><input type="number" id="p_fret" value="3850" oninput="recalcAll()"><span class="sfx">€</span></div></div>
+    <div class="field"><label>Transit DSG</label><div class="inp-wrap sf"><input type="number" id="p_dsg" value="1329" oninput="recalcAll()"><span class="sfx">€</span></div></div>
+    <div class="field"><label>Capacité ctnr</label><div class="inp-wrap"><input type="number" id="p_qte" value="34560" oninput="recalcAll()"></div></div>
+    <div class="field"><label>Stickering FR</label><div class="inp-wrap sf"><input type="number" id="p_sticker" value="0.05" step="0.01" oninput="recalcAll()"><span class="sfx">€/u</span></div></div>
+    <div class="field"><label>Marge cible vente</label><div class="inp-wrap sf"><input type="number" id="p_margin" value="30" step="1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
+    <div class="field"><label>Coeff saisonnalité</label><div class="inp-wrap sf"><input type="number" id="p_season" value="1.0" step="0.1" oninput="recalcAll()"><span class="sfx">×</span></div><div class="field-hint">1.2 = +20% été / vacances</div></div>
+  </div>
+</div>
+
+<!-- RESULT PANEL -->
+<div class="rp" id="rp">
+  <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:.75rem">📦 Plan conteneur</div>
+  <div id="rpContent" style="text-align:center;opacity:.5;font-size:12px;padding:1rem">Chargez l'offre fournisseur →</div>
+</div>
+
+</div><!-- /left -->
+
+<!-- RIGHT -->
+<div>
+
+<!-- MATCH LEGEND -->
+<div id="matchInfo" class="sts info" style="display:none"></div>
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+  <div style="font-size:13px;font-weight:700" id="tblTitle">Chargez une offre fournisseur pour commencer</div>
+  <div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">
+    <div class="search-wrap">
+      <span class="search-ico">🔍</span>
+      <input type="text" class="search" id="searchInp" placeholder="Filtrer..." oninput="renderTable()">
+    </div>
+    <button class="btn btn-sec btn-sm" onclick="sortBy('score')">🎯 Score</button>
+    <button class="btn btn-sec btn-sm" onclick="sortBy('stationQty')">📊 Demande</button>
+    <button class="btn btn-sec btn-sm" onclick="sortBy('marginPct')">💰 Marge</button>
+    <button class="btn btn-sec btn-sm" onclick="clearAll()">✕ Vider</button>
+  </div>
+</div>
+
+<div class="tbl-wrap" id="tblWrap">
+  <div class="empty">
+    <div style="font-size:48px;margin-bottom:.75rem;opacity:.3">📤</div>
+    <div style="font-size:15px;font-weight:700;color:var(--text2)">Glissez votre offre fournisseur</div>
+    <div style="font-size:13px;margin-top:.5rem">Le tableau se remplira automatiquement avec vos produits, leur CRR et la demande estimée de vos 3 stations</div>
+  </div>
+</div>
+
+</div><!-- /right -->
+</div><!-- /layout -->
+</div><!-- /wrap -->
+
+<script>
+// ═══════════════════════════════════════════════════
+// BASE DE DONNÉES VENTES STATIONS 2024
+// Clé = mots-clés de correspondance → {qty, pv}
+// ═══════════════════════════════════════════════════
+const STATION_DB = [
+  // Boissons
+  {keys:["pokka","the glace pokka","pokka ice tea","pokka iced tea"],qty:94163,pv:2.75,cat:"Boissons"},
+  {keys:["monster energy","monster"],qty:56720,pv:3.90,cat:"Boissons"},
+  {keys:["red bull 25","redbull 25","red bull 250","redbull 250","red bull can"],qty:31385,pv:3.40,cat:"Boissons"},
+  {keys:["red bull 355","redbull 355","redbull gm","red bull gm"],qty:10490,pv:4.30,cat:"Boissons"},
+  {keys:["capri-sun","caprisonne","caprisun","capri sun"],qty:31808,pv:1.20,cat:"Boissons"},
+  {keys:["aloe vera","aloe"],qty:17605,pv:2.80,cat:"Boissons"},
+  {keys:["coca cola","coca-cola","coca cola 50","coke"],qty:36065,pv:2.20,cat:"Boissons"},
+  {keys:["xl energy"],qty:13000,pv:5.80,cat:"Boissons"},
+  {keys:["sambo"],qty:20902,pv:2.00,cat:"Boissons"},
+  {keys:["protein milk"],qty:757,pv:4.30,cat:"Boissons"},
+  // Confiseries
+  {keys:["m&m s","m&ms","m&m'","m&m peanut","m&m crispy"],qty:11921,pv:1.60,cat:"Confiseries"},
+  {keys:["kinder bueno white"],qty:1200,pv:2.00,cat:"Confiseries"},
+  {keys:["kinder bueno"],qty:10538,pv:2.00,cat:"Confiseries"},
+  {keys:["kinder joy"],qty:3500,pv:2.30,cat:"Confiseries"},
+  {keys:["kinder country"],qty:700,pv:1.50,cat:"Confiseries"},
+  {keys:["kinder schoko"],qty:400,pv:2.00,cat:"Confiseries"},
+  {keys:["kinder surprise"],qty:1100,pv:2.30,cat:"Confiseries"},
+  {keys:["kinder tronky"],qty:300,pv:1.80,cat:"Confiseries"},
+  {keys:["bounty"],qty:5310,pv:1.60,cat:"Confiseries"},
+  {keys:["snickers"],qty:4902,pv:1.60,cat:"Confiseries"},
+  {keys:["twix"],qty:4457,pv:1.60,cat:"Confiseries"},
+  {keys:["tic tac"],qty:4071,pv:1.30,cat:"Confiseries"},
+  {keys:["mars ","mars bar","mars 50"],qty:2574,pv:1.60,cat:"Confiseries"},
+  {keys:["kitkat chunky peanut","kit kat chunky peanut"],qty:1285,pv:1.90,cat:"Confiseries"},
+  {keys:["kitkat chunky","kit kat chunky"],qty:1407,pv:1.90,cat:"Confiseries"},
+  {keys:["kitkat","kit kat"],qty:1365,pv:1.60,cat:"Confiseries"},
+  {keys:["mentos fruit","mentos"],qty:2209,pv:1.50,cat:"Confiseries"},
+  {keys:["lion peanut"],qty:1409,pv:1.50,cat:"Confiseries"},
+  {keys:["lion white"],qty:1188,pv:1.50,cat:"Confiseries"},
+  {keys:["lion"],qty:1983,pv:1.50,cat:"Confiseries"},
+  {keys:["smarties"],qty:918,pv:1.70,cat:"Confiseries"},
+  {keys:["hanuta"],qty:800,pv:2.20,cat:"Confiseries"},
+  {keys:["maltesers"],qty:1266,pv:2.20,cat:"Confiseries"},
+  {keys:["crunch"],qty:1855,pv:1.60,cat:"Confiseries"},
+  {keys:["nuts"],qty:2136,pv:1.60,cat:"Confiseries"},
+  // Biscuiterie
+  {keys:["nutella biscuit"],qty:249,pv:8.10,cat:"Biscuiterie"},
+  {keys:["nutella b ready","nutella b-ready","nutella bready"],qty:1200,pv:5.50,cat:"Biscuiterie"},
+  {keys:["nutella 600"],qty:400,pv:18.00,cat:"Biscuiterie"},
+  {keys:["nutella 350"],qty:800,pv:12.00,cat:"Biscuiterie"},
+  {keys:["nutella 200"],qty:900,pv:8.10,cat:"Biscuiterie"},
+  {keys:["kinder crunchy cookies","kinder crunchy"],qty:960,pv:9.50,cat:"Biscuiterie"},
+  {keys:["kinder kinderini","kinderini"],qty:250,pv:5.00,cat:"Biscuiterie"},
+  {keys:["mikado"],qty:322,pv:2.50,cat:"Biscuiterie"},
+  {keys:["milka"],qty:429,pv:1.80,cat:"Biscuiterie"},
+  {keys:["oreo"],qty:500,pv:1.90,cat:"Biscuiterie"},
+  {keys:["lu granola","granola cookies"],qty:266,pv:5.60,cat:"Biscuiterie"},
+  {keys:["lu barquette","barquette choco"],qty:369,pv:3.60,cat:"Biscuiterie"},
+  {keys:["loacker"],qty:225,pv:2.30,cat:"Biscuiterie"},
+  // Chips
+  {keys:["pringles"],qty:213,pv:4.20,cat:"Chips"},
+  {keys:["lay s","lay's","lays "],qty:1500,pv:2.50,cat:"Chips"},
+  {keys:["super ring"],qty:727,pv:1.60,cat:"Chips"},
+  {keys:["chicken ring"],qty:121,pv:1.60,cat:"Chips"},
+  {keys:["tuc"],qty:154,pv:2.50,cat:"Chips"},
+];
+
+// ═══════════════════════════════════════════════════
+// ÉTAT
+// ═══════════════════════════════════════════════════
+let products = [];   // produits chargés du fournisseur (avec CRR calculé)
+let selQty = {};     // {productId: qty}
+let sortCol = 'score', sortDir = -1;
+
+// ═══════════════════════════════════════════════════
+// CRR
+// ═══════════════════════════════════════════════════
+const gP = id => parseFloat(document.getElementById(id).value)||0;
+const f2 = n => (isNaN(n)||n==null) ? '—' : new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const f0 = n => (isNaN(n)||n==null) ? '—' : new Intl.NumberFormat('fr-FR').format(Math.round(n));
+
+function calcCRR(prix) {
+  const q=gP('p_qte')||34560, om=gP('p_om')/100, omr=gP('p_omr')/100,
+        dd=gP('p_dd')/100, tva=gP('p_tva')/100, fret=gP('p_fret'),
+        dsg=gP('p_dsg'), stk=gP('p_sticker'), mg=gP('p_margin')/100;
+  const valCAF = prix + fret/q;
+  const droitDD = valCAF * dd;
+  const omU = valCAF * om;
+  const omrU = valCAF * omr;
+  const tvaU = (valCAF + droitDD + omU + omrU) * tva;
+  const dsgU = dsg / q;
+  const crr = prix + fret/q + droitDD + omU + omrU + tvaU + dsgU + stk;
+  const pv = mg > 0 && mg < 1 ? crr / (1 - mg) : null;
+  const marginU = pv ? pv - crr : 0;
+  const marginPct = pv ? (marginU / pv) * 100 : 0;
+  return { crr, pv, marginU, marginPct };
+}
+
+// ═══════════════════════════════════════════════════
+// MATCHING STATIONS
+// ═══════════════════════════════════════════════════
+function matchStation(productName) {
+  const name = productName.toLowerCase();
+  // Find best match in STATION_DB
+  let best = null, bestScore = 0;
+  for (const entry of STATION_DB) {
+    for (const key of entry.keys) {
+      if (name.includes(key) || key.split(' ').every(w => name.includes(w))) {
+        const score = key.length; // longer match = better
+        if (score > bestScore) { best = entry; bestScore = score; }
+      }
+    }
+  }
+  return best;
+}
+
+// ═══════════════════════════════════════════════════
+// SCORE
+// ═══════════════════════════════════════════════════
+function computeScore(p) {
+  const season = gP('p_season') || 1;
+  const maxQty = Math.max(...products.map(x => x.stationQty || 0), 1);
+  const demandScore = p.stationQty > 0 ? Math.min((p.stationQty * season) / maxQty, 1) : 0.05;
+  const marginScore = p.marginPct > 0 ? Math.min(p.marginPct / 50, 1) : 0;
+  // If matched: 60% demand + 40% margin; if not matched: purely margin-based
+  const score = p.stationQty > 0
+    ? demandScore * 0.6 + marginScore * 0.4
+    : marginScore * 0.3;
+  return Math.round(score * 100);
+}
+
+// ═══════════════════════════════════════════════════
+// FILE LOADING
+// ═══════════════════════════════════════════════════
+function loadFile(file) {
+  if (!file) return;
+  showStatus('upSts', '⏳ Lecture du fichier...', 'info');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+      parseFile(raw, file.name);
+    } catch(err) {
+      showStatus('upSts', '❌ Erreur lecture: ' + err.message, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseFile(rows, fname) {
+  // ── Détection header ──
+  let hRow = -1, colMap = {};
+
+  // Méthode 1: chercher ligne avec "Producer" ou "Product" ET "Price"
+  for (let i = 0; i < Math.min(rows.length, 20); i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const vals = row.map(c => String(c || '').toLowerCase());
+    const hasProduct = vals.some(v => v === 'product' || v === 'produit' || v === 'article');
+    const hasPrice = vals.some(v => v === 'price' || v === 'prix');
+    if (hasProduct && hasPrice) {
+      hRow = i;
+      vals.forEach((v, j) => {
+        if (v === 'product' || v === 'produit' || v === 'article') colMap.product = j;
+        else if (v === 'producer' || v === 'brand' || v === 'marque' || v === 'fabricant') colMap.producer = j;
+        else if (v === 'price' || v === 'prix') colMap.price = j;
+        else if (v === 'barcode' || v === 'ean' || v === 'code-barres' || v === 'référence') colMap.barcode = j;
+        else if (v === 'pcs/case' || v === 'pcs/carton' || v === 'unités/carton') colMap.pcsCase = j;
+        else if (v === 'pcs/pallet' || v === 'pcs/palette' || v.includes('palette')) colMap.pcsPallet = j;
+        else if (v.includes('bbd') || v === 'dlc' || v === 'expiry' || v.includes('date limit')) colMap.bbd = j;
+        else if (v.includes('available') || v.includes('pallets') || v === 'stock') colMap.pallets = j;
+        else if (v.includes('weight') || v.includes('poids')) colMap.weight = j;
+        else if (v.includes('note') || v.includes('comment')) colMap.notes = j;
+      });
+      break;
+    }
+  }
+
+  // Méthode 2: fallback DABEX — "Producer" en col 0, "Price" en col 8
+  if (hRow === -1) {
+    for (let i = 0; i < Math.min(rows.length, 20); i++) {
+      const row = rows[i];
+      if (!row) continue;
+      const c0 = String(row[0]||'').toLowerCase().trim();
+      const c2 = String(row[2]||'').toLowerCase().trim();
+      const c8 = String(row[8]||'').toLowerCase().trim();
+      if ((c0 === 'producer' || c0 === 'brand') && (c2 === 'product' || c2 === 'produit') && (c8 === 'price' || c8 === 'prix')) {
+        hRow = i;
+        colMap = { producer: 0, product: 2, barcode: 3, pcsCase: 4, pcsPallet: 5, bbd: 6, pallets: 7, price: 8, notes: 9 };
+        break;
+      }
+    }
+  }
+
+  // Méthode 3: fallback CSV-like — chercher la première ligne avec un numérique en colonne prix
+  if (hRow === -1) {
+    // Try row 6 as Dabex default
+    if (rows.length > 7) {
+      const row = rows[6];
+      if (row && String(row[0]||'').toLowerCase().includes('producer')) {
+        hRow = 6;
+        colMap = { producer: 0, product: 2, barcode: 3, pcsCase: 4, pcsPallet: 5, bbd: 6, pallets: 7, price: 8, notes: 9 };
+      }
+    }
+  }
+
+  if (hRow === -1 || colMap.product === undefined || colMap.price === undefined) {
+    showStatus('upSts', '❌ Format non reconnu. Vérifiez que le fichier contient des colonnes "Product" et "Price".', 'err');
+    return;
+  }
+
+  // ── Parse data rows ──
+  const parsed = [];
+  for (let i = hRow + 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row) continue;
+    const productName = row[colMap.product];
+    if (!productName || String(productName).trim() === '') continue;
+
+    const priceRaw = row[colMap.price];
+    if (priceRaw === null || priceRaw === undefined) continue;
+    const price = parseFloat(String(priceRaw).replace(',', '.'));
+    if (isNaN(price) || price <= 0) continue;
+
+    let bbdStr = '';
+    if (colMap.bbd !== undefined && row[colMap.bbd] != null) {
+      const bv = row[colMap.bbd];
+      if (bv instanceof Date) bbdStr = bv.toLocaleDateString('fr-FR');
+      else {
+        bbdStr = String(bv).trim();
+        // Clean up date ranges like "02.10.2026 - 21.10.2026"
+        if (bbdStr.includes(' - ')) bbdStr = bbdStr.split(' - ')[0].trim();
+      }
+    }
+
+    const name = String(productName).trim();
+    const producer = colMap.producer !== undefined ? String(row[colMap.producer] || '').trim() : '';
+    const barcode = colMap.barcode !== undefined ? String(row[colMap.barcode] || '').trim() : '';
+    const pcsCase = colMap.pcsCase !== undefined ? (row[colMap.pcsCase] || '') : '';
+    const pcsPallet = colMap.pcsPallet !== undefined ? (row[colMap.pcsPallet] || '') : '';
+    const pallets = colMap.pallets !== undefined ? (row[colMap.pallets] || '') : '';
+    const notes = colMap.notes !== undefined ? String(row[colMap.notes] || '').trim() : '';
+
+    // CRR calculation
+    const crr = calcCRR(price);
+
+    // Station matching
+    const stMatch = matchStation(name + ' ' + producer);
+    const stationQty = stMatch ? stMatch.qty : 0;
+    const stationPV = stMatch ? stMatch.pv : crr.pv;
+    const stationCat = stMatch ? stMatch.cat : guessCategory(name);
+
+    const p = {
+      id: i,
+      name, producer, barcode, price, bbd: bbdStr,
+      pcsCase, pcsPallet, pallets, notes,
+      ...crr,
+      stationMatch: stMatch ? stMatch.keys[0] : null,
+      stationQty, stationPV, stationCat,
+      score: 0,
+    };
+    p.score = computeScore(p);
+    parsed.push(p);
+  }
+
+  if (parsed.length === 0) {
+    showStatus('upSts', '❌ Aucun produit valide trouvé. Vérifiez que les colonnes Product et Price contiennent des données.', 'err');
+    return;
+  }
+
+  products = parsed;
+  selQty = {};
+
+  const matched = products.filter(p => p.stationQty > 0).length;
+  const pct = Math.round(matched / products.length * 100);
+
+  document.getElementById('fnDisplay').textContent = `✓ ${fname} — ${products.length} produits chargés`;
+  document.getElementById('fnDisplay').style.display = 'block';
+  document.getElementById('upZone').classList.add('loaded');
+  showStatus('upSts', `✅ ${products.length} produits importés · ${matched} correspondances stations (${pct}%)`, 'ok');
+  showStatus('matchInfo', `📊 ${matched}/${products.length} produits ont une correspondance dans vos ventes stations 2024. Les ${products.length - matched} autres sont classés par marge uniquement.`, matched > 0 ? 'info' : 'warn', 'matchInfo');
+  document.getElementById('matchInfo').style.display = 'block';
+  document.getElementById('kpis').style.display = 'grid';
+  document.getElementById('cbarVis').style.display = 'block';
+  document.getElementById('optBtn').disabled = false;
+  document.getElementById('expBtn').disabled = false;
+
+  document.getElementById('k0').textContent = products.length;
+  document.getElementById('k1').textContent = matched;
+
+  renderTable();
+  updateSummary();
+}
+
+function guessCategory(name) {
+  const n = name.toLowerCase();
+  if (n.includes('energy') || n.includes('drink') || n.includes('cola') || n.includes('juice') || n.includes('water') || n.includes('tea') || n.includes('milk')) return 'Boissons';
+  if (n.includes('chip') || n.includes('crisp') || n.includes('snack') || n.includes('ring') || n.includes('pop') || n.includes('pretzel')) return 'Chips';
+  if (n.includes('kinder') || n.includes('nutella') || n.includes('choco') || n.includes('mars') || n.includes('snickers') || n.includes('twix') || n.includes('bounty') || n.includes('kitkat') || n.includes('mentos') || n.includes('tic tac') || n.includes('lion') || n.includes('m&m')) return 'Confiseries';
+  if (n.includes('biscuit') || n.includes('cookie') || n.includes('wafer') || n.includes('cracker') || n.includes('oreo') || n.includes('lu ') || n.includes('mikado') || n.includes('milka') || n.includes('loacker')) return 'Biscuiterie';
+  return 'Autre';
+}
+
+// ═══════════════════════════════════════════════════
+// RECALC (quand paramètres changent)
+// ═══════════════════════════════════════════════════
+function recalcAll() {
+  if (products.length === 0) return;
+  products = products.map(p => {
+    const crr = calcCRR(p.price);
+    const score = computeScore({...p, ...crr});
+    return {...p, ...crr, score};
+  });
+  renderTable();
+  updateSummary();
+}
+
+// ═══════════════════════════════════════════════════
+// AUTO OPTIMIZE
+// ═══════════════════════════════════════════════════
+function autoOptimize() {
+  const cap = gP('p_qte') || 34560;
+  const sorted = [...products].sort((a, b) => b.score - a.score);
+  const totScore = sorted.reduce((s, p) => s + Math.max(p.score, 1), 0);
+  let rem = cap;
+  selQty = {};
+
+  sorted.forEach(p => {
+    const share = Math.max(p.score, 1) / totScore;
+    // Unit per case
+    const unitCase = parseInt(p.pcsCase) || 24;
+    let units = Math.round(cap * share / unitCase) * unitCase;
+    if (p.score > 10 && units < unitCase) units = unitCase;
+    // Cap at ~3 months demand
+    const maxUnits = p.stationQty > 0 ? Math.ceil(p.stationQty * 0.25 / unitCase) * unitCase : units;
+    units = Math.min(units, rem, maxUnits);
+    if (units > 0 && rem >= units) { selQty[p.id] = units; rem -= units; }
+  });
+
+  // Fill remaining with top scorer
+  if (rem > 0 && sorted.length > 0) {
+    const top = sorted[0];
+    const uc = parseInt(top.pcsCase) || 24;
+    const extra = Math.floor(rem / uc) * uc;
+    if (extra > 0) selQty[top.id] = (selQty[top.id] || 0) + extra;
+  }
+
+  renderTable();
+  updateSummary();
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER TABLE
+// ═══════════════════════════════════════════════════
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = -1; }
+  renderTable();
+}
+
+function renderTable() {
+  if (products.length === 0) return;
+  const q = document.getElementById('searchInp').value.toLowerCase();
+  const season = gP('p_season') || 1;
+
+  let data = q ? products.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.producer.toLowerCase().includes(q) ||
+    p.barcode.includes(q)
+  ) : [...products];
+
+  data.sort((a, b) => {
+    const av = a[sortCol] ?? 0, bv = b[sortCol] ?? 0;
+    return typeof av === 'string' ? av.localeCompare(bv) * sortDir : (av - bv) * sortDir;
+  });
+
+  const cap = gP('p_qte') || 34560;
+  const catColors = {'Boissons':'tag-d','Confiseries':'tag-c','Chips':'tag-s','Biscuiterie':'tag-b','Autre':'tag-o'};
+  const medals = ['🥇','🥈','🥉'];
+
+  const thead = `<tr>
+    <th style="width:28px">#</th>
+    <th>Marque</th>
+    <th onclick="sortBy('name')">Produit</th>
+    <th onclick="sortBy('price')">Prix achat</th>
+    <th onclick="sortBy('crr')" style="background:var(--blue-soft);color:var(--blue)">CRR Réunion ⬇</th>
+    <th onclick="sortBy('pv')">PV conseillé</th>
+    <th onclick="sortBy('marginPct')">Marge %</th>
+    <th onclick="sortBy('stationQty')" style="background:var(--gold-soft)">Demande station</th>
+    <th onclick="sortBy('score')">Score 🎯</th>
+    <th>DLC</th>
+    <th>Qté ctnr</th>
+    <th>Marge €</th>
+  </tr>`;
+
+  const tbody = data.map((p, i) => {
+    const qty = selQty[p.id] || 0;
+    const mTotal = qty * p.marginU;
+    const catCls = catColors[p.stationCat] || 'tag-o';
+    const mColor = p.marginPct > 30 ? 'var(--green)' : p.marginPct > 15 ? 'var(--amber)' : 'var(--red)';
+    const scoreColor = p.score > 60 ? 'var(--green)' : p.score > 30 ? 'var(--blue)' : 'var(--text3)';
+    
+    // BBD color
+    let bbdCls = '', bbdStr = p.bbd || '—';
+    if (p.bbd) {
+      const parts = p.bbd.split(/[-\/\.]/);
+      let d;
+      if (parts.length >= 3) {
+        if (parts[0].length === 4) d = new Date(parts[0], parts[1]-1, parts[2]);
+        else d = new Date(parts[2], parts[1]-1, parts[0]);
+        if (!isNaN(d)) {
+          const diff = (d - new Date()) / (1000*60*60*24);
+          bbdCls = diff < 90 ? 'bbd-urgent' : diff < 180 ? 'bbd-warn' : 'bbd-ok';
+        }
+      }
+    }
+
+    const pName = p.name.replace(/'/g, '&#39;');
+    const scoreBar = `<div class="score-bar"><div class="score-fill" style="width:${p.score}%;background:${scoreColor}"></div></div>`;
+
+    return `<tr class="${qty > 0 ? 'sel' : ''}">
+      <td style="font-size:13px">${medals[i] || i+1}</td>
+      <td style="font-size:10px;color:var(--text3);font-weight:600;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.producer}</td>
+      <td>
+        <div style="font-weight:700;font-size:12px;max-width:200px">${p.name}</div>
+        <div style="margin-top:3px;display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+          <span class="tag ${catCls}">${p.stationCat}</span>
+          ${p.stationQty > 0 ? '<span class="tag tag-match">✓ Vendu en station</span>' : '<span class="tag tag-nomatch">Nouveau</span>'}
+        </div>
+      </td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">€ ${f2(p.price)}</td>
+      <td style="font-family:var(--mono);font-weight:800;color:var(--blue);background:rgba(59,91,219,.04)">€ ${f2(p.crr)}</td>
+      <td style="font-family:var(--mono);font-weight:700;color:var(--green)">€ ${f2(p.pv)}</td>
+      <td><span style="font-family:var(--mono);font-weight:700;color:${mColor}">${p.marginPct.toFixed(1)}%</span></td>
+      <td style="background:rgba(245,159,0,.04)">
+        ${p.stationQty > 0 ? `<div style="font-family:var(--mono);font-weight:700">${f0(Math.round(p.stationQty * (gP('p_season')||1)))}</div><div style="font-size:10px;color:var(--text3)">u/an · PV moyen ${f2(p.stationPV)}€</div>` : '<span style="color:var(--text4);font-size:11px">Pas de données</span>'}
+      </td>
+      <td>
+        <div style="display:flex;align-items:center;gap:5px">
+          ${scoreBar}
+          <span style="font-family:var(--mono);font-size:11px;font-weight:700;color:${scoreColor}">${p.score}</span>
+        </div>
+      </td>
+      <td class="${bbdCls}" style="font-size:11px;white-space:nowrap">${bbdStr}</td>
+      <td>
+        <input type="number" class="qty-inp ${qty > cap ? 'over' : ''}" value="${qty}" min="0" step="${parseInt(p.pcsCase)||24}"
+          oninput="updQ(${p.id}, this.value)" onchange="updQ(${p.id}, this.value)">
+        ${p.pcsCase ? `<div style="font-size:9px;color:var(--text4);text-align:center">${p.pcsCase}u/carton</div>` : ''}
+      </td>
+      <td style="font-family:var(--mono);font-weight:700;color:${mTotal > 0 ? 'var(--green)' : 'var(--text4)'}">
+        ${mTotal > 0 ? '€ '+f0(mTotal) : '—'}
+      </td>
+    </tr>`;
+  }).join('');
+
+  const totalU = Object.values(selQty).reduce((s,v)=>s+v,0);
+  document.getElementById('tblWrap').innerHTML = `
+    <div class="tbl-hdr">
+      <span style="font-size:13px;font-weight:700">${data.length} produits · Triés par: <strong>${sortCol}</strong></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sec btn-sm" onclick="clearAll()">✕ Vider sélection</button>
+        <button class="btn btn-primary btn-sm" onclick="autoOptimize()">⚡ Optimiser auto</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto"><table><thead>${thead}</thead><tbody>${tbody}</tbody></table></div>`;
+
+  document.getElementById('tblTitle').textContent = `${products.length} produits fournisseur — ${products.filter(p=>p.stationQty>0).length} matchés stations`;
+}
+
+// ═══════════════════════════════════════════════════
+// QTY & SUMMARY
+// ═══════════════════════════════════════════════════
+function updQ(id, val) {
+  selQty[id] = Math.max(0, parseInt(val) || 0);
+  updateSummary();
+}
+
+function clearAll() { selQty = {}; renderTable(); updateSummary(); }
+
+function updateSummary() {
+  const cap = gP('p_qte') || 34560;
+  let totU=0, totM=0, totCA=0, totC=0, cnt=0, brk=[];
+
+  Object.entries(selQty).forEach(([id, qty]) => {
+    if (qty <= 0) return;
+    const p = products.find(x => x.id == id);
+    if (!p) return;
+    totU += qty; totM += qty * p.marginU; totCA += qty * (p.pv || 0); totC += qty * p.crr; cnt++;
+    brk.push({ name: p.name, qty, m: qty * p.marginU, cat: p.stationCat });
+  });
+
+  const pct = Math.min(totU / cap * 100, 100);
+  const fill = document.getElementById('cFill');
+  fill.style.width = pct + '%';
+  fill.className = 'cbar-fill' + (pct > 95 ? ' over' : pct > 80 ? ' warn' : '');
+  document.getElementById('cPct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('cLbl').textContent = f0(totU) + ' / ' + f0(cap) + ' unités';
+  document.getElementById('k2').textContent = totM > 0 ? '€ ' + f0(totM) : '—';
+  document.getElementById('k3').textContent = totCA > 0 ? '€ ' + f0(totCA) : '—';
+  document.getElementById('k4').textContent = f0(totU) + ' u';
+
+  if (brk.length === 0) {
+    document.getElementById('rpContent').innerHTML = '<div style="text-align:center;opacity:.5;font-size:12px;padding:1rem">Lance l\'optimisation →</div>';
+    return;
+  }
+
+  const roi = totC > 0 ? (totM / totC * 100) : 0;
+  const top = [...brk].sort((a,b) => b.m - a.m).slice(0, 7);
+  document.getElementById('rpContent').innerHTML = `
+    <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:.4rem">MARGE TOTALE</div>
+    <div style="font-family:var(--mono);font-size:28px;font-weight:800">€ ${f0(totM)}</div>
+    <div style="font-size:11px;opacity:.65;margin-top:3px">${f0(totU)} u · ROI ${roi.toFixed(1)}%</div>
+    <div class="rp-div"></div>
+    <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:.4rem">CA POTENTIEL</div>
+    <div style="font-family:var(--mono);font-size:20px;font-weight:800;opacity:.9">€ ${f0(totCA)}</div>
+    <div class="rp-div"></div>
+    <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:.6rem">TOP MARGE PAR PRODUIT</div>
+    ${top.map(p => `<div class="rp-row"><span style="font-size:11px;font-weight:600;opacity:.85;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${p.name}</span><span style="font-family:var(--mono);font-size:12px;font-weight:700">€ ${f0(p.m)}</span></div>`).join('')}
+    <div class="rp-div"></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.6"><span>${pct.toFixed(1)}% rempli</span><span>${cnt} références</span></div>
+    <div class="pm"><div class="pm-fill" style="width:${pct}%"></div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════
+function exportPlan() {
+  const rows = [];
+  Object.entries(selQty).forEach(([id, qty]) => {
+    if (qty <= 0) return;
+    const p = products.find(x => x.id == id);
+    if (!p) return;
+    rows.push({
+      'Marque': p.producer, 'Produit': p.name, 'EAN/Code': p.barcode,
+      'Prix achat FCA (€)': +p.price.toFixed(4),
+      'CRR La Possession (€)': +p.crr.toFixed(4),
+      'PV conseillé (€)': +(p.pv||0).toFixed(4),
+      'Marge unitaire (€)': +(p.marginU||0).toFixed(4),
+      'Marge %': +p.marginPct.toFixed(1),
+      'Demande station (u/an)': p.stationQty,
+      'PV moyen station (€)': +(p.stationPV||0).toFixed(2),
+      'Score optimisation': p.score,
+      'DLC': p.bbd,
+      'Palettes dispo': p.pallets,
+      'Pcs/carton': p.pcsCase,
+      'Qté conteneur (unités)': qty,
+      'Marge totale produit (€)': +((p.marginU||0)*qty).toFixed(2),
+      'CA total produit (€)': +((p.pv||0)*qty).toFixed(2),
+    });
+  });
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Plan Conteneur');
+  const params = [
+    {P:'OM V395',V:gP('p_om')+'%'},{P:'OM Régional',V:gP('p_omr')+'%'},
+    {P:'Droit douane',V:gP('p_dd')+'%'},{P:'TVA import',V:gP('p_tva')+'%'},
+    {P:'Fret 40',V:'€'+gP('p_fret')},{P:'Transit DSG',V:'€'+gP('p_dsg')},
+    {P:'Capacité ctnr',V:gP('p_qte')+' u'},{P:'Marge cible',V:gP('p_margin')+'%'},
+    {P:'Date export',V:new Date().toLocaleDateString('fr-FR')},
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(params), 'Paramètres CRR');
+  XLSX.writeFile(wb, `INCA_Plan_Conteneur_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function showStatus(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'sts ' + type;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>
