@@ -397,15 +397,32 @@ input[type=file]{display:none}
     <div class="proforma-actions">
       <button class="btn-action" onclick="document.getElementById('pfFile').click()">📂 Charger un proforma (Excel/CSV)</button>
       <input type="file" id="pfFile" accept=".xlsx,.xls,.csv" onchange="handleProformaFile(this.files[0])">
+      <button class="btn-action purple" onclick="togglePfManual()">📝 Saisie manuelle</button>
       <button class="btn-action danger" onclick="clearProforma()" id="pfClearBtn" style="display:none">✕ Effacer</button>
       <div style="flex:1"></div>
-      <span style="font-size:11px;color:var(--text3);font-style:italic">Auto-détection des colonnes : référence/désignation · quantité · prix</span>
+      <span style="font-size:11px;color:var(--text3);font-style:italic">Excel : auto-détection des colonnes · Manuel : recherche dans 229 produits référencés</span>
+    </div>
+
+    <!-- PANNEAU SAISIE MANUELLE -->
+    <div id="pfManualPanel" class="card" style="display:none;border-color:rgba(167,139,250,.3)">
+      <div class="card-title ct-p">📝 Saisie manuelle ligne par ligne</div>
+      <div class="imp-alert purple-alert">💡 Tape le nom d'un produit pour rechercher dans le référentiel, sélectionne-le, indique la quantité et le prix proforma puis ajoute la ligne. Tu peux mixer saisie manuelle et fichier importé.</div>
+      <div style="display:grid;grid-template-columns:2fr 100px 100px auto;gap:10px;align-items:start">
+        <div style="position:relative">
+          <input type="text" id="pfManualSearch" class="search-bar-wrap" placeholder="🔍 Recherche un produit du référentiel (ex: Monster 50cl, Coca, Pokka...)" oninput="pfManualSearchSuggest(this.value)" onfocus="pfManualSearchSuggest(this.value)" onblur="setTimeout(()=>{document.getElementById('pfManualSuggest').style.display='none'},200)" autocomplete="off" style="width:100%;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;padding:10px 14px;font-family:var(--sans);font-size:13px;color:var(--text);outline:none">
+          <div id="pfManualSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;max-height:300px;overflow-y:auto;background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:50"></div>
+          <div id="pfManualSelected" style="display:none;margin-top:6px;padding:8px 12px;background:rgba(184,146,74,.1);border:1px solid rgba(184,146,74,.3);border-radius:8px;font-size:11px"></div>
+        </div>
+        <input type="number" id="pfManualQty" placeholder="Quantité" min="0" step="1" style="background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;padding:10px 14px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;text-align:right">
+        <input type="number" id="pfManualPx" placeholder="Prix HT" min="0" step="0.01" style="background:var(--bg);border:1.5px solid var(--border2);border-radius:10px;padding:10px 14px;font-family:var(--mono);font-size:13px;color:var(--text);outline:none;text-align:right">
+        <button class="btn-action gold" onclick="addPfManualLine()">+ Ajouter</button>
+      </div>
     </div>
 
     <div id="pfEmpty" class="empty-state">
       <div class="empty-state-icon">📦</div>
       <div class="empty-state-title">Aucun proforma chargé</div>
-      <div class="empty-state-text">Charge un fichier Excel ou CSV de ton fournisseur. Le système détectera automatiquement les colonnes désignation, quantité et prix, puis croisera avec tes ventes pour te dire combien il te manque ou combien tu as en trop pour ton stock cible.</div>
+      <div class="empty-state-text">Deux options : (1) <b>Charge un fichier Excel/CSV</b> du fournisseur — auto-détection des colonnes désignation/qté/prix · (2) <b>Saisie manuelle</b> ligne par ligne avec recherche dans les 229 produits référencés. Le système croisera ensuite avec tes ventes pour te dire combien il te manque ou combien tu as en trop par rapport à ton stock cible.</div>
     </div>
 
     <div id="pfContent" style="display:none">
@@ -497,7 +514,7 @@ function dbDelete(store,key){
   });
 }
 
-// ============ MATCHING ============
+// ============ MATCHING (format-aware) ============
 function normalize(s){if(!s)return'';return String(s).toUpperCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();}
 function keywords(name){
   const norm=normalize(name);
@@ -512,11 +529,48 @@ function keywords(name){
   }
   return out;
 }
-PRIX_REF.forEach(p=>{p._kw=new Set(keywords((p.a||'')+' '+(p.f||'')));});
+// Extraction format : volume normalisé en cl + type de contenant
+function extractFormat(s){
+  if(!s)return{vol:null,cont:null};
+  const u=String(s).toUpperCase();
+  let vol=null;
+  let m=u.match(/(\d+[,.]?\d*)\s*L(?![A-Z])/);
+  if(m){const v=parseFloat(m[1].replace(',','.'));if(v>0&&v<50)vol=Math.round(v*100);}
+  if(vol===null){m=u.match(/(\d+[,.]?\d*)\s*CL/);if(m){const v=parseFloat(m[1].replace(',','.'));if(v>0)vol=Math.round(v);}}
+  if(vol===null){m=u.match(/(\d+[,.]?\d*)\s*ML/);if(m){const v=parseFloat(m[1].replace(',','.'));if(v>0)vol=Math.round(v/10);}}
+  let cont=null;
+  if(/CANETT|CANNETT|BOITE|\bBTE\b|\bCAN\b/.test(u))cont='CAN';
+  else if(/BOUT|\bBTL\b|BTEILLE|\bPET\b/.test(u))cont='BOTTLE';
+  else if(/BIDON/.test(u))cont='JUG';
+  else if(/BRIK|\bBRQ\b/.test(u))cont='BRICK';
+  else if(/SACHET/.test(u))cont='SACHET';
+  else if(/PACK/.test(u))cont='PACK';
+  return{vol,cont};
+}
+function formatLabel(f){
+  const p=[];
+  if(f.vol){if(f.vol>=100)p.push((f.vol/100).toString().replace(/\.?0+$/,'')+'L');else p.push(f.vol+'cl');}
+  if(f.cont){const m={CAN:'canette',BOTTLE:'bouteille',JUG:'bidon',BRICK:'brique',SACHET:'sachet',PACK:'pack'};p.push(m[f.cont]||f.cont);}
+  return p.length?p.join(' '):'?';
+}
+function formatCompatible(a,b){
+  if(a.vol!==null&&b.vol!==null){
+    const mx=Math.max(a.vol,b.vol);
+    if(mx>0&&Math.abs(a.vol-b.vol)/mx>0.15)return false;
+  }
+  if(a.cont&&b.cont&&a.cont!==b.cont)return false;
+  return true;
+}
+// Pré-calcul keywords + format pour le référentiel
+PRIX_REF.forEach(p=>{
+  p._kw=new Set(keywords(p.a||''));  // keywords du NOM SEUL (pas du format) pour matching plus fiable
+  p._fmt=extractFormat((p.a||'')+' '+(p.f||''));
+});
 
 function findMatch(venteName){
   const vKw=new Set(keywords(venteName));
   if(vKw.size===0)return null;
+  const vFmt=extractFormat(venteName);
   let best=null,bestScore=0;
   for(const p of PRIX_REF){
     if(!p._kw||p._kw.size===0)continue;
@@ -526,9 +580,25 @@ function findMatch(venteName){
     const scoreP=common/p._kw.size;
     const scoreV=common/vKw.size;
     const score=(scoreP+scoreV)/2;
-    if(scoreP>=0.7&&score>bestScore){bestScore=score;best=p;}
+    if(scoreP<0.7)continue;
+    if(score<0.5)continue;
+    if(!formatCompatible(vFmt,p._fmt))continue;
+    if(score>bestScore){bestScore=score;best=p;}
   }
-  return bestScore>=0.5?best:null;
+  if(!best)return null;
+  // Retour rétro-compatible : conserve les champs originaux + ajoute infos d'agrégation
+  return{
+    a:best.a,           // nom produit référentiel
+    f:best.f,           // format référentiel (peut être vide)
+    p:best.p,           // prix d'achat
+    s:best.s,           // fournisseur
+    d:best.d,           // date dernier achat
+    pv:best.pv,         // PV TTC
+    n:best.n,           // nb fournisseurs historique
+    _fmtDetected:vFmt,  // format extrait de la vente
+    _fmtLabel:formatLabel(vFmt),
+    _aggKey:best.a+'|'+(vFmt.vol||0)+'|'+(vFmt.cont||'')
+  };
 }
 
 // ============ TABS ============
@@ -539,6 +609,47 @@ function switchTab(name){
   if(name==='proforma'&&PROFORMA)renderProforma();
 }
 
+// Recalcule les matchs format-aware pour des données stockées avec l'ancien algo
+function reapplyMatches(){
+  let updated=false;
+  Object.values(YEARS).forEach(yd=>{
+    Object.keys(yd).forEach(stKey=>{
+      if(stKey==='_meta')return;
+      const st=yd[stKey];
+      if(!st||!st.articles)return;
+      st.articles.forEach(a=>{
+        if(!a.match||!a.match._aggKey){
+          // Ancien match sans _aggKey ou pas matché du tout : retenter
+          const m=findMatch(a.article);
+          if(m){a.match=m;updated=true;}
+        }
+      });
+      // Refaire aussi famArticles si présent (pour cohérence)
+      if(st.famArticles){
+        Object.values(st.famArticles).forEach(arts=>{
+          arts.forEach(a=>{
+            if(!a.match||!a.match._aggKey){
+              const m=findMatch(a.article);
+              if(m)a.match=m;
+            }
+          });
+        });
+      }
+    });
+  });
+  // Reapply aux lignes proforma stockées
+  if(PROFORMA&&PROFORMA.lines){
+    PROFORMA.lines.forEach(l=>{
+      if(l.manual)return; // saisie manuelle : déjà bonne
+      if(!l.match||!l.match._aggKey){
+        const m=findMatch(l.desc);
+        if(m)l.match=m;
+      }
+    });
+  }
+  return updated;
+}
+
 // ============ INIT ============
 (async()=>{
   await openDB();
@@ -546,6 +657,9 @@ function switchTab(name){
   all.forEach(y=>{YEARS[y.year]=y.data;});
   const pf=await dbGet('proforma','current');
   if(pf)PROFORMA=pf.data;
+
+  // Re-appliquer le matching format-aware (rétrocompat avec données v4)
+  reapplyMatches();
 
   const years=Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
   if(years.length>0){
@@ -935,7 +1049,8 @@ function renderAll(){
 function renderReassort(matched){
   const agg={};
   matched.forEach(a=>{
-    const k=a.match.a+'|'+(a.match.f||'');
+    // Clé par produit + format détecté de la vente (fusion sûre)
+    const k=a.match._aggKey||(a.match.a+'|'+(a.match.f||''));
     if(!agg[k])agg[k]={ref:a.match,qte:0,ca:0,marge:0};
     agg[k].qte+=a.qte;agg[k].ca+=a.ca;agg[k].marge+=a.marge;
   });
@@ -970,7 +1085,7 @@ function renderReassort(matched){
     <tbody>
     ${rows.slice(0,80).map((r,i)=>`<tr>
       <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
-      <td><div class="reassort-prod">${r.ref.a}</div><div class="reassort-fmt">${r.ref.f||''}</div></td>
+      <td><div class="reassort-prod">${r.ref.a}</div><div class="reassort-fmt">${r.ref._fmtLabel||r.ref.f||''}</div></td>
       <td><div class="reassort-fourn">${r.ref.s||'—'}</div><div style="font-size:9px;color:var(--text3)">dernier achat ${r.ref.d||'—'}</div></td>
       <td class="num">${f0(r.qteAnn)}</td>
       <td class="num reassort-qty">${f0(r.qteRot)}</td>
@@ -1240,8 +1355,8 @@ function renderPfYearSel(){
 }
 
 function getPfSalesQty(){
-  // Retourner les ventes annuelles du produit matché (sur l'année PF_AY, stations PF_AS)
-  // Map: keyOfMatch(p) -> totalQte
+  // Retourne les ventes annuelles agrégées par _aggKey (nom produit + format détecté)
+  // Permet de fusionner toutes les variantes vente d'un même produit/format
   const out={};
   if(!PF_AY||!YEARS[PF_AY])return out;
   const yd=YEARS[PF_AY];
@@ -1249,7 +1364,7 @@ function getPfSalesQty(){
   stKeys.forEach(st=>{
     (yd[st].articles||[]).forEach(a=>{
       if(!a.match)return;
-      const k=a.match.a+'|'+(a.match.f||'');
+      const k=a.match._aggKey||(a.match.a+'|'+(a.match.f||''));
       if(!out[k])out[k]=0;
       out[k]+=a.qte;
     });
@@ -1280,7 +1395,7 @@ function renderProforma(){
   const enriched=lines.map(l=>{
     let salesQtyAnnual=null,qteCible=null,gap=null,status='nomatch';
     if(l.match){
-      const k=l.match.a+'|'+(l.match.f||'');
+      const k=l.match._aggKey||(l.match.a+'|'+(l.match.f||''));
       if(salesByRef[k]!==undefined){
         salesQtyAnnual=salesByRef[k];
         qteCible=Math.ceil(salesQtyAnnual/12*PF_ROT);
@@ -1315,6 +1430,8 @@ function renderProforma(){
     <div class="kpi" style="animation-delay:.25s"><div class="kpi-ico">🎯</div><div class="kpi-l">Stock cible</div><div class="kpi-v" style="color:var(--gold2)">${PF_ROT} mois</div><span class="kpi-delta dgold">${PF_AY?'base '+PF_AY:'aucune année'} · ${PF_AS==='all'?'3 stations':PF_AS.toUpperCase()}</span></div>
   `;
 
+  // Mémoriser l'index original avant tri
+  enriched.forEach((l,i)=>{l._origIdx=i;});
   // Trier : d'abord les manques (plus gros), puis les surplus, puis les OK, puis les non-matchés
   enriched.sort((a,b)=>{
     const order={shortage:1,surplus:2,ok:3,nomatch:4};
@@ -1334,6 +1451,7 @@ function renderProforma(){
       <th class="num">Cible ${PF_ROT}m</th>
       <th class="num">Écart</th>
       <th>Statut</th>
+      <th style="width:30px"></th>
     </tr></thead>
     <tbody>
     ${enriched.map((l,i)=>{
@@ -1345,8 +1463,8 @@ function renderProforma(){
       const gapHtml=l.gap===null?'<span style="color:var(--text3)">—</span>':l.status==='shortage'?`<span class="gap-negative">${f0(l.gap)}</span>`:l.status==='surplus'?`<span class="gap-positive">+${f0(l.gap)}</span>`:`<span class="gap-ok">${l.gap>0?'+':''}${f0(l.gap)}</span>`;
       return`<tr>
         <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
-        <td><div class="proforma-prod">${l.desc.substring(0,55)}</div>${l.ref?`<div style="font-size:9px;color:var(--text3)">Réf: ${l.ref}</div>`:''}</td>
-        <td>${l.match?`<div style="font-size:11px;font-weight:700;color:var(--gold2)">${l.match.a}</div><div style="font-size:9px;color:var(--text3)">${l.match.f||''} · ${l.match.s||''}</div>`:'<span style="color:var(--text3);font-style:italic;font-size:11px">non matché</span>'}</td>
+        <td><div class="proforma-prod">${l.desc.substring(0,55)}${l.manual?' <span style="font-size:9px;color:#a78bfa;font-weight:700">📝</span>':''}</div>${l.ref?`<div style="font-size:9px;color:var(--text3)">Réf: ${l.ref}</div>`:''}</td>
+        <td>${l.match?`<div style="font-size:11px;font-weight:700;color:var(--gold2)">${l.match.a}</div><div style="font-size:9px;color:var(--text3)">${l.match._fmtLabel||l.match.f||''} · ${l.match.s||''}</div>`:'<span style="color:var(--text3);font-style:italic;font-size:11px">non matché</span>'}</td>
         <td class="num" style="color:var(--text)">${f0(l.qty)}</td>
         <td class="num reassort-px">${l.px>0?fE2(l.px):'—'}</td>
         <td class="num" style="color:#4f8ef7">${fE(l.total)}</td>
@@ -1354,10 +1472,131 @@ function renderProforma(){
         <td class="num reassort-qty">${l.qteCible!==null?f0(l.qteCible):'—'}</td>
         <td class="num">${gapHtml}</td>
         <td>${statusBadge}</td>
+        <td><button onclick="removePfLine(${l._origIdx})" title="Supprimer cette ligne" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;transition:all .15s" onmouseover="this.style.color='#ef4444';this.style.background='var(--bg3)'" onmouseout="this.style.color='var(--text3)';this.style.background=''">✕</button></td>
       </tr>`;
     }).join('')}
     </tbody>`;
 }
+// ============ SAISIE MANUELLE PROFORMA ============
+let PF_MANUAL_SELECTED=null;
+
+function togglePfManual(){
+  const p=document.getElementById('pfManualPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+  if(p.style.display==='block')document.getElementById('pfManualSearch').focus();
+}
+
+function pfManualSearchSuggest(q){
+  const sug=document.getElementById('pfManualSuggest');
+  if(!q||q.trim().length<2){sug.style.display='none';return;}
+  const qUp=q.trim().toUpperCase();
+  const tokens=qUp.split(/\s+/).filter(t=>t.length>=2);
+  // Recherche : tous les tokens doivent matcher (dans nom OU format) - tolérant aux variantes
+  const matches=PRIX_REF.map(p=>{
+    const hay=((p.a||'')+' '+(p.f||'')).toUpperCase();
+    let score=0;
+    let allMatch=true;
+    for(const t of tokens){
+      if(hay.includes(t))score+=t.length;
+      else{allMatch=false;break;}
+    }
+    return allMatch?{p,score}:null;
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,12);
+  if(matches.length===0){
+    sug.innerHTML='<div style="padding:14px;color:var(--text3);font-size:12px;text-align:center">Aucun produit trouvé pour "<strong>'+q+'</strong>"</div>';
+    sug.style.display='block';return;
+  }
+  function hl(s){
+    let res=s;
+    for(const t of tokens){
+      const re=new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+      res=res.replace(re,'<span class="highlight">$1</span>');
+    }
+    return res;
+  }
+  sug.innerHTML=matches.map((m,i)=>{
+    const p=m.p;
+    return`<div style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;transition:background .15s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onmousedown="pfManualSelect(${i})" data-idx="${i}">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700">${hl(p.a)}</div>
+        <div style="font-size:10px;color:var(--text3);margin-top:1px">${hl(p.f||'(sans format)')} · ${p.s||''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold2)">${fE2(p.p)}</div>
+        <div style="font-size:9px;color:var(--text3)">PV: ${p.pv?fE2(p.pv):'—'}</div>
+      </div>
+    </div>`;
+  }).join('');
+  sug.style.display='block';
+  // Stocker matches dans une variable accessible
+  sug._matches=matches.map(m=>m.p);
+}
+
+function pfManualSelect(idx){
+  const sug=document.getElementById('pfManualSuggest');
+  const p=(sug._matches||[])[idx];
+  if(!p)return;
+  PF_MANUAL_SELECTED=p;
+  document.getElementById('pfManualSearch').value=p.a+(p.f?' · '+p.f:'');
+  sug.style.display='none';
+  const sel=document.getElementById('pfManualSelected');
+  sel.innerHTML=`✅ <b>${p.a}</b> · ${p.f||'(sans format)'} · Fournisseur actuel : <b style="color:var(--gold2)">${p.s||'—'}</b> · Prix réf : <b style="color:var(--gold2)">${fE2(p.p)}</b>`;
+  sel.style.display='block';
+  // Pré-remplir prix si vide
+  const px=document.getElementById('pfManualPx');
+  if(!px.value)px.value=p.p.toFixed(2);
+  document.getElementById('pfManualQty').focus();
+}
+
+async function addPfManualLine(){
+  if(!PF_MANUAL_SELECTED){alert('Sélectionne d\'abord un produit dans la liste de recherche.');return;}
+  const qty=parseFloat(document.getElementById('pfManualQty').value)||0;
+  const px=parseFloat(document.getElementById('pfManualPx').value)||0;
+  if(qty<=0){alert('Indique une quantité supérieure à 0.');return;}
+  // Construire l'objet match identique à findMatch (avec _aggKey)
+  const refFmt=extractFormat((PF_MANUAL_SELECTED.a||'')+' '+(PF_MANUAL_SELECTED.f||''));
+  const matchObj={
+    a:PF_MANUAL_SELECTED.a,f:PF_MANUAL_SELECTED.f,p:PF_MANUAL_SELECTED.p,
+    s:PF_MANUAL_SELECTED.s,d:PF_MANUAL_SELECTED.d,pv:PF_MANUAL_SELECTED.pv,n:PF_MANUAL_SELECTED.n,
+    _fmtDetected:refFmt,_fmtLabel:formatLabel(refFmt),
+    _aggKey:PF_MANUAL_SELECTED.a+'|'+(refFmt.vol||0)+'|'+(refFmt.cont||'')
+  };
+  const newLine={
+    desc:PF_MANUAL_SELECTED.a+(PF_MANUAL_SELECTED.f?' · '+PF_MANUAL_SELECTED.f:''),
+    qty,px,ref:'',match:matchObj,total:qty*px,manual:true
+  };
+  if(!PROFORMA){
+    PROFORMA={supplier:'Saisie manuelle',fname:'manuel',date:new Date().toISOString(),lines:[],detectedCols:null};
+  }
+  PROFORMA.lines.push(newLine);
+  await dbPut('proforma',{id:'current',data:PROFORMA});
+  document.getElementById('pfClearBtn').style.display='inline-block';
+  updatePersistBadge();
+  // Reset des champs
+  document.getElementById('pfManualSearch').value='';
+  document.getElementById('pfManualQty').value='';
+  document.getElementById('pfManualPx').value='';
+  document.getElementById('pfManualSelected').style.display='none';
+  PF_MANUAL_SELECTED=null;
+  document.getElementById('pfManualSearch').focus();
+  renderProforma();
+}
+async function removePfLine(idx){
+  if(!PROFORMA||idx<0||idx>=PROFORMA.lines.length)return;
+  const l=PROFORMA.lines[idx];
+  if(!confirm('Retirer cette ligne du proforma ?\n\n"'+l.desc.substring(0,60)+'"'))return;
+  PROFORMA.lines.splice(idx,1);
+  if(PROFORMA.lines.length===0){
+    PROFORMA=null;
+    await dbDelete('proforma','current');
+    document.getElementById('pfClearBtn').style.display='none';
+  }else{
+    await dbPut('proforma',{id:'current',data:PROFORMA});
+  }
+  updatePersistBadge();
+  renderProforma();
+}
+
 </script>
 </body>
 </html>
