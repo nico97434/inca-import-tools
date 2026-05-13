@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>INCA IMPORT — Dashboard Ventes</title>
+<title>INCA IMPORT — Dashboard Ventes & Proforma</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
@@ -33,14 +33,30 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .total{background:rgba(16,185,129,.2);color:#10b981;border:1px solid rgba(16,185,129,.3)}
 .vito{background:rgba(245,158,11,.2);color:#f59e0b;border:1px solid rgba(245,158,11,.3)}
 .ref-badge{background:rgba(184,146,74,.15);color:var(--gold2);border:1px solid rgba(184,146,74,.3);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px}
-.drop-wrap{padding:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 60px)}
-.drop-zone{width:100%;max-width:700px;border:2px dashed var(--border2);border-radius:20px;padding:4rem 2rem;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg2)}
+.persist-badge{background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px;display:none}
+.persist-badge.show{display:inline-flex;align-items:center;gap:5px}
+.tabs{display:flex;gap:4px;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;position:sticky;top:60px;z-index:99}
+.tab{padding:14px 22px;background:none;border:none;color:var(--text2);font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;display:flex;align-items:center;gap:8px}
+.tab:hover{color:var(--text)}
+.tab.active{color:#4f8ef7;border-bottom-color:#4f8ef7}
+.tab-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--text3)}
+.tab.active .tab-badge{background:rgba(79,142,247,.2);color:#4f8ef7}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.drop-wrap{padding:2rem;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 120px)}
+.drop-zone{width:100%;max-width:720px;border:2px dashed var(--border2);border-radius:20px;padding:3rem 2rem;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg2)}
 .drop-zone:hover,.drag-over{border-color:#4f8ef7!important;background:rgba(79,142,247,.08)!important}
-.drop-icon{font-size:52px;margin-bottom:1rem;opacity:.6}
+.drop-icon{font-size:46px;margin-bottom:.8rem;opacity:.6}
 .drop-title{font-size:22px;font-weight:800;margin-bottom:.5rem}
 .drop-sub{font-size:13px;color:var(--text2);font-weight:500;line-height:1.7;margin-bottom:1rem}
-.ref-info{background:rgba(184,146,74,.08);border:1px solid rgba(184,146,74,.25);border-radius:10px;padding:10px 14px;margin-bottom:1.5rem;font-size:11px;color:var(--gold2);line-height:1.6;text-align:left}
+.year-picker{margin:1rem 0 1.5rem;display:flex;flex-direction:column;align-items:center;gap:8px}
+.year-picker-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3)}
+.year-input{background:var(--bg3);border:1.5px solid var(--border2);border-radius:10px;padding:10px 18px;color:var(--text);font-family:var(--mono);font-size:18px;font-weight:700;text-align:center;width:120px;outline:none;transition:all .2s}
+.year-input:focus{border-color:#4f8ef7}
+.ref-info{background:rgba(184,146,74,.08);border:1px solid rgba(184,146,74,.25);border-radius:10px;padding:10px 14px;margin-bottom:1rem;font-size:11px;color:var(--gold2);line-height:1.6;text-align:left}
 .ref-info b{color:#e6bb6a}
+.persist-info{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:10px 14px;margin-bottom:1.5rem;font-size:11px;color:#34d399;line-height:1.6;text-align:left}
+.persist-info b{color:#6ee7b7}
 .drop-formats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
 .fmt{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:4px 12px;font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase}
 .drop-btn{padding:11px 28px;background:linear-gradient(135deg,#4f8ef7,#6ba3f8);border:none;border-radius:10px;color:#fff;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(79,142,247,.3)}
@@ -56,15 +72,25 @@ input[type=file]{display:none}
 .analyze-btn{margin-top:1.5rem;width:100%;padding:14px;background:linear-gradient(135deg,#10b981,#0d9f72);border:none;border-radius:12px;color:#fff;font-family:var(--sans);font-size:14px;font-weight:800;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(16,185,129,.3);display:none}
 .analyze-btn:hover{transform:translateY(-2px)}
 .analyze-btn.show{display:block}
-.dashboard{display:none;padding:1.5rem 2rem}
+.saved-years{margin-top:1.5rem;width:100%;display:flex;flex-direction:column;gap:6px}
+.saved-year-item{background:var(--bg3);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:12px}
+.saved-year-yr{font-family:var(--mono);font-weight:800;color:#10b981;font-size:14px;min-width:50px}
+.saved-year-info{flex:1;font-size:11px;color:var(--text2)}
+.saved-year-info b{color:var(--text)}
+.saved-year-btn{padding:6px 12px;font-size:11px;font-weight:700;border-radius:6px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .2s}
+.saved-year-btn:hover{color:var(--text);border-color:var(--border2)}
+.saved-year-btn.danger:hover{color:#ef4444;border-color:#ef4444}
+.dashboard{padding:1.5rem 2rem}
 .dash-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:10px}
 .dash-title{font-size:20px;font-weight:800}
 .dash-period{font-size:11px;color:var(--text2);font-weight:600;font-family:var(--mono)}
 .btn-reset{padding:7px 16px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
 .btn-reset:hover{border-color:#4f8ef7;color:#4f8ef7}
-.station-sel{display:flex;gap:8px;flex-wrap:wrap}
-.st-btn{padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.station-sel,.year-sel{display:flex;gap:8px;flex-wrap:wrap}
+.st-btn,.yr-btn{padding:7px 18px;border-radius:20px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
 .st-btn.act{border-color:#4f8ef7;color:#4f8ef7;background:rgba(79,142,247,.12)}
+.yr-btn.act{border-color:var(--gold);color:var(--gold2);background:rgba(184,146,74,.12)}
+.yr-btn.compare{border-color:#a78bfa;color:#a78bfa;background:rgba(167,139,250,.12)}
 .rot-sel{display:flex;gap:4px;align-items:center;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:3px}
 .rot-lbl{font-size:10px;font-weight:700;color:var(--text2);padding:0 8px;letter-spacing:.5px;text-transform:uppercase}
 .rot-btn{padding:5px 12px;border-radius:14px;border:none;background:transparent;color:var(--text2);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
@@ -72,6 +98,7 @@ input[type=file]{display:none}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:1.5rem}
 .kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1rem 1.25rem;box-shadow:var(--sh);animation:fi .4s ease both}
 .kpi.gold{border-color:rgba(184,146,74,.3);background:linear-gradient(135deg,var(--bg2) 0%,rgba(184,146,74,.05) 100%)}
+.kpi.purple{border-color:rgba(167,139,250,.3);background:linear-gradient(135deg,var(--bg2) 0%,rgba(167,139,250,.05) 100%)}
 .kpi-ico{font-size:18px;margin-bottom:.5rem}
 .kpi-v{font-family:var(--mono);font-size:22px;font-weight:700;line-height:1;margin-bottom:3px}
 .kpi-l{font-size:10px;font-weight:600;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
@@ -79,6 +106,8 @@ input[type=file]{display:none}
 .dg{background:rgba(16,185,129,.18);color:#10b981}
 .db{background:rgba(79,142,247,.15);color:#4f8ef7}
 .dgold{background:rgba(184,146,74,.18);color:var(--gold2)}
+.dpurple{background:rgba(167,139,250,.18);color:#a78bfa}
+.dred{background:rgba(239,68,68,.18);color:#ef4444}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 @media(max-width:850px){.grid2{grid-template-columns:1fr}}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:1.25rem;box-shadow:var(--sh);margin-bottom:1rem;animation:fi .4s ease both}
@@ -98,6 +127,7 @@ input[type=file]{display:none}
 .prod-bar-f{height:4px;border-radius:2px;transition:width .5s}
 .prod-val{font-family:var(--mono);font-size:11px;font-weight:700;min-width:60px;text-align:right}
 .prod-px{font-family:var(--mono);font-size:10px;color:var(--gold2);min-width:50px;text-align:right;font-weight:700}
+.prod-delta{font-family:var(--mono);font-size:10px;font-weight:700;min-width:48px;text-align:right;padding:2px 6px;border-radius:8px}
 .fam-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:var(--bg3);margin-bottom:5px}
 .fam-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
 .fam-name{flex:1;font-size:12px;font-weight:600}
@@ -113,14 +143,15 @@ input[type=file]{display:none}
 .st-card-sub{font-size:10px;color:var(--text2)}
 .imp-alert{background:rgba(79,142,247,.1);border:1px solid rgba(79,142,247,.2);border-radius:var(--r);padding:10px 14px;margin-bottom:1rem;font-size:12px;font-weight:600;color:#6ba3f8;line-height:1.6}
 .gold-alert{background:rgba(184,146,74,.08);border-color:rgba(184,146,74,.25);color:var(--gold2)}
-.reassort-table{width:100%;border-collapse:collapse;font-size:11px}
-.reassort-table thead th{text-align:left;padding:10px 8px;font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border2);background:var(--bg3);position:sticky;top:0;z-index:2}
-.reassort-table thead th.num{text-align:right}
-.reassort-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
-.reassort-table tbody tr:hover{background:var(--bg3)}
-.reassort-table tbody td{padding:9px 8px;vertical-align:middle}
-.reassort-table tbody td.num{text-align:right;font-family:var(--mono);font-weight:600}
-.reassort-prod{font-size:11px;font-weight:700;color:var(--text)}
+.purple-alert{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.25);color:#a78bfa}
+.reassort-table,.proforma-table{width:100%;border-collapse:collapse;font-size:11px}
+.reassort-table thead th,.proforma-table thead th{text-align:left;padding:10px 8px;font-size:10px;font-weight:700;color:var(--text2);letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border2);background:var(--bg3);position:sticky;top:0;z-index:2}
+.reassort-table thead th.num,.proforma-table thead th.num{text-align:right}
+.reassort-table tbody tr,.proforma-table tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+.reassort-table tbody tr:hover,.proforma-table tbody tr:hover{background:var(--bg3)}
+.reassort-table tbody td,.proforma-table tbody td{padding:9px 8px;vertical-align:middle}
+.reassort-table tbody td.num,.proforma-table tbody td.num{text-align:right;font-family:var(--mono);font-weight:600}
+.reassort-prod,.proforma-prod{font-size:11px;font-weight:700;color:var(--text)}
 .reassort-fmt{font-size:9px;color:var(--text3);font-weight:500;margin-top:1px}
 .reassort-fourn{font-size:10px;color:var(--text2);font-weight:500}
 .reassort-px{color:var(--gold2)}
@@ -162,6 +193,31 @@ input[type=file]{display:none}
 .sr-empty{padding:2rem;text-align:center;color:var(--text3);font-size:13px;font-weight:500}
 .sr-total{display:grid;grid-template-columns:1.6fr repeat(5,auto);gap:8px;padding:10px 14px;background:rgba(79,142,247,.08);border-top:1px solid rgba(79,142,247,.2);font-weight:700}
 .highlight{background:rgba(79,142,247,.25);border-radius:3px;padding:0 2px}
+.delta-up{color:#10b981;background:rgba(16,185,129,.12)}
+.delta-down{color:#ef4444;background:rgba(239,68,68,.12)}
+.delta-flat{color:var(--text3);background:var(--bg3)}
+.gap-positive{color:#10b981;font-weight:700}
+.gap-negative{color:#ef4444;font-weight:700}
+.gap-ok{color:var(--text3);font-weight:600}
+.proforma-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px;display:inline-block}
+.ps-shortage{background:rgba(239,68,68,.18);color:#ef4444}
+.ps-surplus{background:rgba(245,158,11,.18);color:#f59e0b}
+.ps-ok{background:rgba(16,185,129,.18);color:#10b981}
+.ps-nomatch{background:var(--bg3);color:var(--text3)}
+.proforma-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+.btn-action{padding:9px 18px;background:linear-gradient(135deg,#4f8ef7,#6ba3f8);border:none;border-radius:10px;color:#fff;font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-action:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(79,142,247,.3)}
+.btn-action.purple{background:linear-gradient(135deg,#a78bfa,#9075f5)}
+.btn-action.gold{background:linear-gradient(135deg,#b8924a,#d4a661);color:#0a0e1a}
+.btn-action.danger{background:var(--bg3);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.proforma-info-line{padding:10px 14px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text2);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.proforma-info-line b{color:var(--text)}
+.empty-state{text-align:center;padding:3rem 2rem;color:var(--text3)}
+.empty-state-icon{font-size:48px;margin-bottom:1rem;opacity:.4}
+.empty-state-title{font-size:16px;font-weight:700;color:var(--text2);margin-bottom:.5rem}
+.empty-state-text{font-size:13px;color:var(--text3);max-width:400px;margin:0 auto 1.5rem;line-height:1.6}
+.col-pf-input{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);font-family:var(--mono);font-size:11px;text-align:right;width:75px;outline:none}
+.col-pf-input:focus{border-color:#4f8ef7}
 @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -173,11 +229,12 @@ input[type=file]{display:none}
   <div class="hdr-l">
     <div class="logo">INCA IMPORT</div>
     <div>
-      <div class="hdr-title">Dashboard Ventes &amp; Réassort</div>
-      <div class="hdr-sub">Groupe INCANA · Couplé au référentiel <b>PRIX D'ACHATS 2026</b></div>
+      <div class="hdr-title">Dashboard Ventes &amp; Proforma</div>
+      <div class="hdr-sub">Groupe INCANA · Couplé au référentiel <b>PRIX D'ACHATS 2026</b> · Stockage local persistant</div>
     </div>
   </div>
   <div style="display:flex;gap:6px;align-items:center">
+    <span class="persist-badge" id="persistBadge">💾 <span id="persistText">0 année</span></span>
     <span class="ref-badge">📋 229 réfs.</span>
     <span class="sbadge ola">OLA</span>
     <span class="sbadge total">TOTAL</span>
@@ -185,107 +242,186 @@ input[type=file]{display:none}
   </div>
 </div>
 
-<div class="drop-wrap" id="dropWrap">
-  <div class="drop-zone" id="dropZone">
-    <div class="drop-icon">📊</div>
-    <div class="drop-title">Glisse tes exports de ventes ici</div>
-    <div class="drop-sub">Dépose les fichiers Excel des 3 stations OLA, TOTAL et VITO<br>Format : "Ventes par familles" — exports de ton logiciel de caisse</div>
-    <div class="ref-info">
-      💡 <b>Couplé au référentiel PRIX D'ACHATS 2026</b><br>
-      Chaque article vendu est automatiquement matché avec son <b>prix d'achat actuel</b> et son <b>fournisseur</b> (229 références embarquées). Le dashboard affichera la <b>quantité à commander pour une rotation paramétrable</b> + le budget réassort.
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" data-tab="dashboard">📊 Dashboard <span class="tab-badge" id="tabBadgeDash">—</span></button>
+  <button class="tab" data-tab="import">📥 Importer ventes</button>
+  <button class="tab" data-tab="proforma">📦 Proforma fournisseur <span class="tab-badge" id="tabBadgePF">—</span></button>
+</div>
+
+<!-- ============ TAB 1 : DASHBOARD ============ -->
+<div class="tab-content active" id="tab-dashboard">
+  <div id="dashEmpty" class="empty-state" style="display:none">
+    <div class="empty-state-icon">📊</div>
+    <div class="empty-state-title">Aucune donnée chargée</div>
+    <div class="empty-state-text">Importe tes fichiers de ventes pour démarrer. Le dashboard se construit automatiquement et tout est sauvegardé localement.</div>
+    <button class="btn-action" onclick="switchTab('import')">📥 Importer des ventes</button>
+  </div>
+  <div id="dashboard" style="display:none">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title">Analyse Ventes &amp; Plan de Réassort</div>
+        <div class="dash-period" id="dashPeriod">3 stations consolidées · Référentiel PRIX D'ACHATS 2026</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="rot-sel">
+          <span class="rot-lbl">Rotation</span>
+          <button class="rot-btn" onclick="setRot(2,this)">2 mois</button>
+          <button class="rot-btn act" id="rot3" onclick="setRot(3,this)">3 mois</button>
+          <button class="rot-btn" onclick="setRot(4,this)">4 mois</button>
+          <button class="rot-btn" onclick="setRot(6,this)">6 mois</button>
+        </div>
+        <div class="year-sel" id="yearSel"></div>
+        <div class="station-sel" id="stSel">
+          <button class="st-btn act" onclick="filterSt('all',this)">Toutes</button>
+          <button class="st-btn" id="bOla" onclick="filterSt('ola',this)">OLA</button>
+          <button class="st-btn" id="bTotal" onclick="filterSt('total',this)">TOTAL</button>
+          <button class="st-btn" id="bVito" onclick="filterSt('vito',this)">VITO</button>
+        </div>
+      </div>
     </div>
-    <div class="drop-formats">
-      <span class="fmt">.xlsx</span>
-      <span class="fmt">.xls</span>
-      <span class="fmt">1 à 3 fichiers</span>
+
+    <div class="cat-filter-wrap">
+      <span class="cat-filter-label">Filtrer par catégorie</span>
+      <div class="cat-btns" id="catBtns"></div>
     </div>
-    <button class="drop-btn" onclick="document.getElementById('fi').click()">📂 Parcourir les fichiers</button>
-    <input type="file" id="fi" multiple accept=".xlsx,.xls" onchange="handleFiles(this.files)">
-    <div class="files-loaded" id="filesLoaded"></div>
-    <button class="analyze-btn" id="analyzeBtn" onclick="buildDashboard()">✓ Analyser les ventes →</button>
+    <div class="cat-panel" id="catPanel">
+      <div class="cat-panel-title">
+        <span id="catPanelTitle">Top 10 — Catégorie</span>
+        <button class="cat-panel-close" onclick="clearCat()">✕</button>
+      </div>
+      <div class="cat-grid2">
+        <div><div class="card-title ct-b" style="margin-bottom:.75rem">Volume (unités)</div><div id="catTopVol"></div></div>
+        <div><div class="card-title ct-g" style="margin-bottom:.75rem">Marge €</div><div id="catTopMg"></div></div>
+      </div>
+    </div>
+
+    <div class="search-bar-wrap">
+      <span class="search-ico">🔍</span>
+      <input type="text" id="searchInput" placeholder="Recherche un produit... ex: Monster, Pokka, Pringles" oninput="searchProduct(this.value)" autocomplete="off">
+      <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
+    </div>
+    <div id="searchResults" style="display:none;margin-bottom:1.5rem"></div>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+    <div class="grid2">
+      <div class="card"><div class="card-title ct-b">Top 10 produits — volume <span style="color:var(--gold2);font-weight:700">+ prix d'achat</span></div><div id="topVol"></div></div>
+      <div class="card"><div class="card-title ct-g">Top 10 produits — marge € <span style="color:var(--gold2);font-weight:700">+ prix d'achat</span></div><div id="topMg"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title ct-gold">📦 Plan de réassort <span id="rotLabel">3 mois</span> — articles matchés au référentiel</div>
+      <div class="imp-alert gold-alert">💡 Pour chaque article vendu identifié dans <b>PRIX D'ACHATS 2026</b> : quantité à commander = ventes annuelles ÷ 12 × rotation. Budget = quantité × prix d'achat actuel.</div>
+      <div class="summary-strip" id="reassortSummary"></div>
+      <div style="overflow-x:auto;max-height:600px;overflow-y:auto"><table class="reassort-table" id="reassortTable"></table></div>
+    </div>
+
+    <div class="card"><div class="card-title ct-o">Familles produits — CA et marge %</div><div id="famRows"></div></div>
+    <div class="grid2">
+      <div class="card"><div class="card-title ct-b">Répartition CA par famille</div><div class="chart-wrap"><canvas id="pieC"></canvas></div></div>
+      <div class="card"><div class="card-title ct-g">Marge % par famille</div><div class="chart-wrap"><canvas id="mgC"></canvas></div></div>
+    </div>
+    <div class="card" id="stCard" style="display:none">
+      <div class="card-title ct-p">Comparaison 3 stations</div>
+      <div class="st-compare" id="stCompare"></div>
+    </div>
+    <div class="card">
+      <div class="card-title ct-o">Opportunités import INCA IMPORT</div>
+      <div class="imp-alert">💡 Ces produits vendus dans tes stations peuvent être sourcés à l'international — gain estimé basé sur la cotation DSG Transit.</div>
+      <div id="impOpps"></div>
+    </div>
   </div>
 </div>
 
-<div class="dashboard" id="dashboard">
-  <div class="dash-header">
-    <div>
-      <div class="dash-title">Analyse Ventes &amp; Plan de Réassort</div>
-      <div class="dash-period" id="dashPeriod">3 stations consolidées · Référentiel PRIX D'ACHATS 2026</div>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-      <div class="rot-sel">
-        <span class="rot-lbl">Rotation</span>
-        <button class="rot-btn" onclick="setRot(2,this)">2 mois</button>
-        <button class="rot-btn act" id="rot3" onclick="setRot(3,this)">3 mois</button>
-        <button class="rot-btn" onclick="setRot(4,this)">4 mois</button>
-        <button class="rot-btn" onclick="setRot(6,this)">6 mois</button>
+<!-- ============ TAB 2 : IMPORT ============ -->
+<div class="tab-content" id="tab-import">
+  <div class="drop-wrap">
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-icon">📊</div>
+      <div class="drop-title">Importer des ventes</div>
+      <div class="drop-sub">Dépose les exports Excel des 3 stations OLA, TOTAL et VITO<br>Format : "Ventes par familles" — exports de ton logiciel de caisse</div>
+
+      <div class="year-picker">
+        <span class="year-picker-lbl">Année des données</span>
+        <input type="number" class="year-input" id="yearInput" value="2024" min="2020" max="2030" step="1">
       </div>
-      <div class="station-sel" id="stSel">
-        <button class="st-btn act" onclick="filterSt('all',this)">Toutes</button>
-        <button class="st-btn" id="bOla" onclick="filterSt('ola',this)">OLA</button>
-        <button class="st-btn" id="bTotal" onclick="filterSt('total',this)">TOTAL</button>
-        <button class="st-btn" id="bVito" onclick="filterSt('vito',this)">VITO</button>
+
+      <div class="persist-info">
+        💾 <b>Stockage local persistant</b> — toutes les ventes sont sauvegardées dans ton navigateur (IndexedDB). Tu pourras y revenir sans recharger les fichiers. Données stockées : fichiers Excel bruts + données agrégées par produit/station/année.
       </div>
-      <button class="btn-reset" onclick="resetDB()">↩ Nouveau fichier</button>
+      <div class="ref-info">
+        💡 <b>Couplé au référentiel PRIX D'ACHATS 2026</b><br>
+        Chaque article vendu est automatiquement matché avec son <b>prix d'achat actuel</b> et son <b>fournisseur</b> (229 réfs).
+      </div>
+      <div class="drop-formats">
+        <span class="fmt">.xlsx</span>
+        <span class="fmt">.xls</span>
+        <span class="fmt">1 à 3 fichiers</span>
+      </div>
+      <button class="drop-btn" onclick="document.getElementById('fi').click()">📂 Parcourir les fichiers</button>
+      <input type="file" id="fi" multiple accept=".xlsx,.xls" onchange="handleFiles(this.files)">
+      <div class="files-loaded" id="filesLoaded"></div>
+      <button class="analyze-btn" id="analyzeBtn" onclick="saveAndAnalyze()">💾 Sauvegarder &amp; analyser →</button>
+
+      <div class="saved-years" id="savedYears"></div>
     </div>
   </div>
+</div>
 
-  <!-- FILTRE PAR CATÉGORIE -->
-  <div class="cat-filter-wrap">
-    <span class="cat-filter-label">Filtrer par catégorie</span>
-    <div class="cat-btns" id="catBtns"></div>
-  </div>
-  <div class="cat-panel" id="catPanel">
-    <div class="cat-panel-title">
-      <span id="catPanelTitle">Top 10 — Catégorie</span>
-      <button class="cat-panel-close" onclick="clearCat()">✕</button>
+<!-- ============ TAB 3 : PROFORMA ============ -->
+<div class="tab-content" id="tab-proforma">
+  <div style="padding:1.5rem 2rem">
+    <div class="dash-header">
+      <div>
+        <div class="dash-title">📦 Analyse Proforma Fournisseur</div>
+        <div class="dash-period">Upload un proforma → comparaison automatique avec ventes &amp; rotation</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="rot-sel">
+          <span class="rot-lbl">Stock cible</span>
+          <button class="rot-btn" onclick="setPfRot(2,this)">2 mois</button>
+          <button class="rot-btn act" id="pfRot3" onclick="setPfRot(3,this)">3 mois</button>
+          <button class="rot-btn" onclick="setPfRot(4,this)">4 mois</button>
+          <button class="rot-btn" onclick="setPfRot(6,this)">6 mois</button>
+        </div>
+        <div class="year-sel" id="pfYearSel"></div>
+        <div class="station-sel" id="pfStSel">
+          <button class="st-btn act" onclick="filterPfSt('all',this)">Toutes</button>
+          <button class="st-btn" onclick="filterPfSt('ola',this)">OLA</button>
+          <button class="st-btn" onclick="filterPfSt('total',this)">TOTAL</button>
+          <button class="st-btn" onclick="filterPfSt('vito',this)">VITO</button>
+        </div>
+      </div>
     </div>
-    <div class="cat-grid2">
-      <div><div class="card-title ct-b" style="margin-bottom:.75rem">Volume (unités)</div><div id="catTopVol"></div></div>
-      <div><div class="card-title ct-g" style="margin-bottom:.75rem">Marge €</div><div id="catTopMg"></div></div>
+
+    <div class="proforma-actions">
+      <button class="btn-action" onclick="document.getElementById('pfFile').click()">📂 Charger un proforma (Excel/CSV)</button>
+      <input type="file" id="pfFile" accept=".xlsx,.xls,.csv" onchange="handleProformaFile(this.files[0])">
+      <button class="btn-action danger" onclick="clearProforma()" id="pfClearBtn" style="display:none">✕ Effacer</button>
+      <div style="flex:1"></div>
+      <span style="font-size:11px;color:var(--text3);font-style:italic">Auto-détection des colonnes : référence/désignation · quantité · prix</span>
     </div>
-  </div>
 
-  <!-- BARRE DE RECHERCHE PRODUIT -->
-  <div class="search-bar-wrap">
-    <span class="search-ico">🔍</span>
-    <input type="text" id="searchInput" placeholder="Recherche un produit... ex: Monster, Pokka, Pringles" oninput="searchProduct(this.value)" autocomplete="off">
-    <button class="search-clear" id="searchClear" onclick="clearSearch()">✕</button>
-  </div>
-  <div id="searchResults" style="display:none;margin-bottom:1.5rem"></div>
+    <div id="pfEmpty" class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <div class="empty-state-title">Aucun proforma chargé</div>
+      <div class="empty-state-text">Charge un fichier Excel ou CSV de ton fournisseur. Le système détectera automatiquement les colonnes désignation, quantité et prix, puis croisera avec tes ventes pour te dire combien il te manque ou combien tu as en trop pour ton stock cible.</div>
+    </div>
 
-  <div class="kpi-grid" id="kpiGrid"></div>
-  <div class="grid2">
-    <div class="card"><div class="card-title ct-b">Top 10 produits — volume <span style="color:var(--gold2);font-weight:700">+ prix d'achat</span></div><div id="topVol"></div></div>
-    <div class="card"><div class="card-title ct-g">Top 10 produits — marge € <span style="color:var(--gold2);font-weight:700">+ prix d'achat</span></div><div id="topMg"></div></div>
-  </div>
-
-  <!-- PLAN DE RÉASSORT -->
-  <div class="card">
-    <div class="card-title ct-gold">📦 Plan de réassort <span id="rotLabel">3 mois</span> — articles matchés au référentiel</div>
-    <div class="imp-alert gold-alert">💡 Pour chaque article vendu identifié dans <b>PRIX D'ACHATS 2026</b> : quantité à commander = ventes annuelles ÷ 12 × rotation. Budget = quantité × prix d'achat actuel.</div>
-    <div class="summary-strip" id="reassortSummary"></div>
-    <div style="overflow-x:auto;max-height:600px;overflow-y:auto"><table class="reassort-table" id="reassortTable"></table></div>
-  </div>
-
-  <div class="card"><div class="card-title ct-o">Familles produits — CA et marge %</div><div id="famRows"></div></div>
-  <div class="grid2">
-    <div class="card"><div class="card-title ct-b">Répartition CA par famille</div><div class="chart-wrap"><canvas id="pieC"></canvas></div></div>
-    <div class="card"><div class="card-title ct-g">Marge % par famille</div><div class="chart-wrap"><canvas id="mgC"></canvas></div></div>
-  </div>
-  <div class="card" id="stCard" style="display:none">
-    <div class="card-title ct-p">Comparaison 3 stations</div>
-    <div class="st-compare" id="stCompare"></div>
-  </div>
-  <div class="card">
-    <div class="card-title ct-o">Opportunités import INCA IMPORT</div>
-    <div class="imp-alert">💡 Ces produits vendus dans tes stations peuvent être sourcés à l'international — gain estimé basé sur la cotation DSG Transit.</div>
-    <div id="impOpps"></div>
+    <div id="pfContent" style="display:none">
+      <div id="pfWarn"></div>
+      <div class="kpi-grid" id="pfKpiGrid"></div>
+      <div class="card">
+        <div class="card-title ct-p">📊 Analyse ligne par ligne</div>
+        <div class="imp-alert purple-alert">💡 Pour chaque ligne du proforma matchée à un produit vendu : <b>Écart = Quantité proforma − Quantité nécessaire pour atteindre le stock cible</b>. Si négatif → il te manque ces quantités. Si positif → tu prends trop.</div>
+        <div style="overflow-x:auto;max-height:700px;overflow-y:auto"><table class="proforma-table" id="pfTable"></table></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-// ============ RÉFÉRENTIEL PRIX D'ACHATS 2026 (229 articles) ============
+// ============ RÉFÉRENTIEL PRIX D'ACHATS 2026 ============
 const PRIX_REF = [{"a":"ALOE VERA OKF TPF","f":"50.00 CL BOUTEILLE","p":0.98,"s":"ASD SARL","d":"2026-04-22","pv":2.6,"n":7},{"a":"ARIZONA 50 TPF","f":"","p":1.57,"s":"SIDISRUN","d":"2026-03-18","pv":3.2,"n":2},{"a":"BAGATELLE 5L","f":"5.00 L BOUT*","p":1.46,"s":"PHOENIX REUNION johan","d":"2024-03-30","pv":3.2,"n":2},{"a":"BASIL SEED","f":"30.00 CL BOUTEILLE","p":0.73,"s":"DIVERS FOURNISSEURS","d":"2025-04-24","pv":2.1,"n":4},{"a":"BIG COLA","f":"1.60 L BOUTEILLE","p":2.18,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":3.3,"n":5},{"a":"BIG COLA","f":"60.00 CL BOUTEILLE","p":0.96,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":1.7,"n":5},{"a":"BISSAP JUS ARTISANAL","f":"25.00 CL BOCAL","p":1.21,"s":"DIVERS FOURNISSEURS","d":"2026-03-31","pv":2.3,"n":1},{"a":"BLACK BRUIN 250","f":"250.00 ML BTE*","p":0.77,"s":"DIVERS FOURNISSEURS","d":"2023-12-18","pv":1.9,"n":1},{"a":"BLACK BRUIN 500","f":"500.00 ML BTE*","p":1.18,"s":"DIVERS FOURNISSEURS","d":"2023-09-09","pv":2.5,"n":1},{"a":"BLUE SPORT","f":"","p":0.85,"s":"DIVERS FOURNISSEURS","d":"2025-07-21","pv":2.0,"n":2},{"a":"BOBACO BUBBLE TEA CUP TPF","f":"330.00 ML","p":2.9,"s":"CODISMA","d":"2025-08-26","pv":4.2,"n":1},{"a":"BOISSON DON SIMON","f":"1.50 L BOUT*","p":1.75,"s":"SUPERCASH","d":"2025-09-05","pv":3.5,"n":1},{"a":"BOURBON PANACHE","f":"33.00 CL BOUTEILLE","p":0.85,"s":"SUPERCASH","d":"2025-11-28","pv":1.6,"n":4},{"a":"BUM BUM","f":"250.00 ML BOITE","p":1.17,"s":"CHANE HIVE","d":"2026-02-26","pv":2.5,"n":2},{"a":"BUM BUM 50 CL","f":"50.00 CL BTE*","p":1.91,"s":"CHANE HIVE","d":"2026-02-26","pv":3.1,"n":1},{"a":"BUM BUM POMME SS","f":"25.00 CL BTE*","p":1.2,"s":"CHANE HIVE","d":"2023-12-30","pv":2.5,"n":1},{"a":"CACOLAC","f":"20.00 CL BOUTEILLE","p":1.89,"s":"SUPERCASH","d":"2026-04-15","pv":2.5,"n":5},{"a":"CAFE SWEET BLACK NOIS OKF","f":"390.00 ML BTE*","p":1.21,"s":"DISTRI PROXI OI vincent","d":"2024-12-10","pv":2.3,"n":1},{"a":"CAFEMIO TPF","f":"25.00 ML BOUTEILLE","p":1.69,"s":"LORDIS","d":"2024-02-21","pv":2.9,"n":1},{"a":"CAPRI SUN","f":"33.00 CL FLACON","p":1.13,"s":"GRAND SUD PRDUCTIONS sebastien","d":"2026-02-24","pv":1.9,"n":4},{"a":"CAPRISONNE","f":"","p":0.36,"s":"GRAND SUD PRDUCTIONS sebastien","d":"2026-03-25","pv":1.0,"n":7},{"a":"CARESSE CREOLE 1 L","f":"1.00 L BOUT.","p":5.2,"s":"POINT CHR","d":"2025-01-02","pv":5.9,"n":1},{"a":"CHIEF MILK SHAKE","f":"","p":2.95,"s":"DISTRI PROXI OI vincent","d":"2026-04-15","pv":4.9,"n":1},{"a":"CILAOS","f":"125.00 CL BTL","p":0.92,"s":"CILAOS","d":"2026-04-10","pv":2.3,"n":5},{"a":"CILAOS","f":"50.00 CL PLAS","p":0.49,"s":"CILAOS","d":"2026-04-10","pv":1.5,"n":5},{"a":"CITRO","f":"1.00 L BOUTEILLE","p":2.62,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":3.9,"n":3},{"a":"CITRO PETILLANT TPF","f":"","p":1.6,"s":"PHOENIX REUNION johan","d":"2025-11-29","pv":2.5,"n":3},{"a":"CITRO TPF","f":"50.00 CL BOUT.","p":1.63,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":2.5,"n":3},{"a":"COCA COLA","f":"1.00 L BOUTEILLE","p":1.81,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":2.9,"n":3},{"a":"COCA COLA","f":"1.50 L BTL","p":2.35,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":3.9,"n":5},{"a":"COCA COLA","f":"50.00 CL PET","p":1.1,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":2.0,"n":5},{"a":"COCA COLA BLE VER","f":"","p":0.7,"s":"RTF","d":"2025-12-08","pv":1.5,"n":2},{"a":"COCA COLA CANETTE","f":"33.00 CL BOITE","p":0.94,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-03","pv":1.9,"n":7},{"a":"COCA COLA CHERRY/VANILLE","f":"33.00 CL","p":0.92,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.9,"n":2},{"a":"COCA COLA VERRE","f":"30.00 CL BOUTEILLE","p":0.95,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.8,"n":6},{"a":"COCA COLA ZERO","f":"1.50 L BOUTEILLE","p":2.22,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-17","pv":3.8,"n":5},{"a":"COCA COLA ZERO","f":"50.00 CL BOUTEILLE","p":1.1,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":2.1,"n":6},{"a":"COCA COLA ZERO VR","f":"","p":0.65,"s":"RTF","d":"2025-05-27","pv":1.5,"n":1},{"a":"COCOMAX GRAND","f":"1.00 L BOUTEILLE","p":2.95,"s":"DIVERS FOURNISSEURS","d":"2025-12-05","pv":4.6,"n":3},{"a":"COCOMAX PETILLANT","f":"310.00 ML","p":0.99,"s":"DISTRI PROXI OI vincent","d":"2026-04-15","pv":1.8,"n":1},{"a":"COCOMAX PETIT","f":"50.00 CL BOUTEILLE","p":1.49,"s":"DIVERS FOURNISSEURS","d":"2026-03-25","pv":2.6,"n":5},{"a":"COLORADO THE","f":"50.00 CL BOITE","p":1.54,"s":"DISTRI PROXI OI vincent","d":"2026-04-01","pv":2.5,"n":2},{"a":"CONTREX","f":"","p":1.19,"s":"RTF","d":"2024-01-31","pv":2.1,"n":1},{"a":"CONTREX","f":"1.00 L BOUTEILLE","p":1.07,"s":"RTF","d":"2025-03-13","pv":2.1,"n":4},{"a":"COT LIMONADE TPF","f":"1.50 L PLAS","p":1.65,"s":"CHAN OU TEUNG","d":"2026-04-13","pv":2.8,"n":4},{"a":"CRISTALINE CITRONNADE 1.5","f":"","p":1.91,"s":"SIDISRUN","d":"2025-12-10","pv":3.5,"n":1},{"a":"CURCUMIN SHOT","f":"","p":1.62,"s":"RTF","d":"2026-04-21","pv":2.2,"n":1},{"a":"DIEGO","f":"20.00 CL POCHE","p":0.5,"s":"POINT CHR","d":"2026-04-16","pv":1.0,"n":3},{"a":"DIEGO TPF","f":"1.00 L BRICK","p":1.98,"s":"POINT CHR","d":"2026-04-01","pv":2.6,"n":1},{"a":"DIEGO/REA","f":"2.00 L BRICK","p":3.5,"s":"POINT CHR","d":"2026-04-16","pv":4.9,"n":3},{"a":"DYNAMALT","f":"33.00 CL BTL","p":1.06,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.8,"n":2},{"a":"EAU AROMATISEE CRISTALINE","f":"50.00 CL BOUT 300","p":0.88,"s":"CODISMA","d":"2024-01-23","pv":1.4,"n":1},{"a":"EAU AUSTRALINE","f":"","p":0.75,"s":"POINT CHR","d":"2025-07-17","pv":2.2,"n":1},{"a":"EAU AUSTRALINE","f":"1.00 L BOUTEILLE","p":0.53,"s":"POINT CHR","d":"2026-04-16","pv":1.6,"n":3},{"a":"EAU AUSTRALINE","f":"1.50 L BOUT.","p":0.65,"s":"POINT CHR","d":"2026-04-16","pv":1.9,"n":4},{"a":"EAU AUSTRALINE","f":"5.00 L BIDON","p":1.76,"s":"POINT CHR","d":"2026-04-16","pv":3.0,"n":3},{"a":"EAU AUSTRALINE","f":"50.00 CL BOUTEILLE","p":0.61,"s":"DIVERS FOURNISSEURS","d":"2026-04-17","pv":1.0,"n":5},{"a":"EAU BAGATELLE","f":"1.60 L BTL","p":0.55,"s":"PHOENIX REUNION johan","d":"2026-04-23","pv":1.5,"n":5},{"a":"EAU EVIAN","f":"1.50 L BTL","p":1.45,"s":"BARCODES","d":"2021-10-26","pv":2.3,"n":3},{"a":"EAU SAN PELLIGRINO","f":"50.00 CL BOUTEILLE","p":0.88,"s":"SIDISRUN","d":"2025-04-10","pv":1.7,"n":4},{"a":"EAU VOLCANIK","f":"1.25 L BOUTEILLE","p":1.15,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":1.8,"n":4},{"a":"EAU VOLCANIK","f":"50.00 CL BOUTEILLE","p":0.66,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":1.5,"n":5},{"a":"EDENA","f":"1.00 L BTL","p":0.61,"s":"PHOENIX REUNION johan","d":"2026-04-03","pv":1.6,"n":5},{"a":"EDENA","f":"1.50 L BTL","p":0.78,"s":"PHOENIX REUNION johan","d":"2026-03-12","pv":1.9,"n":5},{"a":"EDENA","f":"5.00 L BOUTEILLE","p":1.77,"s":"PHOENIX REUNION johan","d":"2026-02-12","pv":3.0,"n":1},{"a":"EDENA","f":"50.00 CL BTL","p":0.65,"s":"DIVERS FOURNISSEURS","d":"2026-04-17","pv":1.0,"n":5},{"a":"EDENA PETILLANTE","f":"1.00 L BTL","p":0.93,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":1.9,"n":5},{"a":"EDENA PETILLANTE","f":"50.00 CL BTL","p":0.63,"s":"PHOENIX REUNION johan","d":"2026-04-14","pv":1.3,"n":4},{"a":"ENERGADE","f":"500.00 ML BTL","p":1.4,"s":"RTF","d":"2026-01-27","pv":2.9,"n":2},{"a":"FANTA ANANAS","f":"","p":1.01,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-07-25","pv":1.9,"n":2},{"a":"FANTA ANANAS GR","f":"","p":2.01,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-02-14","pv":3.6,"n":1},{"a":"FANTA CITRON","f":"","p":0.51,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-04-18","pv":1.0,"n":1},{"a":"FANTA ORANGE","f":"50.00 CL PLAS","p":1.06,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.9,"n":5},{"a":"FANTA ORANGE BOITE","f":"33.00 CL BTE*","p":0.63,"s":"DIVERS FOURNISSEURS","d":"2025-03-25","pv":1.7,"n":2},{"a":"FANTA ORANGE/CITRON","f":"1.50 L BOUTEILL","p":2.44,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":3.6,"n":5},{"a":"FANTA PASSION","f":"1.50 L BTL","p":2.45,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":3.6,"n":4},{"a":"FANTA PASSION","f":"50.00 CL PLAS","p":1.08,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-10","pv":1.9,"n":5},{"a":"FISHER PANACHE","f":"33.00 CL BOUTEILLE","p":0.78,"s":"SUPERCASH","d":"2025-11-28","pv":1.6,"n":5},{"a":"FREEZ MIX TPF","f":"27.50 CL BOUT.","p":1.45,"s":"MOLLA AMODE","d":"2023-10-18","pv":2.7,"n":3},{"a":"FRESCHY/MOUSSY PECHE","f":"33.00 ML BOITE","p":1.4,"s":"PHOENIX REUNION johan","d":"2026-01-22","pv":2.5,"n":5},{"a":"FUZE TEA TPF","f":"500.00 ML BOUTEILLE","p":1.21,"s":"PHOENIX REUNION johan","d":"2022-12-15","pv":2.0,"n":2},{"a":"GATORADE","f":"","p":1.73,"s":"RTF","d":"2024-11-12","pv":2.9,"n":2},{"a":"GINGER SHOT","f":"","p":1.62,"s":"RTF","d":"2026-03-17","pv":2.2,"n":1},{"a":"GINI LEMON","f":"33.00 CL BOITE","p":1.15,"s":"SUPERCASH","d":"2022-12-23","pv":1.9,"n":2},{"a":"HEPAR","f":"75.00 CL BOUT PLA","p":1.44,"s":"RTF","d":"2026-04-08","pv":2.1,"n":1},{"a":"HERBI TEA TAMARIN","f":"","p":0.71,"s":"RTF","d":"2024-09-06","pv":2.0,"n":1},{"a":"HYPE ENERGY DRINK","f":"25.00 CL BTE*","p":1.24,"s":"PHOENIX REUNION johan","d":"2024-10-15","pv":2.9,"n":1},{"a":"ICE COFFE VIENNA TPF","f":"230.00 ML GOBELET","p":1.66,"s":"SIDISRUN","d":"2026-04-15","pv":2.6,"n":3},{"a":"ICE TEA EXOTIQUE  LIPTON","f":"33.00 CL BOITE","p":1.28,"s":"SUPERCASH","d":"2026-04-08","pv":1.9,"n":4},{"a":"ICE TEA GREEN AGRUMES","f":"50.00 CL BOUTEILL","p":1.07,"s":"CHANE HIVE","d":"2021-06-05","pv":2.2,"n":2},{"a":"ICE TEA LIPTON","f":"50.00 CL PET","p":1.45,"s":"RTF","d":"2026-04-08","pv":2.5,"n":5},{"a":"ICE TEA LIPTONIC","f":"33.00 CL BOITE","p":0.94,"s":"RTF","d":"2026-04-08","pv":1.9,"n":6},{"a":"ICE TEA PECHE","f":"33.00 CL BOITE","p":0.73,"s":"RTF","d":"2021-12-15","pv":1.7,"n":2},{"a":"IF COCO GM","f":"1.00 L BOUT*","p":2.5,"s":"RTF","d":"2022-02-16","pv":3.9,"n":1},{"a":"IF COCO/PASTEQUE/RAISIN","f":"350.00 ML BOUT 300","p":1.12,"s":"SOLO IMPORT","d":"2026-03-17","pv":1.8,"n":4},{"a":"INFUSION BIO TPF","f":"330.00 ML BRICK","p":1.77,"s":"DISTRI PROXI OI vincent","d":"2023-05-31","pv":2.6,"n":1},{"a":"JOKER LE FRUIT","f":"1.00 L BRICK","p":2.65,"s":"RTF","d":"2025-06-05","pv":5.6,"n":1},{"a":"JUS CARESSE CREOLE","f":"","p":1.66,"s":"POINT CHR","d":"2024-08-29","pv":2.3,"n":1},{"a":"JUS FEEL MORE DIMES","f":"","p":1.2,"s":"MOLLA AMODE","d":"2023-10-18","pv":2.0,"n":1},{"a":"JUS GRANINI","f":"25.00 CL BTL","p":1.14,"s":"CODISMA","d":"2025-11-04","pv":1.9,"n":4},{"a":"JUS LOOZA TPF","f":"20.00 CL BTLLE","p":0.73,"s":"MOLLAN","d":"2022-05-19","pv":1.7,"n":1},{"a":"JUS MANGO","f":"50.00 CL BOUTEILLE","p":0.64,"s":"DIVERS FOURNISSEURS","d":"2024-05-02","pv":1.7,"n":3},{"a":"JUS SPRING VALLEY","f":"33.00 CL BTE*","p":0.9,"s":"SOLO IMPORT","d":"2025-05-13","pv":1.6,"n":1},{"a":"KALAO 2L TPF","f":"2.00 L BOUTEILLE","p":2.43,"s":"POINT CHR","d":"2021-09-01","pv":3.5,"n":1},{"a":"KALAO TPF","f":"45.00 CL BOUTEILLE","p":0.95,"s":"POINT CHR","d":"2022-11-30","pv":1.6,"n":2},{"a":"KOOL KOOL TPF","f":"","p":0.35,"s":"RTF","d":"2024-09-06","pv":1.6,"n":1},{"a":"LA PATAT","f":"250.00 ML","p":0.83,"s":"DIVERS FOURNISSEURS","d":"2026-04-09","pv":1.9,"n":1},{"a":"LACTEL MAX TPF","f":"20.00 CL BRICK","p":0.58,"s":"RTF","d":"2024-03-29","pv":1.0,"n":1},{"a":"LE COQ NO ALCOL","f":"33.00 CL BOUT*","p":2.25,"s":"DIVERS FOURNISSEURS","d":"2025-02-21","pv":3.7,"n":1},{"a":"LEAMO LIMONADE","f":"","p":1.89,"s":"DISTRI PROXI OI vincent","d":"2025-03-12","pv":2.9,"n":1},{"a":"LIMONADE COT","f":"33.00 CL BTL","p":0.57,"s":"CHAN OU TEUNG","d":"2026-04-13","pv":1.0,"n":4},{"a":"LIMONADE COT 2L","f":"","p":1.0,"s":"CHAN OU TEUNG","d":"2018-12-04","pv":2.7,"n":1},{"a":"LIMONADE COT 50 CL","f":"","p":0.76,"s":"SUPERCASH","d":"2026-03-06","pv":1.6,"n":3},{"a":"LIMONADE SEGA","f":"50.00 CL BOUTEILLE","p":0.76,"s":"PHOENIX REUNION johan","d":"2026-03-12","pv":1.6,"n":4},{"a":"LIMONICE TPF","f":"50.00 CL BOUTEILLE","p":0.76,"s":"CHANE HIVE","d":"2026-02-26","pv":1.6,"n":2},{"a":"LIMONICE TPF 1.5","f":"","p":1.4,"s":"CHANE HIVE","d":"2026-02-26","pv":2.8,"n":1},{"a":"LIPTON PASTEQUE MENTHE","f":"33.00 CL BTE*","p":0.94,"s":"RTF","d":"2026-04-08","pv":1.9,"n":2},{"a":"LIPTON PETILLANT PECHE","f":"33.00 CL BTE*","p":1.14,"s":"SUPERCASH","d":"2026-04-08","pv":1.9,"n":4},{"a":"LIPTONIC GRD BOUT","f":"1.50 L BOUT PLA","p":3.72,"s":"RTF","d":"2026-04-08","pv":5.2,"n":1},{"a":"MAAZA BRIQUE 33CL","f":"33.00 CL BRICK","p":1.36,"s":"CHANE HIVE","d":"2023-11-07","pv":2.2,"n":1},{"a":"MAAZA FRUIT PASSION","f":"50.00 CL BOUT PLA","p":1.98,"s":"CHANE HIVE","d":"2025-09-17","pv":2.5,"n":2},{"a":"MAAZA LETCHIS","f":"50.00 CL BOUT PLA","p":1.69,"s":"RTF","d":"2025-02-19","pv":2.5,"n":1},{"a":"MAAZA MANGUE","f":"50.00 CL BOUT PLA","p":1.79,"s":"CHANE HIVE","d":"2025-12-24","pv":2.5,"n":2},{"a":"MAAZA TPF","f":"33.00 CL BOUTEILL","p":1.67,"s":"CHANE HIVE","d":"2025-05-20","pv":2.5,"n":3},{"a":"MAAZA TROPICAL","f":"50.00 CL BOUT PLA","p":1.86,"s":"CHANE HIVE","d":"2025-12-24","pv":2.5,"n":2},{"a":"MAXBREWCAFE GLACE","f":"250.00 ML","p":1.48,"s":"DISTRI PROXI OI vincent","d":"2026-03-17","pv":2.8,"n":1},{"a":"MAXFLY NRJ","f":"250.00 ML","p":1.18,"s":"DISTRI PROXI OI vincent","d":"2026-04-15","pv":2.2,"n":1},{"a":"MAY TEA TPF","f":"","p":2.81,"s":"SOGEREP","d":"2022-06-28","pv":4.2,"n":1},{"a":"MAY TEA TPF","f":"33.00 CL BOIT","p":0.98,"s":"SOGEREP","d":"2020-11-06","pv":1.9,"n":1},{"a":"MIAMI SOUL","f":"250.00 ML BTE*","p":1.24,"s":"DIVERS FOURNISSEURS","d":"2023-04-21","pv":2.5,"n":1},{"a":"MINUTE MAID ORANGE","f":"33.00 CL BOITE","p":1.1,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.9,"n":4},{"a":"MINUTE MAID POMME","f":"33.00 CL BOITE","p":1.1,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.9,"n":4},{"a":"MINUTE MAID TROPICAL","f":"33.00 CL BOITE","p":1.12,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-03","pv":1.9,"n":3},{"a":"MONSTER ENERGY","f":"50.00 CL BOITDE","p":1.72,"s":"CODISMA","d":"2026-04-14","pv":3.9,"n":9},{"a":"MOUSSY FRAISE","f":"33.00 ML BOITE","p":1.4,"s":"PHOENIX REUNION johan","d":"2025-10-30","pv":2.5,"n":5},{"a":"NAW JUS TAMARIN","f":"33.00 CL BOIT","p":0.94,"s":"SODIREL","d":"2026-03-05","pv":1.5,"n":1},{"a":"NAW JUS TPF","f":"","p":0.97,"s":"SODIREL","d":"2026-04-16","pv":1.5,"n":1},{"a":"NECTAR LES VERGERS DE MARIE","f":"","p":2.65,"s":"DIVERS FOURNISSEURS","d":"2024-09-02","pv":3.9,"n":1},{"a":"NOYA BOISSON CHIA","f":"320.00 ML BOUT P","p":1.6,"s":"SODIREL","d":"2023-05-12","pv":2.9,"n":1},{"a":"NU SMOOTHIES","f":"33.00 CL BRICK","p":1.54,"s":"DISTRI PROXI OI vincent","d":"2021-11-25","pv":2.8,"n":1},{"a":"OASIS  BOITE","f":"50.00 CL BOITE","p":0.98,"s":"SUPERCASH","d":"2021-12-28","pv":1.8,"n":2},{"a":"OASIS 1L","f":"1.00 L BOUTEILLE","p":2.22,"s":"SOGEREP","d":"2026-04-02","pv":3.3,"n":4},{"a":"OASIS BOUTEILLE","f":"50.00 CL BOUTEILLE","p":1.36,"s":"SOGEREP","d":"2026-04-23","pv":2.2,"n":7},{"a":"OASIS CANETTE TPF","f":"33.00 CL BOITE","p":1.07,"s":"SOGEREP","d":"2026-04-23","pv":1.8,"n":4},{"a":"OASIS POCKET","f":"25.00 CL BOUTEILLE","p":0.89,"s":"SOGEREP","d":"2026-04-03","pv":1.5,"n":2},{"a":"OASIS THE","f":"","p":2.59,"s":"SOGEREP","d":"2026-02-03","pv":3.9,"n":1},{"a":"OASIS TPF BOUTEILLE","f":"2.00 L BOUTEILLE","p":3.13,"s":"SOGEREP","d":"2026-04-03","pv":4.9,"n":3},{"a":"ORANGINA","f":"1.50 L PLAS","p":2.69,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":3.9,"n":6},{"a":"ORANGINA","f":"50.00 CL BOUTEILLE","p":1.24,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":2.3,"n":6},{"a":"ORANGINA BOULE","f":"25.00 CL PLAS","p":1.33,"s":"SUPERCASH","d":"2026-01-21","pv":1.9,"n":5},{"a":"ORANGINA CANETTE","f":"33.00 CL BTE*","p":1.18,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-03-27","pv":1.9,"n":2},{"a":"PEPSI COLA ZERO","f":"50.00 CL BOUT.","p":0.88,"s":"CHANE HIVE","d":"2024-10-11","pv":2.1,"n":1},{"a":"PEPSI GRAND","f":"","p":2.43,"s":"CHANE HIVE","d":"2024-08-16","pv":3.7,"n":1},{"a":"PERRIER","f":"1.00 L BTL","p":1.22,"s":"RTF","d":"2026-03-17","pv":2.8,"n":7},{"a":"PERRIER","f":"20.00 CL BTL","p":0.85,"s":"RTF","d":"2025-12-08","pv":1.3,"n":3},{"a":"PERRIER & JUICE","f":"25.00 CL BTE*","p":1.26,"s":"RTF","d":"2025-07-22","pv":1.9,"n":6},{"a":"PERRIER CITRON","f":"","p":1.54,"s":"RTF","d":"2026-04-08","pv":2.9,"n":1},{"a":"PERRIER CITRON 50","f":"","p":1.12,"s":"RTF","d":"2026-04-08","pv":1.9,"n":1},{"a":"PERRIER NAT/CITRON","f":"33.00 CL CANETTE","p":0.71,"s":"RTF","d":"2024-12-27","pv":1.7,"n":1},{"a":"PERRIER VERRE","f":"33.00 CL BOUT.","p":0.98,"s":"RTF","d":"2026-02-19","pv":1.5,"n":3},{"a":"PHOENIX PANACHE","f":"33.00 CL BOUTEILLE","p":1.04,"s":"SUPERCASH","d":"2025-11-14","pv":2.2,"n":3},{"a":"PREDATOR GOLD","f":"50.00 CL","p":0.98,"s":"SIDISRUN","d":"2024-01-25","pv":2.5,"n":1},{"a":"REA ANANAS","f":"1.00 L BRQ","p":2.06,"s":"POINT CHR","d":"2024-03-13","pv":2.9,"n":1},{"a":"REA BOCAL 1L","f":"1.00 L BOUT.","p":2.75,"s":"POINT CHR","d":"2023-11-16","pv":4.1,"n":1},{"a":"REA EXOTIQUE/MULTI","f":"1.00 L BRQ","p":2.36,"s":"POINT CHR","d":"2025-08-15","pv":3.3,"n":3},{"a":"REA MANGUE","f":"1.00 L BRIQUE","p":2.15,"s":"POINT CHR","d":"2025-03-17","pv":2.9,"n":2},{"a":"REA ORANGE","f":"1.00 L BRQ","p":1.95,"s":"POINT CHR","d":"2023-11-16","pv":2.9,"n":1},{"a":"REA PLASTIQ","f":"25.00 CL BOUTEILLE","p":1.0,"s":"POINT CHR","d":"2023-07-19","pv":1.8,"n":2},{"a":"REA POMME","f":"1.00 L BRIQ","p":2.06,"s":"POINT CHR","d":"2024-04-03","pv":2.9,"n":2},{"a":"REA RAISIN ROUGE","f":"1.00 L BRQ","p":1.72,"s":"POINT CHR","d":"2023-01-18","pv":2.9,"n":2},{"a":"REA VERRE TPF","f":"25.00 CL BTL","p":1.12,"s":"POINT CHR","d":"2026-04-16","pv":1.9,"n":4},{"a":"RED BULL SHOT","f":"","p":1.25,"s":"RTF","d":"2026-01-06","pv":2.5,"n":1},{"a":"REDBULL","f":"355.00 ML BOITE","p":2.06,"s":"SOLO IMPORT","d":"2023-09-26","pv":3.9,"n":1},{"a":"REDBULL TPF","f":"250.00 ML","p":1.5,"s":"SOLO IMPORT","d":"2026-02-10","pv":2.9,"n":2},{"a":"RICQLES","f":"33.00 CL BOITE","p":1.13,"s":"SUPERCASH","d":"2021-10-25","pv":1.9,"n":2},{"a":"SAMBO TS PARFUM","f":"33.00 CL BOITE","p":0.88,"s":"SOLO IMPORT","d":"2026-04-21","pv":2.0,"n":7},{"a":"SAN BENEDETTO BTE TPF 33","f":"33.00 CL BTE*","p":1.03,"s":"CHANE HIVE","d":"2024-09-06","pv":1.9,"n":1},{"a":"SANPELL LIMON + ARANC","f":"33.00 CL BTE*","p":1.03,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2024-12-13","pv":1.9,"n":4},{"a":"SANTAL AMANDE LAIT","f":"1.00 L BRICK","p":2.95,"s":"RTF","d":"2025-03-13","pv":4.9,"n":1},{"a":"SCHWEPPES AGRUM/LEMN/POM","f":"33.00 CL BOITE","p":1.01,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-17","pv":1.9,"n":2},{"a":"SCHWEPPES AGRUM/POIRE/MOJITO","f":"50.00 CL BOUTEILLE","p":1.25,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-17","pv":2.1,"n":5},{"a":"SCHWEPPES COCO","f":"50.00 CL BOUTEILLE","p":1.25,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-17","pv":2.1,"n":4},{"a":"SCHWEPPES MOJITO SLIM","f":"0.33 CL CANETTE","p":1.01,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-12-12","pv":1.9,"n":2},{"a":"SCHWEPPES TONIC","f":"25.00 ML BTL","p":1.03,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-10","pv":1.8,"n":2},{"a":"SCHWEPPES TONIC PET","f":"50.00 CL BOUT PLA","p":1.25,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":2.1,"n":3},{"a":"SCHWEPPES/S.AGRUM/COCO","f":"1.50 L BTL","p":2.55,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":3.9,"n":4},{"a":"SEVEN UP","f":"1.50 L BOUTEILLE","p":2.33,"s":"CHANE HIVE","d":"2024-08-16","pv":3.5,"n":2},{"a":"SHAKER TPF","f":"250.00 ML BRICK","p":0.65,"s":"DISTRI PROXI OI vincent","d":"2025-02-05","pv":2.2,"n":1},{"a":"SHOT BISSAP ZANDJABILA","f":"60.00 ML BOCAL","p":1.76,"s":"DIVERS FOURNISSEURS","d":"2026-04-23","pv":3.2,"n":1},{"a":"SIPSTY BLUE HAWAI","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SIPSTY COLA","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SIPSTY COLA CHERRY","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SIPSTY KIWI CITRON SMASH","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SIPSTY LETCHIS BREEZE","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SIPSTY MANGUE PECHE BELLINI","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SIPSTY PINA COLADA","f":"275.00 ML BOUT.","p":1.3,"s":"DIVERS FOURNISSEURS","d":"2025-02-10","pv":2.5,"n":1},{"a":"SMOOTHIE ANANAS RAISIN","f":"500.00 ML BOUT PLA","p":1.47,"s":"SODIREL","d":"2026-04-16","pv":2.5,"n":1},{"a":"SMOOTHIE FRAISE PAMPLEMOUSSRE","f":"500.00 ML BOUT PLA","p":1.47,"s":"SODIREL","d":"2026-04-16","pv":2.5,"n":1},{"a":"SMOOTHIE GREEN","f":"500.00 ML BOUT PLA","p":1.47,"s":"SODIREL","d":"2026-04-16","pv":2.5,"n":1},{"a":"SMOOTHIE LFW","f":"350.00 ML PET","p":1.08,"s":"LIM FA WAN ET FILS","d":"2026-04-13","pv":2.5,"n":1},{"a":"SMOOTHIE MYRTILLE NAW","f":"500.00 ML BOUT PLA","p":1.47,"s":"SODIREL","d":"2026-04-16","pv":2.5,"n":1},{"a":"SOJA MILK","f":"300.00 ML BOUTEILLE","p":0.99,"s":"DISTRI PROXI OI vincent","d":"2025-02-05","pv":1.9,"n":2},{"a":"SOLPAK BERLINGOT","f":"20.00 CL","p":0.43,"s":"SOLPAK QB","d":"2022-06-29","pv":1.0,"n":3},{"a":"SOLPAK TPF 1.5L/2L","f":"2.00 L BOUTEILLE","p":2.56,"s":"SOLPAK QB","d":"2022-06-29","pv":4.1,"n":3},{"a":"SPLASH GREN/CIT/EXO","f":"1.50 L PLAS","p":1.47,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2024-03-22","pv":2.8,"n":1},{"a":"SPLASH TPF","f":"50.00 CL BLLE","p":0.67,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2023-10-20","pv":1.6,"n":2},{"a":"SPRITE","f":"1.50 L BOUTEILLE","p":2.44,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":3.7,"n":4},{"a":"SPRITE","f":"50.00 CL BTL","p":1.06,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2026-04-24","pv":1.9,"n":4},{"a":"SPRITE CANETTE","f":"33.00 CL CANETTE","p":0.63,"s":"DIVERS FOURNISSEURS","d":"2025-07-21","pv":1.8,"n":3},{"a":"SPRITE/FANTA VERRE","f":"","p":0.7,"s":"RTF","d":"2025-09-12","pv":1.5,"n":1},{"a":"SULTAN TPF","f":"250.00 ML BOITE","p":0.98,"s":"DIVERS FOURNISSEURS","d":"2017-10-30","pv":2.1,"n":1},{"a":"TENSAI THE GLACE","f":"","p":1.84,"s":"DISTRI PROXI OI vincent","d":"2024-08-07","pv":2.8,"n":1},{"a":"TEZI GRAND MODELE","f":"","p":2.27,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-08-01","pv":4.5,"n":1},{"a":"TEZI TEA CITRON","f":"50.00 CL BOUT.","p":1.13,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2019-09-13","pv":2.0,"n":2},{"a":"TEZI TEA LETCHI","f":"","p":0.98,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2024-03-08","pv":2.0,"n":2},{"a":"TEZI TEA MANGUE","f":"","p":1.22,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2024-10-11","pv":2.0,"n":3},{"a":"TEZI TEA MELON","f":"","p":1.22,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-01-24","pv":2.0,"n":2},{"a":"TEZI TEA PECHE","f":"50.00 CL BOUT.","p":1.22,"s":"BRASSERIE DE BOURBON ALIETTE SAUTRON","d":"2025-01-24","pv":2.5,"n":2},{"a":"THE GLACE POKKA TPF","f":"50.00 CL PET","p":1.1,"s":"SOLO IMPORT","d":"2021-06-14","pv":2.5,"n":3},{"a":"THE LIPTON GREEN SLIM","f":"33.00 CL BTE*","p":0.94,"s":"RTF","d":"2026-03-17","pv":1.9,"n":4},{"a":"THE POKKA","f":"1.50 L BOUTEILLE","p":3.53,"s":"SUPERCASH","d":"2023-12-19","pv":4.9,"n":2},{"a":"VICHY CELESTINS","f":"1.15 L BOUTEILLE","p":1.42,"s":"RTF","d":"2026-04-08","pv":2.9,"n":4},{"a":"VINUT BUBBLE TEA TPF","f":"320.00 ML BTE*","p":1.02,"s":"DISTRI PROXI OI vincent","d":"2025-12-10","pv":2.1,"n":2},{"a":"VITTEL","f":"","p":0.71,"s":"RTF","d":"2026-04-21","pv":1.4,"n":1},{"a":"VITTEL BOUCHON SPORT","f":"75.00 CL BOUT PLA","p":0.85,"s":"RTF","d":"2025-12-08","pv":1.8,"n":1},{"a":"WEIDER POWER","f":"50.00 CL BOUT P","p":1.94,"s":"DISTRI PROXI OI vincent","d":"2023-04-20","pv":3.7,"n":1},{"a":"XL ENERGY","f":"1.00 L BOUTEILL","p":2.81,"s":"SOGEREP","d":"2026-04-23","pv":5.2,"n":2},{"a":"XL ENERGY","f":"25.00 CL CANETTE","p":1.17,"s":"SOGEREP","d":"2026-04-23","pv":2.9,"n":4},{"a":"ZINGI SODA","f":"","p":1.3,"s":"WINARUN SARL","d":"2024-10-22","pv":2.5,"n":1}];
 
 const FAM_COLORS=['#4f8ef7','#10b981','#f59e0b','#a78bfa','#ef4444','#06b6d4','#ec4899','#84cc16','#f97316','#8b5cf6','#14b8a6','#fb7185'];
@@ -297,29 +433,72 @@ const OPPS=[
   {n:'Granini Jus 25cl',f:'Famobra (Allemagne)',pl:1.009,crr:0.785,mg:0.224,pct:22.2},
   {n:'Red Bull 25cl',f:'Big Brands (Pologne)',pl:1.628,crr:1.485,mg:0.143,pct:8.8},
 ];
+const STOP=new Set(['TPF','BTE','BOUT','BOUTEILLE','CL','ML','BOITE','UNITE','SACHET','FLACON','U','BIDON','BOCAL','CAN','CANETTE','CANNETTE','PACK','DUO','BLISTER','PLAQUETTE','POCHETTE','CARTON','LOT','UNITES','GR','G','KG','LITRE','LITRES','GRAMME','PIECE','PIECES','PCS','PC','MORCEAU','BTEILLE','BTL','TEUR','DE','LA','LE','LES','DU','DES','UN','UNE','ET','EN','AU','AUX']);
 
-// Stop words pour matching
-const STOP=new Set(['TPF','BTE','BOUT','BOUTEILLE','CL','ML','BOITE','UNITE','SACHET','FLACON','U','BIDON','BOCAL','CAN','CANETTE','CANNETTE','PACK','DUO','BLISTER','PLAQUETTE','POCHETTE','CARTON','LOT','UNITES','GR','G','KG','LITRE','LITRES','GRAMME','PIECE','PIECES','PCS','PC','MORCEAU','BTEILLE','BTL','TEUR']);
+let YEARS={};      // {2024: {ola: {...}, total: {...}, vito: {...}}}
+let TEMP_LOAD={};  // chargement temporaire avant sauvegarde
+let TEMP_YEAR=2024;
+let AY=null;       // Année active dashboard
+let AYC=null;      // Année comparaison (optional)
+let AS='all',PC=null,MC=null,ROT=3,AC=null;
+let PROFORMA=null; // {supplier:..., lines:[...], file:..., date:...}
+let PF_ROT=3,PF_AS='all',PF_AY=null;
 
-let AD={};let AS='all';let PC=null,MC=null;let ROT=3;let AC=null;
 const f0=n=>new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n);
 const fE=n=>'€'+new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n);
 const fE2=n=>'€'+new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 
-const dz=document.getElementById('dropZone');
-dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
-dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
-dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFiles(e.dataTransfer.files)});
-
-function handleFiles(files){Array.from(files).forEach(f=>{const r=new FileReader();r.onload=e=>parseXL(e.target.result,f.name);r.readAsArrayBuffer(f)});}
-
-function detectSt(name){const n=name.toUpperCase();if(n.includes('OLA'))return'ola';if(n.includes('TOTAL'))return'total';if(n.includes('VITO'))return'vito';return'st'+Date.now();}
-
-// ============ MATCHING ALGORITHM ============
-function normalize(s){
-  if(!s)return'';
-  return String(s).toUpperCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();
+// ============ INDEXEDDB ============
+const DB_NAME='inca_dashboard',DB_VER=1;
+let DB=null;
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,DB_VER);
+    r.onerror=()=>rej(r.error);
+    r.onsuccess=()=>{DB=r.result;res(DB);};
+    r.onupgradeneeded=e=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains('years'))db.createObjectStore('years',{keyPath:'year'});
+      if(!db.objectStoreNames.contains('raw'))db.createObjectStore('raw',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('proforma'))db.createObjectStore('proforma',{keyPath:'id'});
+    };
+  });
 }
+function dbPut(store,obj){
+  return new Promise((res,rej)=>{
+    const tx=DB.transaction(store,'readwrite');
+    const req=tx.objectStore(store).put(obj);
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbGet(store,key){
+  return new Promise((res,rej)=>{
+    const tx=DB.transaction(store,'readonly');
+    const req=tx.objectStore(store).get(key);
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbGetAll(store){
+  return new Promise((res,rej)=>{
+    const tx=DB.transaction(store,'readonly');
+    const req=tx.objectStore(store).getAll();
+    req.onsuccess=()=>res(req.result);
+    req.onerror=()=>rej(req.error);
+  });
+}
+function dbDelete(store,key){
+  return new Promise((res,rej)=>{
+    const tx=DB.transaction(store,'readwrite');
+    const req=tx.objectStore(store).delete(key);
+    req.onsuccess=()=>res();
+    req.onerror=()=>rej(req.error);
+  });
+}
+
+// ============ MATCHING ============
+function normalize(s){if(!s)return'';return String(s).toUpperCase().replace(/[^\w\s]/g,' ').replace(/\s+/g,' ').trim();}
 function keywords(name){
   const norm=normalize(name);
   const out=[];
@@ -352,7 +531,117 @@ function findMatch(venteName){
   return bestScore>=0.5?best:null;
 }
 
-function parseXL(buf,fname){
+// ============ TABS ============
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===name));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+name));
+  if(name==='proforma'&&PROFORMA)renderProforma();
+}
+
+// ============ INIT ============
+(async()=>{
+  await openDB();
+  const all=await dbGetAll('years');
+  all.forEach(y=>{YEARS[y.year]=y.data;});
+  const pf=await dbGet('proforma','current');
+  if(pf)PROFORMA=pf.data;
+
+  const years=Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
+  if(years.length>0){
+    AY=years[0];
+    document.getElementById('dashboard').style.display='block';
+    document.getElementById('dashEmpty').style.display='none';
+    renderAll();
+  }else{
+    document.getElementById('dashboard').style.display='none';
+    document.getElementById('dashEmpty').style.display='block';
+  }
+  updatePersistBadge();
+  renderSavedYears();
+  if(PROFORMA){
+    document.getElementById('pfClearBtn').style.display='inline-block';
+    renderProforma();
+  }
+})();
+
+function updatePersistBadge(){
+  const years=Object.keys(YEARS);
+  const badge=document.getElementById('persistBadge');
+  const txt=document.getElementById('persistText');
+  if(years.length>0){
+    badge.classList.add('show');
+    txt.textContent=years.length+' année'+(years.length>1?'s':'')+' · '+years.sort().join(', ');
+    document.getElementById('tabBadgeDash').textContent=years.sort().reverse()[0];
+  }else{
+    badge.classList.remove('show');
+    document.getElementById('tabBadgeDash').textContent='—';
+  }
+  document.getElementById('tabBadgePF').textContent=PROFORMA?'1':'—';
+}
+
+function renderSavedYears(){
+  const wrap=document.getElementById('savedYears');
+  const years=Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
+  if(years.length===0){wrap.innerHTML='';return;}
+  wrap.innerHTML='<div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-top:1rem;text-align:left">💾 Années sauvegardées</div>'+
+    years.map(y=>{
+      const d=YEARS[y];
+      const sts=Object.keys(d).filter(k=>k!=='_meta');
+      const nbArts=sts.reduce((s,st)=>s+(d[st].articles||[]).length,0);
+      const totCA=sts.reduce((s,st)=>s+(d[st].familles||[]).filter(f=>!EXCLU.includes(f.famille)).reduce((t,f)=>t+f.ca,0),0);
+      return `<div class="saved-year-item">
+        <div class="saved-year-yr">${y}</div>
+        <div class="saved-year-info"><b>${sts.length} station${sts.length>1?'s':''}</b> · ${nbArts} articles · ${fE(totCA)} CA HT</div>
+        <button class="saved-year-btn" onclick="loadYearDB(${y})">📊 Voir</button>
+        <button class="saved-year-btn danger" onclick="deleteYear(${y})">🗑 Supprimer</button>
+      </div>`;
+    }).join('');
+}
+
+async function deleteYear(y){
+  if(!confirm('Supprimer définitivement l\'année '+y+' ?'))return;
+  await dbDelete('years',y);
+  await dbDelete('raw','y'+y);
+  delete YEARS[y];
+  if(AY===y){
+    const remaining=Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
+    AY=remaining[0]||null;
+    if(AY)renderAll();else{
+      document.getElementById('dashboard').style.display='none';
+      document.getElementById('dashEmpty').style.display='block';
+    }
+  }
+  updatePersistBadge();
+  renderSavedYears();
+}
+
+function loadYearDB(y){
+  AY=y;AYC=null;AS='all';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('dashEmpty').style.display='none';
+  switchTab('dashboard');
+  renderAll();
+}
+
+// ============ FILE HANDLING ============
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');handleFiles(e.dataTransfer.files)});
+
+function handleFiles(files){
+  TEMP_YEAR=parseInt(document.getElementById('yearInput').value)||2024;
+  Array.from(files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>parseXL(e.target.result,f.name,f);
+    r.readAsArrayBuffer(f);
+  });
+}
+
+function detectSt(name){const n=name.toUpperCase();if(n.includes('OLA'))return'ola';if(n.includes('TOTAL'))return'total';if(n.includes('VITO'))return'vito';return'st'+Date.now();}
+
+function parseXL(buf,fname,fileObj){
   try{
     const wb=XLSX.read(buf,{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
@@ -387,9 +676,10 @@ function parseXL(buf,fname){
       }
     });
     const st=detectSt(fname);
-    AD[st]={familles:fams,articles:arts,famArticles,fname};
+    // Stocker en TEMP_LOAD (pas encore sauvegardé)
+    TEMP_LOAD[st]={familles:fams,articles:arts,famArticles,fname,rawBuf:buf};
     addFileUI(fname,fams.length>0?'ok':'err',fams.length,arts.filter(a=>a.match).length);
-    if(Object.keys(AD).length>=1)document.getElementById('analyzeBtn').classList.add('show');
+    if(Object.keys(TEMP_LOAD).length>=1)document.getElementById('analyzeBtn').classList.add('show');
   }catch(e){addFileUI(fname,'err',0,0);console.error(e);}
 }
 
@@ -401,45 +691,119 @@ function addFileUI(name,status,rows,matched){
   if(ex)ex.outerHTML=html;else fl.insertAdjacentHTML('beforeend',html);
 }
 
-function buildDashboard(){
-  document.getElementById('dropWrap').style.display='none';
+async function saveAndAnalyze(){
+  // Sauvegarder dans YEARS[TEMP_YEAR]
+  if(!YEARS[TEMP_YEAR])YEARS[TEMP_YEAR]={};
+  // Préparer données agrégées (sans rawBuf) + données brutes séparément
+  const yearData={};
+  const rawData={year:TEMP_YEAR,files:{}};
+  Object.entries(TEMP_LOAD).forEach(([st,d])=>{
+    yearData[st]={
+      familles:d.familles,
+      articles:d.articles,
+      famArticles:d.famArticles,
+      fname:d.fname
+    };
+    // Stocker raw buffer encoded base64 pour pouvoir réimporter plus tard
+    const u8=new Uint8Array(d.rawBuf);
+    let bin='';for(let i=0;i<u8.length;i++)bin+=String.fromCharCode(u8[i]);
+    rawData.files[st]={fname:d.fname,data:btoa(bin)};
+  });
+  YEARS[TEMP_YEAR]={...YEARS[TEMP_YEAR],...yearData,_meta:{savedAt:new Date().toISOString()}};
+  await dbPut('years',{year:TEMP_YEAR,data:YEARS[TEMP_YEAR]});
+  await dbPut('raw',{id:'y'+TEMP_YEAR,...rawData});
+  TEMP_LOAD={};
+  document.getElementById('filesLoaded').innerHTML='';
+  document.getElementById('analyzeBtn').classList.remove('show');
+  document.getElementById('fi').value='';
+  AY=TEMP_YEAR;
+  updatePersistBadge();
+  renderSavedYears();
   document.getElementById('dashboard').style.display='block';
+  document.getElementById('dashEmpty').style.display='none';
+  switchTab('dashboard');
   renderAll();
 }
 
-function getData(){
+// ============ DASHBOARD ============
+function getYearData(year){
+  if(!year||!YEARS[year])return null;
+  const d=YEARS[year];
+  const stKeys=Object.keys(d).filter(k=>k!=='_meta');
   if(AS==='all'){
     const mf={};const ma={};
-    Object.values(AD).forEach(d=>{
-      d.familles.forEach(r=>{if(!mf[r.famille])mf[r.famille]={famille:r.famille,qte:0,revient:0,ca:0,marge:0};mf[r.famille].qte+=r.qte;mf[r.famille].revient+=r.revient;mf[r.famille].ca+=r.ca;mf[r.famille].marge+=r.marge;});
-      (d.articles||[]).forEach(r=>{
+    stKeys.forEach(st=>{
+      const dd=d[st];
+      (dd.familles||[]).forEach(r=>{
+        if(!mf[r.famille])mf[r.famille]={famille:r.famille,qte:0,revient:0,ca:0,marge:0};
+        mf[r.famille].qte+=r.qte;mf[r.famille].revient+=r.revient;mf[r.famille].ca+=r.ca;mf[r.famille].marge+=r.marge;
+      });
+      (dd.articles||[]).forEach(r=>{
         if(!ma[r.article])ma[r.article]={article:r.article,qte:0,ca:0,marge:0,match:r.match};
         ma[r.article].qte+=r.qte;ma[r.article].ca+=r.ca;ma[r.article].marge+=r.marge;
       });
     });
     return{
       familles:Object.values(mf).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0})),
-      articles:Object.values(ma).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0}))
+      articles:Object.values(ma).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0})),
+      stations:stKeys
     };
   }
-  return AD[AS]||{familles:[],articles:[]};
+  return d[AS]?{...d[AS],stations:[AS]}:{familles:[],articles:[],stations:[]};
+}
+
+function renderYearSel(){
+  const wrap=document.getElementById('yearSel');
+  const years=Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
+  wrap.innerHTML=years.map(y=>{
+    let cls='yr-btn';
+    if(y===AY)cls+=' act';
+    else if(y===AYC)cls+=' compare';
+    return `<button class="${cls}" onclick="selectYear(${y})">${y}</button>`;
+  }).join('');
+}
+
+function selectYear(y){
+  if(y===AY){
+    // Toggle comparison
+    if(AYC){AYC=null;}
+  }else if(AY&&y!==AY){
+    if(AYC===y){AYC=null;}else AYC=y;
+  }
+  if(!AY)AY=y;
+  renderAll();
 }
 
 function setRot(n,btn){
   ROT=n;
-  document.querySelectorAll('.rot-btn').forEach(b=>b.classList.remove('act'));
+  document.querySelectorAll('#tab-dashboard .rot-btn').forEach(b=>b.classList.remove('act'));
   btn.classList.add('act');
   document.getElementById('rotLabel').textContent=n+' mois';
-  if(document.getElementById('dashboard').style.display==='block'){
-    renderAll();
-    // Re-rendre la recherche si active
-    const sv=document.getElementById('searchInput').value;
-    if(sv&&sv.trim().length>=2)searchProduct(sv);
-  }
+  renderAll();
+  const sv=document.getElementById('searchInput').value;
+  if(sv&&sv.trim().length>=2)searchProduct(sv);
+}
+
+function filterSt(st,btn){
+  AS=st;
+  document.querySelectorAll('#tab-dashboard .st-btn').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  renderAll();
+  const sv=document.getElementById('searchInput').value;
+  if(sv&&sv.trim().length>=2)searchProduct(sv);
 }
 
 function renderAll(){
-  const data=getData();
+  if(!AY){
+    document.getElementById('dashboard').style.display='none';
+    document.getElementById('dashEmpty').style.display='block';
+    return;
+  }
+  renderYearSel();
+  const data=getYearData(AY);
+  if(!data){return;}
+  const dataC=AYC?getYearData(AYC):null;
+
   const fams=data.familles.filter(f=>!EXCLU.includes(f.famille.trim()));
   const arts=data.articles||[];
   const tCA=fams.reduce((s,f)=>s+f.ca,0);
@@ -448,6 +812,22 @@ function renderAll(){
   const tRev=fams.reduce((s,f)=>s+f.revient,0);
   const avgMg=tCA>0?tMg/tCA*100:0;
 
+  // Comparaison année
+  let cmpCA=null,cmpMg=null,cmpQt=null;
+  if(dataC){
+    const famsC=dataC.familles.filter(f=>!EXCLU.includes(f.famille.trim()));
+    cmpCA=famsC.reduce((s,f)=>s+f.ca,0);
+    cmpMg=famsC.reduce((s,f)=>s+f.marge,0);
+    cmpQt=famsC.reduce((s,f)=>s+f.qte,0);
+  }
+  function deltaHtml(cur,prev){
+    if(prev===null||prev===0)return '';
+    const pct=(cur-prev)/prev*100;
+    const cls=pct>2?'delta-up':pct<-2?'delta-down':'delta-flat';
+    const sign=pct>=0?'+':'';
+    return `<span class="kpi-delta ${cls}">${sign}${pct.toFixed(1)}% vs ${AYC}</span>`;
+  }
+
   const excluArt=/CARBURANT|GAZOLE|SANS PLOMB|GNR|ADBLUE/i;
   const artImp=arts.filter(a=>!excluArt.test(a.article));
   const matched=artImp.filter(a=>a.match);
@@ -455,10 +835,13 @@ function renderAll(){
   matched.forEach(a=>{budgetTot+=(a.qte/12*ROT)*a.match.p;});
   const coverage=artImp.length>0?(matched.length/artImp.length*100):0;
 
+  const titleSuffix=dataC?` <span style="color:#a78bfa;font-weight:600;font-size:14px">· comparé à ${AYC}</span>`:'';
+  document.getElementById('dashPeriod').innerHTML=`Année ${AY}${dataC?' vs '+AYC:''} · ${data.stations.length} station${data.stations.length>1?'s':''} · Référentiel PRIX D'ACHATS 2026`;
+
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi" style="animation-delay:.05s"><div class="kpi-ico">💰</div><div class="kpi-l">CA HT total</div><div class="kpi-v" style="color:#4f8ef7">${fE(tCA)}</div><span class="kpi-delta db">${AS==='all'?'3 stations':AS.toUpperCase()}</span></div>
-    <div class="kpi" style="animation-delay:.1s"><div class="kpi-ico">📈</div><div class="kpi-l">Marge brute</div><div class="kpi-v" style="color:#10b981">${fE(tMg)}</div><span class="kpi-delta dg">${avgMg.toFixed(1)}%</span></div>
-    <div class="kpi" style="animation-delay:.15s"><div class="kpi-ico">📦</div><div class="kpi-l">Unités vendues</div><div class="kpi-v">${f0(tQt)}</div><span class="kpi-delta db">tous produits</span></div>
+    <div class="kpi" style="animation-delay:.05s"><div class="kpi-ico">💰</div><div class="kpi-l">CA HT ${AY}</div><div class="kpi-v" style="color:#4f8ef7">${fE(tCA)}</div>${dataC?deltaHtml(tCA,cmpCA):`<span class="kpi-delta db">${AS==='all'?'3 stations':AS.toUpperCase()}</span>`}</div>
+    <div class="kpi" style="animation-delay:.1s"><div class="kpi-ico">📈</div><div class="kpi-l">Marge brute</div><div class="kpi-v" style="color:#10b981">${fE(tMg)}</div>${dataC?deltaHtml(tMg,cmpMg):`<span class="kpi-delta dg">${avgMg.toFixed(1)}%</span>`}</div>
+    <div class="kpi" style="animation-delay:.15s"><div class="kpi-ico">📦</div><div class="kpi-l">Unités vendues</div><div class="kpi-v">${f0(tQt)}</div>${dataC?deltaHtml(tQt,cmpQt):`<span class="kpi-delta db">tous produits</span>`}</div>
     <div class="kpi gold" style="animation-delay:.2s"><div class="kpi-ico">📋</div><div class="kpi-l">Couverture référentiel</div><div class="kpi-v" style="color:var(--gold2)">${matched.length}</div><span class="kpi-delta dgold">${coverage.toFixed(1)}% matchés</span></div>
     <div class="kpi gold" style="animation-delay:.25s"><div class="kpi-ico">🛒</div><div class="kpi-l">Budget réassort ${ROT} mois</div><div class="kpi-v" style="color:var(--gold2)">${fE(budgetTot)}</div><span class="kpi-delta dgold">prix d'achat actuels</span></div>
   `;
@@ -466,10 +849,22 @@ function renderAll(){
   buildCatBtns();
   if(AC)clearCat();
 
+  // Top 10 avec comparaison année si dataC
+  const artsCBy={};
+  if(dataC){(dataC.articles||[]).forEach(a=>{artsCBy[a.article]=a;});}
+
   const tv=artImp.sort((a,b)=>b.qte-a.qte).slice(0,10);
   const mv=tv[0]?.qte||1;
-  document.getElementById('topVol').innerHTML=tv.map((a,i)=>`
-    <div class="prod-row">
+  document.getElementById('topVol').innerHTML=tv.map((a,i)=>{
+    const prev=artsCBy[a.article];
+    let deltaH='';
+    if(dataC&&prev){
+      const pct=prev.qte>0?(a.qte-prev.qte)/prev.qte*100:0;
+      const cls=pct>2?'delta-up':pct<-2?'delta-down':'delta-flat';
+      const sign=pct>=0?'+':'';
+      deltaH=`<span class="prod-delta ${cls}">${sign}${pct.toFixed(0)}%</span>`;
+    }
+    return`<div class="prod-row">
       <span class="prod-rank">${i+1}</span>
       <div class="prod-name">
         <div>${a.article.substring(0,38)}</div>
@@ -477,13 +872,22 @@ function renderAll(){
       </div>
       <div class="prod-bar"><div class="prod-bar-f" style="width:${a.qte/mv*100}%;background:#4f8ef7"></div></div>
       <span class="prod-val" style="color:#4f8ef7">${f0(a.qte)}</span>
-      <span class="prod-px">${a.match?fE2(a.match.p):'—'}</span>
-    </div>`).join('');
+      ${deltaH||`<span class="prod-px">${a.match?fE2(a.match.p):'—'}</span>`}
+    </div>`;
+  }).join('');
 
   const tm=artImp.sort((a,b)=>b.marge-a.marge).slice(0,10);
   const mm=tm[0]?.marge||1;
-  document.getElementById('topMg').innerHTML=tm.map((a,i)=>`
-    <div class="prod-row">
+  document.getElementById('topMg').innerHTML=tm.map((a,i)=>{
+    const prev=artsCBy[a.article];
+    let deltaH='';
+    if(dataC&&prev){
+      const pct=prev.marge>0?(a.marge-prev.marge)/prev.marge*100:0;
+      const cls=pct>2?'delta-up':pct<-2?'delta-down':'delta-flat';
+      const sign=pct>=0?'+':'';
+      deltaH=`<span class="prod-delta ${cls}">${sign}${pct.toFixed(0)}%</span>`;
+    }
+    return`<div class="prod-row">
       <span class="prod-rank">${i+1}</span>
       <div class="prod-name">
         <div>${a.article.substring(0,38)}</div>
@@ -491,7 +895,9 @@ function renderAll(){
       </div>
       <div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div>
       <span class="prod-val" style="color:#10b981">${fE(a.marge)}</span>
-    </div>`).join('');
+      ${deltaH}
+    </div>`;
+  }).join('');
 
   renderReassort(matched);
 
@@ -507,11 +913,12 @@ function renderAll(){
   const fmg=fs.slice(0,8).sort((a,b)=>b.margePct-a.margePct);
   MC=new Chart(document.getElementById('mgC'),{type:'bar',data:{labels:fmg.map(f=>f.famille.substring(0,14)),datasets:[{data:fmg.map(f=>+f.margePct.toFixed(1)),backgroundColor:fmg.map(f=>f.margePct>45?'#10b981':f.margePct>25?'#4f8ef7':'#f59e0b'),borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:i=>i.raw+'%'}}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{size:9},maxRotation:35}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#64748b',font:{size:10},callback:v=>v+'%'}}}}});
 
-  if(AS==='all'&&Object.keys(AD).length>1){
+  if(AS==='all'&&data.stations.length>1){
     document.getElementById('stCard').style.display='block';
     document.getElementById('stCompare').innerHTML=['ola','total','vito'].map(s=>{
-      if(!AD[s])return'';
-      const d=AD[s].familles.filter(f=>!EXCLU.includes(f.famille.trim()));
+      const yd=YEARS[AY];
+      if(!yd[s])return'';
+      const d=(yd[s].familles||[]).filter(f=>!EXCLU.includes(f.famille.trim()));
       const ca=d.reduce((t,f)=>t+f.ca,0);const mg=d.reduce((t,f)=>t+f.marge,0);
       const col=s==='ola'?'#4f8ef7':s==='total'?'#10b981':'#f59e0b';
       return`<div class="st-card"><div class="st-card-name" style="color:${col}">${s.toUpperCase()}</div><div class="st-card-val" style="color:${col}">${fE(ca)}</div><div class="st-card-sub">CA HT</div><div style="margin-top:6px;font-family:var(--mono);font-size:14px;font-weight:700;color:#10b981">${fE(mg)}</div><div class="st-card-sub">${ca>0?(mg/ca*100).toFixed(1):0}% marge</div></div>`;
@@ -530,21 +937,12 @@ function renderReassort(matched){
   matched.forEach(a=>{
     const k=a.match.a+'|'+(a.match.f||'');
     if(!agg[k])agg[k]={ref:a.match,qte:0,ca:0,marge:0};
-    agg[k].qte+=a.qte;
-    agg[k].ca+=a.ca;
-    agg[k].marge+=a.marge;
+    agg[k].qte+=a.qte;agg[k].ca+=a.ca;agg[k].marge+=a.marge;
   });
   const rows=Object.values(agg).map(g=>{
-    const qteAnn=g.qte;
-    const qteRot=qteAnn/12*ROT;
-    const budget=qteRot*g.ref.p;
-    return{
-      ref:g.ref,qteAnn,qteRot:Math.ceil(qteRot),budget,
-      prixUnit:g.ref.p,pvTtc:g.ref.pv,ca:g.ca,marge:g.marge,
-      margePct:g.ca>0?(g.marge/g.ca*100):0
-    };
-  });
-  rows.sort((a,b)=>b.budget-a.budget);
+    const qteRot=g.qte/12*ROT;
+    return{ref:g.ref,qteAnn:g.qte,qteRot:Math.ceil(qteRot),budget:qteRot*g.ref.p,prixUnit:g.ref.p,pvTtc:g.ref.pv,ca:g.ca,marge:g.marge,margePct:g.ca>0?(g.marge/g.ca*100):0};
+  }).sort((a,b)=>b.budget-a.budget);
 
   const totalBudget=rows.reduce((s,r)=>s+r.budget,0);
   const totalQte=rows.reduce((s,r)=>s+r.qteRot,0);
@@ -565,52 +963,35 @@ function renderReassort(matched){
 
   document.getElementById('reassortTable').innerHTML=`
     <thead><tr>
-      <th style="width:30px">#</th>
-      <th>Produit (référentiel)</th>
-      <th>Fournisseur actuel</th>
-      <th class="num">Vendu/an</th>
-      <th class="num">Qté ${ROT}m</th>
-      <th class="num">Prix achat HT</th>
-      <th class="num">Budget HT</th>
-      <th class="num">PV TTC</th>
-      <th class="num">Marge %</th>
+      <th style="width:30px">#</th><th>Produit (référentiel)</th><th>Fournisseur actuel</th>
+      <th class="num">Vendu/an</th><th class="num">Qté ${ROT}m</th>
+      <th class="num">Prix achat HT</th><th class="num">Budget HT</th><th class="num">PV TTC</th><th class="num">Marge %</th>
     </tr></thead>
     <tbody>
-    ${rows.slice(0,80).map((r,i)=>`
-      <tr>
-        <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
-        <td><div class="reassort-prod">${r.ref.a}</div><div class="reassort-fmt">${r.ref.f||''}</div></td>
-        <td><div class="reassort-fourn">${r.ref.s||'—'}</div><div style="font-size:9px;color:var(--text3)">dernier achat ${r.ref.d||'—'}</div></td>
-        <td class="num">${f0(r.qteAnn)}</td>
-        <td class="num reassort-qty">${f0(r.qteRot)}</td>
-        <td class="num reassort-px">${fE2(r.prixUnit)}</td>
-        <td class="num reassort-budg">${fE(r.budget)}</td>
-        <td class="num" style="color:#94a3b8">${r.pvTtc?fE2(r.pvTtc):'—'}</td>
-        <td class="num" style="color:${r.margePct>40?'#10b981':r.margePct>20?'#f59e0b':'#94a3b8'}">${r.margePct.toFixed(1)}%</td>
-      </tr>`).join('')}
-    </tbody>
-  `;
-}
-
-function filterSt(st,btn){
-  AS=st;
-  document.querySelectorAll('.st-btn').forEach(b=>b.classList.remove('act'));
-  btn.classList.add('act');
-  renderAll();
-  const sv=document.getElementById('searchInput').value;
-  if(sv&&sv.trim().length>=2)searchProduct(sv);
+    ${rows.slice(0,80).map((r,i)=>`<tr>
+      <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
+      <td><div class="reassort-prod">${r.ref.a}</div><div class="reassort-fmt">${r.ref.f||''}</div></td>
+      <td><div class="reassort-fourn">${r.ref.s||'—'}</div><div style="font-size:9px;color:var(--text3)">dernier achat ${r.ref.d||'—'}</div></td>
+      <td class="num">${f0(r.qteAnn)}</td>
+      <td class="num reassort-qty">${f0(r.qteRot)}</td>
+      <td class="num reassort-px">${fE2(r.prixUnit)}</td>
+      <td class="num reassort-budg">${fE(r.budget)}</td>
+      <td class="num" style="color:#94a3b8">${r.pvTtc?fE2(r.pvTtc):'—'}</td>
+      <td class="num" style="color:${r.margePct>40?'#10b981':r.margePct>20?'#f59e0b':'#94a3b8'}">${r.margePct.toFixed(1)}%</td>
+    </tr>`).join('')}
+    </tbody>`;
 }
 
 function buildCatBtns(){
   const wrap=document.getElementById('catBtns');
   if(!wrap)return;
-  const data=getData();
+  const data=getYearData(AY);
+  if(!data){wrap.innerHTML='';return;}
   const fams=[...new Set((data.familles||[]).map(f=>f.famille.trim()))].filter(f=>f&&!EXCLU.includes(f)).sort();
   wrap.innerHTML='';
   fams.forEach(f=>{
     const btn=document.createElement('button');
-    btn.className='cat-btn';
-    btn.textContent=f;
+    btn.className='cat-btn';btn.textContent=f;
     btn.addEventListener('click',function(){selectCat(f,this);});
     wrap.appendChild(btn);
   });
@@ -621,45 +1002,26 @@ function selectCat(fam,btn){
   AC=fam;
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('cat-act'));
   btn.classList.add('cat-act');
-
-  const stationsToSearch=AS==='all'?Object.keys(AD):(AD[AS]?[AS]:[]);
+  const yd=YEARS[AY];if(!yd){clearCat();return;}
+  const stationsToSearch=AS==='all'?Object.keys(yd).filter(k=>k!=='_meta'):(yd[AS]?[AS]:[]);
   const artMerged={};
-
   stationsToSearch.forEach(st=>{
-    if(!AD[st])return;
-    if(AD[st].famArticles&&AD[st].famArticles[fam]){
-      AD[st].famArticles[fam].forEach(a=>{
-        if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0,match:a.match};
-        artMerged[a.article].qte+=a.qte;
-        artMerged[a.article].ca+=a.ca;
-        artMerged[a.article].marge+=a.marge;
-      });
-    }
-  });
-
-  let topArts=Object.values(artMerged);
-
-  if(topArts.length===0){
-    stationsToSearch.forEach(st=>{
-      if(!AD[st]||!AD[st].famArticles)return;
-      Object.keys(AD[st].famArticles).forEach(k=>{
-        if(k.trim().toUpperCase()===fam.trim().toUpperCase()){
-          AD[st].famArticles[k].forEach(a=>{
-            if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0,match:a.match};
-            artMerged[a.article].qte+=a.qte;
-            artMerged[a.article].ca+=a.ca;
-            artMerged[a.article].marge+=a.marge;
-          });
-        }
-      });
+    if(!yd[st]||!yd[st].famArticles)return;
+    Object.keys(yd[st].famArticles).forEach(k=>{
+      if(k.trim().toUpperCase()===fam.trim().toUpperCase()){
+        yd[st].famArticles[k].forEach(a=>{
+          if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0,match:a.match};
+          artMerged[a.article].qte+=a.qte;
+          artMerged[a.article].ca+=a.ca;
+          artMerged[a.article].marge+=a.marge;
+        });
+      }
     });
-    topArts=Object.values(artMerged);
-  }
-
+  });
+  let topArts=Object.values(artMerged);
   topArts.sort((a,b)=>b.qte-a.qte);
   const top10Vol=topArts.slice(0,10);
   const top10Mg=[...topArts].sort((a,b)=>b.marge-a.marge).slice(0,10);
-
   const mv=top10Vol[0]?.qte||1;
   const mm=top10Mg[0]?.marge||1;
 
@@ -677,20 +1039,18 @@ function selectCat(fam,btn){
   }).join(''):'<div style="color:var(--text3);font-size:12px;padding:1rem;text-align:center">Aucun article trouvé</div>';
 
   document.getElementById('catTopMg').innerHTML=top10Mg.length?top10Mg.map((a,i)=>`<div class="prod-row">
-      <span class="prod-rank">${i+1}</span>
-      <div class="prod-name">
-        <div>${a.article.substring(0,36)}</div>
-        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,22)} · ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}</div>
-      </div>
-      <div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div>
-      <span class="prod-val" style="color:#10b981">${fE(a.marge)}</span>
-    </div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:1rem;text-align:center">Aucun article trouvé</div>';
-
+    <span class="prod-rank">${i+1}</span>
+    <div class="prod-name">
+      <div>${a.article.substring(0,36)}</div>
+      <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,22)} · ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}</div>
+    </div>
+    <div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div>
+    <span class="prod-val" style="color:#10b981">${fE(a.marge)}</span>
+  </div>`).join(''):'<div style="color:var(--text3);font-size:12px;padding:1rem;text-align:center">Aucun article trouvé</div>';
   document.getElementById('catPanelTitle').textContent=`Top 10 — ${fam}`;
   document.getElementById('catPanel').classList.add('show');
   document.getElementById('catPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
-
 function clearCat(){
   AC=null;
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('cat-act'));
@@ -698,143 +1058,305 @@ function clearCat(){
 }
 
 function searchProduct(q){
-  const inp=document.getElementById('searchInput');
   const clr=document.getElementById('searchClear');
   const res=document.getElementById('searchResults');
   clr.style.display=q.length>0?'block':'none';
   if(q.trim().length<2){res.style.display='none';return;}
-
   const qUp=q.trim().toUpperCase();
   const matches=[];
   const stNames={ola:'OLA',total:'TOTAL',vito:'VITO'};
   const stCols={ola:'#4f8ef7',total:'#10b981',vito:'#f59e0b'};
-
-  const stationsToSearch=AS==='all'?Object.keys(AD):(AD[AS]?[AS]:[]);
-
+  const yd=YEARS[AY];if(!yd){res.style.display='none';return;}
+  const stationsToSearch=AS==='all'?Object.keys(yd).filter(k=>k!=='_meta'):(yd[AS]?[AS]:[]);
   stationsToSearch.forEach(st=>{
-    if(!AD[st])return;
-    (AD[st].articles||[]).forEach(a=>{
-      if(a.article.toUpperCase().includes(qUp)){
-        matches.push({...a,station:st});
-      }
-    });
+    if(!yd[st])return;
+    (yd[st].articles||[]).forEach(a=>{if(a.article.toUpperCase().includes(qUp))matches.push({...a,station:st});});
   });
-
   if(matches.length===0){
     res.style.display='block';
-    res.innerHTML=`<div class="search-results"><div class="sr-empty">Aucun produit trouvé pour "<strong>${q}</strong>"</div></div>`;
-    return;
+    res.innerHTML=`<div class="search-results"><div class="sr-empty">Aucun produit trouvé pour "<strong>${q}</strong>"</div></div>`;return;
   }
-
   const byArt={};
   matches.forEach(m=>{
     if(!byArt[m.article])byArt[m.article]={article:m.article,stations:{},totQte:0,totCA:0,totMg:0,match:m.match};
     byArt[m.article].stations[m.station]={qte:m.qte,ca:m.ca,marge:m.marge,margePct:m.margePct};
-    byArt[m.article].totQte+=m.qte;
-    byArt[m.article].totCA+=m.ca;
-    byArt[m.article].totMg+=m.marge;
+    byArt[m.article].totQte+=m.qte;byArt[m.article].totCA+=m.ca;byArt[m.article].totMg+=m.marge;
   });
-
   const arts=Object.values(byArt).sort((a,b)=>b.totQte-a.totQte);
-
-  function hl(str){
-    const idx=str.toUpperCase().indexOf(qUp);
-    if(idx<0)return str;
-    return str.substring(0,idx)+'<span class="highlight">'+str.substring(idx,idx+qUp.length)+'</span>'+str.substring(idx+qUp.length);
-  }
-
-  const allSts=AS==='all'?Object.keys(AD):[AS];
+  function hl(str){const idx=str.toUpperCase().indexOf(qUp);if(idx<0)return str;return str.substring(0,idx)+'<span class="highlight">'+str.substring(idx,idx+qUp.length)+'</span>'+str.substring(idx+qUp.length);}
+  const allSts=stationsToSearch;
   const hasManyStations=allSts.length>1;
-
   let html=`<div class="search-results">
-    <div class="sr-header">
-      <span>Produit${hasManyStations?' / Station':''}</span>
-      <span>Quantité</span>
-      <span>Prix achat</span>
-      <span>Qté ${ROT}m</span>
-      <span>CA HT</span>
-      <span>Marge €</span>
-    </div>`;
-
+    <div class="sr-header"><span>Produit${hasManyStations?' / Station':''}</span><span>Quantité</span><span>Prix achat</span><span>Qté ${ROT}m</span><span>CA HT</span><span>Marge €</span></div>`;
   arts.forEach(art=>{
     const stKeys=Object.keys(art.stations);
     const totMgPct=art.totCA>0?art.totMg/art.totCA*100:0;
-    const mgCol=totMgPct>45?'#10b981':totMgPct>25?'#4f8ef7':'#f59e0b';
     const px=art.match?fE2(art.match.p):'—';
     const fourn=art.match?art.match.s:'';
     const qteRot=art.match?Math.ceil(art.totQte/12*ROT):null;
-
     if(hasManyStations&&stKeys.length>1){
       html+=`<div class="sr-row" style="background:rgba(79,142,247,.06)">
         <span class="sr-name">${hl(art.article)}${fourn?`<span style="font-size:9px;color:var(--gold2);margin-left:6px;font-weight:600">📋 ${fourn.substring(0,22)}</span>`:''}<span style="font-size:10px;color:#94a3b8;margin-left:6px;font-weight:500">— toutes stations</span></span>
-        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span>
-        <span class="sr-val sr-val-px">${px}</span>
-        <span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span>
-        <span class="sr-val">${fE(art.totCA)}</span>
-        <span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
+        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span><span class="sr-val">${fE(art.totCA)}</span><span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
       </div>`;
       stKeys.forEach(st=>{
-        const s=art.stations[st];
-        const col=stCols[st]||'#94a3b8';
-        const qteRotSt=art.match?Math.ceil(s.qte/12*ROT):null;
-        html+=`<div class="sr-row">
-          <span class="sr-name" style="padding-left:16px;font-size:12px;color:#94a3b8">
-            <span style="color:${col};font-weight:700;font-size:10px;letter-spacing:.5px">${(stNames[st]||st).toUpperCase()}</span>
-          </span>
-          <span class="sr-val" style="color:${col}">${f0(s.qte)}</span>
-          <span class="sr-val sr-val-px">${px}</span>
-          <span class="sr-val sr-val-rot">${qteRotSt?f0(qteRotSt):'—'}</span>
-          <span class="sr-val">${fE(s.ca)}</span>
-          <span class="sr-val" style="color:#10b981">${fE(s.marge)}</span>
-        </div>`;
+        const s=art.stations[st];const col=stCols[st]||'#94a3b8';const qteRotSt=art.match?Math.ceil(s.qte/12*ROT):null;
+        html+=`<div class="sr-row"><span class="sr-name" style="padding-left:16px;font-size:12px;color:#94a3b8"><span style="color:${col};font-weight:700;font-size:10px;letter-spacing:.5px">${(stNames[st]||st).toUpperCase()}</span></span><span class="sr-val" style="color:${col}">${f0(s.qte)}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRotSt?f0(qteRotSt):'—'}</span><span class="sr-val">${fE(s.ca)}</span><span class="sr-val" style="color:#10b981">${fE(s.marge)}</span></div>`;
       });
     }else{
-      html+=`<div class="sr-row">
-        <span class="sr-name">${hl(art.article)}${fourn?`<div style="font-size:9px;color:var(--gold2);margin-top:2px;font-weight:600">📋 ${fourn}</div>`:''}</span>
-        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span>
-        <span class="sr-val sr-val-px">${px}</span>
-        <span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span>
-        <span class="sr-val">${fE(art.totCA)}</span>
-        <span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
-      </div>`;
+      html+=`<div class="sr-row"><span class="sr-name">${hl(art.article)}${fourn?`<div style="font-size:9px;color:var(--gold2);margin-top:2px;font-weight:600">📋 ${fourn}</div>`:''}</span><span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span><span class="sr-val">${fE(art.totCA)}</span><span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span></div>`;
     }
   });
-
   if(arts.length>1){
-    const tQ=arts.reduce((s,a)=>s+a.totQte,0);
-    const tC=arts.reduce((s,a)=>s+a.totCA,0);
-    const tM=arts.reduce((s,a)=>s+a.totMg,0);
+    const tQ=arts.reduce((s,a)=>s+a.totQte,0);const tC=arts.reduce((s,a)=>s+a.totCA,0);const tM=arts.reduce((s,a)=>s+a.totMg,0);
     const tBud=arts.reduce((s,a)=>s+(a.match?(a.totQte/12*ROT)*a.match.p:0),0);
-    html+=`<div class="sr-total">
-      <span style="font-size:12px;color:#4f8ef7">${arts.length} références · Budget ${ROT}m: ${fE(tBud)}</span>
-      <span class="sr-val" style="color:#4f8ef7">${f0(tQ)}</span>
-      <span class="sr-val">—</span>
-      <span class="sr-val sr-val-rot">${arts.filter(a=>a.match).reduce((s,a)=>s+Math.ceil(a.totQte/12*ROT),0)}</span>
-      <span class="sr-val">${fE(tC)}</span>
-      <span class="sr-val" style="color:#10b981">${fE(tM)}</span>
-    </div>`;
+    html+=`<div class="sr-total"><span style="font-size:12px;color:#4f8ef7">${arts.length} références · Budget ${ROT}m: ${fE(tBud)}</span><span class="sr-val" style="color:#4f8ef7">${f0(tQ)}</span><span class="sr-val">—</span><span class="sr-val sr-val-rot">${arts.filter(a=>a.match).reduce((s,a)=>s+Math.ceil(a.totQte/12*ROT),0)}</span><span class="sr-val">${fE(tC)}</span><span class="sr-val" style="color:#10b981">${fE(tM)}</span></div>`;
+  }
+  html+='</div>';res.innerHTML=html;res.style.display='block';
+}
+function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchClear').style.display='none';document.getElementById('searchResults').style.display='none';}
+
+// ============ PROFORMA ============
+async function handleProformaFile(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const parsed=parseProforma(raw,file.name);
+      PROFORMA=parsed;
+      await dbPut('proforma',{id:'current',data:PROFORMA});
+      document.getElementById('pfClearBtn').style.display='inline-block';
+      updatePersistBadge();
+      renderProforma();
+    }catch(err){alert('Erreur de lecture du proforma: '+err.message);console.error(err);}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function parseProforma(raw,fname){
+  // Auto-détection des colonnes : on cherche la ligne d'entête
+  let headerRow=-1;
+  let cDesc=-1,cQty=-1,cPx=-1,cRef=-1;
+  const headerPatterns={
+    desc:/d[eé]signation|description|article|libell|produit|item|name|nom/i,
+    qty:/qu?[aá]nt|qty|qte|nb|nombre|colisage/i,
+    px:/prix.*unit|p\.?u\.?|unit.*price|prix.*ht|montant.*unit|tarif/i,
+    ref:/r[eé]f[eé]rence|ref|sku|code|barcode|ean/i
+  };
+  for(let i=0;i<Math.min(20,raw.length);i++){
+    const row=raw[i];if(!row)continue;
+    let m={desc:-1,qty:-1,px:-1,ref:-1};
+    row.forEach((c,j)=>{
+      const s=String(c||'').trim();
+      if(!s)return;
+      if(m.desc<0&&headerPatterns.desc.test(s))m.desc=j;
+      if(m.qty<0&&headerPatterns.qty.test(s))m.qty=j;
+      if(m.px<0&&headerPatterns.px.test(s))m.px=j;
+      if(m.ref<0&&headerPatterns.ref.test(s))m.ref=j;
+    });
+    // Au moins description + (qté OU prix) trouvés
+    if(m.desc>=0&&(m.qty>=0||m.px>=0)){
+      headerRow=i;cDesc=m.desc;cQty=m.qty;cPx=m.px;cRef=m.ref;break;
+    }
+  }
+  const lines=[];let supplier=fname.replace(/\.(xlsx?|csv)$/i,'');
+  if(headerRow<0){
+    // Pas d'entête trouvé : tenter une détection heuristique
+    // Description = colonne avec le plus de strings longs
+    // Quantité = colonne avec des nombres entiers
+    // Prix = colonne avec des nombres décimaux
+    const colStats=[];
+    raw.slice(0,50).forEach(row=>{
+      (row||[]).forEach((c,j)=>{
+        if(!colStats[j])colStats[j]={str:0,int:0,dec:0};
+        const n=parseFloat(c);
+        if(!isNaN(n)){if(Number.isInteger(n)&&n>0&&n<10000)colStats[j].int++;if(!Number.isInteger(n)&&n>0&&n<1000)colStats[j].dec++;}
+        else if(typeof c==='string'&&c.trim().length>4)colStats[j].str++;
+      });
+    });
+    cDesc=colStats.findIndex(s=>s&&s.str>=3);
+    cQty=colStats.findIndex(s=>s&&s.int>=3);
+    cPx=colStats.findIndex(s=>s&&s.dec>=3);
+    headerRow=-1;
+    // ATTENTION cDesc==cQty si même colonne, on prend la première de chaque type différent
+    if(cDesc===cQty){const alt=colStats.findIndex((s,j)=>j!==cDesc&&s&&s.int>=3);if(alt>=0)cQty=alt;}
+    if(cDesc===cPx){const alt=colStats.findIndex((s,j)=>j!==cDesc&&s&&s.dec>=3);if(alt>=0)cPx=alt;}
+  }
+  // Parser les lignes
+  const startRow=headerRow>=0?headerRow+1:0;
+  raw.slice(startRow).forEach(row=>{
+    if(!row)return;
+    const desc=cDesc>=0?String(row[cDesc]||'').trim():'';
+    if(!desc||desc.length<3)return;
+    // Exclure les lignes de totaux
+    if(/total|sous.?total|net.?[aà].?payer|tva|h\.?t\.?$|t\.?t\.?c\.?$/i.test(desc))return;
+    const qty=cQty>=0?parseFloat(String(row[cQty]||'').replace(',','.'))||0:0;
+    const px=cPx>=0?parseFloat(String(row[cPx]||'').replace(',','.'))||0:0;
+    const ref=cRef>=0?String(row[cRef]||'').trim():'';
+    if(qty<=0&&px<=0)return;
+    // Matcher au référentiel via la description
+    const match=findMatch(desc);
+    lines.push({desc,qty,px,ref,match,total:qty*px});
+  });
+  return{
+    supplier,fname,
+    date:new Date().toISOString(),
+    lines,
+    detectedCols:{desc:cDesc,qty:cQty,px:cPx,ref:cRef,headerRow}
+  };
+}
+
+async function clearProforma(){
+  if(!confirm('Supprimer le proforma actuel ?'))return;
+  PROFORMA=null;
+  await dbDelete('proforma','current');
+  document.getElementById('pfClearBtn').style.display='none';
+  updatePersistBadge();
+  renderProforma();
+}
+
+function setPfRot(n,btn){
+  PF_ROT=n;
+  document.querySelectorAll('#tab-proforma .rot-btn').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  renderProforma();
+}
+function filterPfSt(st,btn){
+  PF_AS=st;
+  document.querySelectorAll('#tab-proforma .st-btn').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  renderProforma();
+}
+function selectPfYear(y){PF_AY=y;renderProforma();}
+
+function renderPfYearSel(){
+  const wrap=document.getElementById('pfYearSel');
+  const years=Object.keys(YEARS).map(Number).sort((a,b)=>b-a);
+  if(!PF_AY&&years.length>0)PF_AY=years[0];
+  wrap.innerHTML=years.map(y=>`<button class="yr-btn ${y===PF_AY?'act':''}" onclick="selectPfYear(${y})">${y}</button>`).join('');
+}
+
+function getPfSalesQty(){
+  // Retourner les ventes annuelles du produit matché (sur l'année PF_AY, stations PF_AS)
+  // Map: keyOfMatch(p) -> totalQte
+  const out={};
+  if(!PF_AY||!YEARS[PF_AY])return out;
+  const yd=YEARS[PF_AY];
+  const stKeys=PF_AS==='all'?Object.keys(yd).filter(k=>k!=='_meta'):(yd[PF_AS]?[PF_AS]:[]);
+  stKeys.forEach(st=>{
+    (yd[st].articles||[]).forEach(a=>{
+      if(!a.match)return;
+      const k=a.match.a+'|'+(a.match.f||'');
+      if(!out[k])out[k]=0;
+      out[k]+=a.qte;
+    });
+  });
+  return out;
+}
+
+function renderProforma(){
+  const empty=document.getElementById('pfEmpty');
+  const content=document.getElementById('pfContent');
+  if(!PROFORMA){
+    empty.style.display='block';content.style.display='none';return;
+  }
+  empty.style.display='none';content.style.display='block';
+
+  renderPfYearSel();
+  const noYear=!PF_AY||!YEARS[PF_AY];
+  const warn=document.getElementById('pfWarn');
+  if(noYear){
+    warn.innerHTML='<div class="imp-alert" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:#fbbf24">⚠️ <b>Aucune année de ventes sélectionnée.</b> Charge des ventes dans l\'onglet "Importer ventes" ou sélectionne une année ci-dessus pour calculer les écarts de stock.</div>';
+  }else{
+    warn.innerHTML='';
   }
 
-  html+='</div>';
-  res.innerHTML=html;
-  res.style.display='block';
-}
+  const salesByRef=getPfSalesQty();
+  const lines=PROFORMA.lines;
+  // Pour chaque ligne du proforma, calculer écart vs besoin
+  const enriched=lines.map(l=>{
+    let salesQtyAnnual=null,qteCible=null,gap=null,status='nomatch';
+    if(l.match){
+      const k=l.match.a+'|'+(l.match.f||'');
+      if(salesByRef[k]!==undefined){
+        salesQtyAnnual=salesByRef[k];
+        qteCible=Math.ceil(salesQtyAnnual/12*PF_ROT);
+        gap=l.qty-qteCible; // positif = trop, négatif = manque
+        if(Math.abs(gap)<=qteCible*0.05||(qteCible<=5&&Math.abs(gap)<=2))status='ok';
+        else if(gap<0)status='shortage';
+        else status='surplus';
+      }
+    }
+    return{...l,salesQtyAnnual,qteCible,gap,status};
+  });
 
-function clearSearch(){
-  document.getElementById('searchInput').value='';
-  document.getElementById('searchClear').style.display='none';
-  document.getElementById('searchResults').style.display='none';
-}
+  // KPIs
+  const totalLines=enriched.length;
+  const matchedLines=enriched.filter(l=>l.match).length;
+  const matchedWithSales=enriched.filter(l=>l.status!=='nomatch').length;
+  const totalAmount=enriched.reduce((s,l)=>s+l.total,0);
+  const totalQtyOrdered=enriched.reduce((s,l)=>s+l.qty,0);
+  // Lignes en manque / surplus
+  const shortages=enriched.filter(l=>l.status==='shortage');
+  const surplus=enriched.filter(l=>l.status==='surplus');
+  const totalShortageQty=shortages.reduce((s,l)=>s+Math.abs(l.gap),0);
+  const totalSurplusQty=surplus.reduce((s,l)=>s+l.gap,0);
+  const totalShortageVal=shortages.reduce((s,l)=>s+(Math.abs(l.gap)*l.px),0);
+  const totalSurplusVal=surplus.reduce((s,l)=>s+(l.gap*l.px),0);
 
-function resetDB(){
-  AD={};AS='all';PC=null;MC=null;ROT=3;
-  document.getElementById('rot3').classList.add('act');
-  document.getElementById('rotLabel').textContent='3 mois';
-  document.getElementById('dashboard').style.display='none';
-  document.getElementById('dropWrap').style.display='flex';
-  document.getElementById('filesLoaded').innerHTML='';
-  document.getElementById('analyzeBtn').classList.remove('show');
-  document.getElementById('fi').value='';clearSearch();clearCat();
+  document.getElementById('pfKpiGrid').innerHTML=`
+    <div class="kpi" style="animation-delay:.05s"><div class="kpi-ico">📦</div><div class="kpi-l">Lignes proforma</div><div class="kpi-v" style="color:var(--text)">${totalLines}</div><span class="kpi-delta dgold">${matchedLines} matchées (${totalLines>0?(matchedLines/totalLines*100).toFixed(0):0}%)</span></div>
+    <div class="kpi" style="animation-delay:.1s"><div class="kpi-ico">💰</div><div class="kpi-l">Montant total HT</div><div class="kpi-v" style="color:#4f8ef7">${fE(totalAmount)}</div><span class="kpi-delta db">${f0(totalQtyOrdered)} unités</span></div>
+    <div class="kpi" style="animation-delay:.15s"><div class="kpi-ico">${shortages.length>0?'⚠️':'✅'}</div><div class="kpi-l">Lignes en manque</div><div class="kpi-v" style="color:${shortages.length>0?'#ef4444':'#10b981'}">${shortages.length}</div><span class="kpi-delta ${shortages.length>0?'dred':'dg'}">${shortages.length>0?'+'+f0(totalShortageQty)+' u. à ajouter ('+fE(totalShortageVal)+')':'aucun manque'}</span></div>
+    <div class="kpi" style="animation-delay:.2s"><div class="kpi-ico">${surplus.length>0?'📈':'✅'}</div><div class="kpi-l">Lignes en surplus</div><div class="kpi-v" style="color:${surplus.length>0?'#f59e0b':'#10b981'}">${surplus.length}</div><span class="kpi-delta ${surplus.length>0?'dgold':'dg'}">${surplus.length>0?'−'+f0(totalSurplusQty)+' u. à retirer ('+fE(totalSurplusVal)+')':'aucun surplus'}</span></div>
+    <div class="kpi" style="animation-delay:.25s"><div class="kpi-ico">🎯</div><div class="kpi-l">Stock cible</div><div class="kpi-v" style="color:var(--gold2)">${PF_ROT} mois</div><span class="kpi-delta dgold">${PF_AY?'base '+PF_AY:'aucune année'} · ${PF_AS==='all'?'3 stations':PF_AS.toUpperCase()}</span></div>
+  `;
+
+  // Trier : d'abord les manques (plus gros), puis les surplus, puis les OK, puis les non-matchés
+  enriched.sort((a,b)=>{
+    const order={shortage:1,surplus:2,ok:3,nomatch:4};
+    if(order[a.status]!==order[b.status])return order[a.status]-order[b.status];
+    return Math.abs(b.gap||0)-Math.abs(a.gap||0);
+  });
+
+  document.getElementById('pfTable').innerHTML=`
+    <thead><tr>
+      <th style="width:30px">#</th>
+      <th>Ligne proforma</th>
+      <th>Matché référentiel</th>
+      <th class="num">Qté proforma</th>
+      <th class="num">Prix HT</th>
+      <th class="num">Total HT</th>
+      <th class="num">Vendu/an</th>
+      <th class="num">Cible ${PF_ROT}m</th>
+      <th class="num">Écart</th>
+      <th>Statut</th>
+    </tr></thead>
+    <tbody>
+    ${enriched.map((l,i)=>{
+      let statusBadge='';
+      if(l.status==='shortage')statusBadge='<span class="proforma-status ps-shortage">⚠️ Manque '+f0(Math.abs(l.gap))+'</span>';
+      else if(l.status==='surplus')statusBadge='<span class="proforma-status ps-surplus">📈 Surplus '+f0(l.gap)+'</span>';
+      else if(l.status==='ok')statusBadge='<span class="proforma-status ps-ok">✅ Conforme</span>';
+      else statusBadge='<span class="proforma-status ps-nomatch">— Non rapproché</span>';
+      const gapHtml=l.gap===null?'<span style="color:var(--text3)">—</span>':l.status==='shortage'?`<span class="gap-negative">${f0(l.gap)}</span>`:l.status==='surplus'?`<span class="gap-positive">+${f0(l.gap)}</span>`:`<span class="gap-ok">${l.gap>0?'+':''}${f0(l.gap)}</span>`;
+      return`<tr>
+        <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
+        <td><div class="proforma-prod">${l.desc.substring(0,55)}</div>${l.ref?`<div style="font-size:9px;color:var(--text3)">Réf: ${l.ref}</div>`:''}</td>
+        <td>${l.match?`<div style="font-size:11px;font-weight:700;color:var(--gold2)">${l.match.a}</div><div style="font-size:9px;color:var(--text3)">${l.match.f||''} · ${l.match.s||''}</div>`:'<span style="color:var(--text3);font-style:italic;font-size:11px">non matché</span>'}</td>
+        <td class="num" style="color:var(--text)">${f0(l.qty)}</td>
+        <td class="num reassort-px">${l.px>0?fE2(l.px):'—'}</td>
+        <td class="num" style="color:#4f8ef7">${fE(l.total)}</td>
+        <td class="num" style="color:#94a3b8">${l.salesQtyAnnual!==null?f0(l.salesQtyAnnual):'—'}</td>
+        <td class="num reassort-qty">${l.qteCible!==null?f0(l.qteCible):'—'}</td>
+        <td class="num">${gapHtml}</td>
+        <td>${statusBadge}</td>
+      </tr>`;
+    }).join('')}
+    </tbody>`;
 }
 </script>
 </body>
