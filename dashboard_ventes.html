@@ -182,8 +182,8 @@ input[type=file]{display:none}
 .search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 6px;border-radius:6px;transition:all .2s;display:none}
 .search-clear:hover{color:var(--text);background:var(--bg3)}
 .search-results{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.sr-header{display:grid;grid-template-columns:1.6fr repeat(5,auto);gap:8px;padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
-.sr-row{display:grid;grid-template-columns:1.6fr repeat(5,auto);gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s}
+.sr-header{display:grid;grid-template-columns:1.6fr repeat(6,auto);gap:8px;padding:10px 14px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3)}
+.sr-row{display:grid;grid-template-columns:1.6fr repeat(6,auto);gap:8px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center;transition:background .15s}
 .sr-row:last-child{border-bottom:none}
 .sr-row:hover{background:var(--bg3)}
 .sr-name{font-size:13px;font-weight:600}
@@ -191,7 +191,7 @@ input[type=file]{display:none}
 .sr-val-px{color:var(--gold2)}
 .sr-val-rot{color:#a78bfa;font-weight:700}
 .sr-empty{padding:2rem;text-align:center;color:var(--text3);font-size:13px;font-weight:500}
-.sr-total{display:grid;grid-template-columns:1.6fr repeat(5,auto);gap:8px;padding:10px 14px;background:rgba(79,142,247,.08);border-top:1px solid rgba(79,142,247,.2);font-weight:700}
+.sr-total{display:grid;grid-template-columns:1.6fr repeat(6,auto);gap:8px;padding:10px 14px;background:rgba(79,142,247,.08);border-top:1px solid rgba(79,142,247,.2);font-weight:700}
 .highlight{background:rgba(79,142,247,.25);border-radius:3px;padding:0 2px}
 .delta-up{color:#10b981;background:rgba(16,185,129,.12)}
 .delta-down{color:#ef4444;background:rgba(239,68,68,.12)}
@@ -311,7 +311,7 @@ input[type=file]{display:none}
 
     <div class="card">
       <div class="card-title ct-gold">📦 Plan de réassort <span id="rotLabel">3 mois</span> — articles matchés au référentiel</div>
-      <div class="imp-alert gold-alert">💡 Pour chaque article vendu identifié dans <b>PRIX D'ACHATS 2026</b> : quantité à commander = ventes annuelles ÷ 12 × rotation. Budget = quantité × prix d'achat actuel.</div>
+      <div class="imp-alert gold-alert">💡 Pour chaque article vendu identifié dans <b>PRIX D'ACHATS 2026</b> : quantité à commander = ventes annuelles ÷ 12 × rotation. Budget = quantité × prix d'achat actuel. La colonne <b style="color:#a78bfa">PA moyen</b> = Revient HT ÷ Qté vendue (prix réel payé sur l'année), comparé au prix d'achat du référentiel.</div>
       <div class="summary-strip" id="reassortSummary"></div>
       <div style="overflow-x:auto;max-height:600px;overflow-y:auto"><table class="reassort-table" id="reassortTable"></table></div>
     </div>
@@ -430,7 +430,7 @@ input[type=file]{display:none}
       <div class="kpi-grid" id="pfKpiGrid"></div>
       <div class="card">
         <div class="card-title ct-p">📊 Analyse ligne par ligne</div>
-        <div class="imp-alert purple-alert">💡 Pour chaque ligne du proforma matchée à un produit vendu : <b>Écart = Quantité proforma − Quantité nécessaire pour atteindre le stock cible</b>. Si négatif → il te manque ces quantités. Si positif → tu prends trop.</div>
+        <div class="imp-alert purple-alert">💡 Pour chaque ligne du proforma matchée à un produit vendu : <b>Écart = Quantité proforma − Quantité nécessaire pour atteindre le stock cible</b>. Si négatif → il te manque ces quantités. Si positif → tu prends trop. La colonne <b style="color:#a78bfa">PA moyen</b> = Revient HT ÷ Quantité vendue sur l'année — permet de comparer le prix proforma à ton coût d'achat réel actuel.</div>
         <div style="overflow-x:auto;max-height:700px;overflow-y:auto"><table class="proforma-table" id="pfTable"></table></div>
       </div>
     </div>
@@ -853,17 +853,24 @@ function getYearData(year){
         mf[r.famille].qte+=r.qte;mf[r.famille].revient+=r.revient;mf[r.famille].ca+=r.ca;mf[r.famille].marge+=r.marge;
       });
       (dd.articles||[]).forEach(r=>{
-        if(!ma[r.article])ma[r.article]={article:r.article,qte:0,ca:0,marge:0,match:r.match};
-        ma[r.article].qte+=r.qte;ma[r.article].ca+=r.ca;ma[r.article].marge+=r.marge;
+        if(!ma[r.article])ma[r.article]={article:r.article,qte:0,revient:0,ca:0,marge:0,match:r.match};
+        ma[r.article].qte+=r.qte;ma[r.article].revient+=(r.revient||0);ma[r.article].ca+=r.ca;ma[r.article].marge+=r.marge;
       });
     });
     return{
-      familles:Object.values(mf).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0})),
-      articles:Object.values(ma).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0})),
+      familles:Object.values(mf).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0,paMoy:r.qte>0?r.revient/r.qte:0})),
+      articles:Object.values(ma).map(r=>({...r,margePct:r.ca>0?r.marge/r.ca*100:0,paMoy:r.qte>0?r.revient/r.qte:0})),
       stations:stKeys
     };
   }
-  return d[AS]?{...d[AS],stations:[AS]}:{familles:[],articles:[],stations:[]};
+  if(!d[AS])return{familles:[],articles:[],stations:[]};
+  const dd=d[AS];
+  return{
+    familles:(dd.familles||[]).map(r=>({...r,paMoy:r.qte>0?(r.revient||0)/r.qte:0})),
+    articles:(dd.articles||[]).map(r=>({...r,paMoy:r.qte>0?(r.revient||0)/r.qte:0})),
+    famArticles:dd.famArticles,
+    stations:[AS]
+  };
 }
 
 function renderYearSel(){
@@ -982,7 +989,7 @@ function renderAll(){
       <span class="prod-rank">${i+1}</span>
       <div class="prod-name">
         <div>${a.article.substring(0,38)}</div>
-        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,28)}`:'<span class="no-m">non matché</span>'}</div>
+        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,22)}`:'<span class="no-m">non matché</span>'}${a.paMoy>0?` <span style="color:#a78bfa">· PA moy ${fE2(a.paMoy)}</span>`:''}</div>
       </div>
       <div class="prod-bar"><div class="prod-bar-f" style="width:${a.qte/mv*100}%;background:#4f8ef7"></div></div>
       <span class="prod-val" style="color:#4f8ef7">${f0(a.qte)}</span>
@@ -1005,7 +1012,7 @@ function renderAll(){
       <span class="prod-rank">${i+1}</span>
       <div class="prod-name">
         <div>${a.article.substring(0,38)}</div>
-        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,22)} · ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}</div>
+        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,18)} · ref ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}${a.paMoy>0?` <span style="color:#a78bfa">· PA moy ${fE2(a.paMoy)}</span>`:''}</div>
       </div>
       <div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div>
       <span class="prod-val" style="color:#10b981">${fE(a.marge)}</span>
@@ -1051,12 +1058,16 @@ function renderReassort(matched){
   matched.forEach(a=>{
     // Clé par produit + format détecté de la vente (fusion sûre)
     const k=a.match._aggKey||(a.match.a+'|'+(a.match.f||''));
-    if(!agg[k])agg[k]={ref:a.match,qte:0,ca:0,marge:0};
-    agg[k].qte+=a.qte;agg[k].ca+=a.ca;agg[k].marge+=a.marge;
+    if(!agg[k])agg[k]={ref:a.match,qte:0,revient:0,ca:0,marge:0};
+    agg[k].qte+=a.qte;
+    agg[k].revient+=(a.revient||0);
+    agg[k].ca+=a.ca;
+    agg[k].marge+=a.marge;
   });
   const rows=Object.values(agg).map(g=>{
     const qteRot=g.qte/12*ROT;
-    return{ref:g.ref,qteAnn:g.qte,qteRot:Math.ceil(qteRot),budget:qteRot*g.ref.p,prixUnit:g.ref.p,pvTtc:g.ref.pv,ca:g.ca,marge:g.marge,margePct:g.ca>0?(g.marge/g.ca*100):0};
+    const paMoy=g.qte>0?g.revient/g.qte:0; // Prix achat moyen réel sur ventes
+    return{ref:g.ref,qteAnn:g.qte,qteRot:Math.ceil(qteRot),budget:qteRot*g.ref.p,prixUnit:g.ref.p,paMoy,pvTtc:g.ref.pv,ca:g.ca,marge:g.marge,margePct:g.ca>0?(g.marge/g.ca*100):0};
   }).sort((a,b)=>b.budget-a.budget);
 
   const totalBudget=rows.reduce((s,r)=>s+r.budget,0);
@@ -1080,20 +1091,34 @@ function renderReassort(matched){
     <thead><tr>
       <th style="width:30px">#</th><th>Produit (référentiel)</th><th>Fournisseur actuel</th>
       <th class="num">Vendu/an</th><th class="num">Qté ${ROT}m</th>
-      <th class="num">Prix achat HT</th><th class="num">Budget HT</th><th class="num">PV TTC</th><th class="num">Marge %</th>
+      <th class="num">PA moyen<br><span style="font-weight:500;text-transform:none;font-size:9px;color:var(--text3)">revient/qté</span></th>
+      <th class="num">Prix achat HT<br><span style="font-weight:500;text-transform:none;font-size:9px;color:var(--text3)">référentiel</span></th>
+      <th class="num">Écart</th>
+      <th class="num">Budget HT</th><th class="num">PV TTC</th><th class="num">Marge %</th>
     </tr></thead>
     <tbody>
-    ${rows.slice(0,80).map((r,i)=>`<tr>
+    ${rows.slice(0,80).map((r,i)=>{
+      let ecartHtml='<span style="color:var(--text3)">—</span>';
+      if(r.paMoy>0&&r.prixUnit>0){
+        const ecart=r.prixUnit-r.paMoy;
+        const ecartPct=(ecart/r.paMoy)*100;
+        const cls=ecartPct>5?'delta-down':ecartPct<-5?'delta-up':'delta-flat';
+        const sign=ecart>=0?'+':'';
+        ecartHtml=`<span class="prod-delta ${cls}">${sign}${ecartPct.toFixed(0)}%</span>`;
+      }
+      return`<tr>
       <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
       <td><div class="reassort-prod">${r.ref.a}</div><div class="reassort-fmt">${r.ref._fmtLabel||r.ref.f||''}</div></td>
       <td><div class="reassort-fourn">${r.ref.s||'—'}</div><div style="font-size:9px;color:var(--text3)">dernier achat ${r.ref.d||'—'}</div></td>
       <td class="num">${f0(r.qteAnn)}</td>
       <td class="num reassort-qty">${f0(r.qteRot)}</td>
+      <td class="num" style="color:#a78bfa;font-weight:700">${r.paMoy>0?fE2(r.paMoy):'—'}</td>
       <td class="num reassort-px">${fE2(r.prixUnit)}</td>
+      <td class="num">${ecartHtml}</td>
       <td class="num reassort-budg">${fE(r.budget)}</td>
       <td class="num" style="color:#94a3b8">${r.pvTtc?fE2(r.pvTtc):'—'}</td>
       <td class="num" style="color:${r.margePct>40?'#10b981':r.margePct>20?'#f59e0b':'#94a3b8'}">${r.margePct.toFixed(1)}%</td>
-    </tr>`).join('')}
+    </tr>`;}).join('')}
     </tbody>`;
 }
 
@@ -1125,15 +1150,16 @@ function selectCat(fam,btn){
     Object.keys(yd[st].famArticles).forEach(k=>{
       if(k.trim().toUpperCase()===fam.trim().toUpperCase()){
         yd[st].famArticles[k].forEach(a=>{
-          if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,ca:0,marge:0,match:a.match};
+          if(!artMerged[a.article])artMerged[a.article]={article:a.article,qte:0,revient:0,ca:0,marge:0,match:a.match};
           artMerged[a.article].qte+=a.qte;
+          artMerged[a.article].revient+=(a.revient||0);
           artMerged[a.article].ca+=a.ca;
           artMerged[a.article].marge+=a.marge;
         });
       }
     });
   });
-  let topArts=Object.values(artMerged);
+  let topArts=Object.values(artMerged).map(a=>({...a,paMoy:a.qte>0?a.revient/a.qte:0}));
   topArts.sort((a,b)=>b.qte-a.qte);
   const top10Vol=topArts.slice(0,10);
   const top10Mg=[...topArts].sort((a,b)=>b.marge-a.marge).slice(0,10);
@@ -1146,7 +1172,7 @@ function selectCat(fam,btn){
       <span class="prod-rank">${i+1}</span>
       <div class="prod-name">
         <div>${a.article.substring(0,36)}</div>
-        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,18)} · ${fE2(a.match.p)} · <span style="color:#a78bfa">${qteRot}u/${ROT}m</span>`:'<span class="no-m">non matché</span>'}</div>
+        <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,16)} · ref ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}${a.paMoy>0?` <span style="color:#a78bfa">· PA moy ${fE2(a.paMoy)}</span>`:''}${qteRot?` <span style="color:#a78bfa">· ${qteRot}u/${ROT}m</span>`:''}</div>
       </div>
       <div class="prod-bar"><div class="prod-bar-f" style="width:${a.qte/mv*100}%;background:#a78bfa"></div></div>
       <span class="prod-val" style="color:#a78bfa">${f0(a.qte)}</span>
@@ -1157,7 +1183,7 @@ function selectCat(fam,btn){
     <span class="prod-rank">${i+1}</span>
     <div class="prod-name">
       <div>${a.article.substring(0,36)}</div>
-      <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,22)} · ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}</div>
+      <div class="prod-name-sub">${a.match?`📋 ${a.match.s.substring(0,18)} · ref ${fE2(a.match.p)}`:'<span class="no-m">non matché</span>'}${a.paMoy>0?` <span style="color:#a78bfa">· PA moy ${fE2(a.paMoy)}</span>`:''}</div>
     </div>
     <div class="prod-bar"><div class="prod-bar-f" style="width:${a.marge/mm*100}%;background:#10b981"></div></div>
     <span class="prod-val" style="color:#10b981">${fE(a.marge)}</span>
@@ -1193,39 +1219,43 @@ function searchProduct(q){
   }
   const byArt={};
   matches.forEach(m=>{
-    if(!byArt[m.article])byArt[m.article]={article:m.article,stations:{},totQte:0,totCA:0,totMg:0,match:m.match};
-    byArt[m.article].stations[m.station]={qte:m.qte,ca:m.ca,marge:m.marge,margePct:m.margePct};
-    byArt[m.article].totQte+=m.qte;byArt[m.article].totCA+=m.ca;byArt[m.article].totMg+=m.marge;
+    if(!byArt[m.article])byArt[m.article]={article:m.article,stations:{},totQte:0,totRev:0,totCA:0,totMg:0,match:m.match};
+    byArt[m.article].stations[m.station]={qte:m.qte,revient:(m.revient||0),ca:m.ca,marge:m.marge,margePct:m.margePct,paMoy:m.qte>0?(m.revient||0)/m.qte:0};
+    byArt[m.article].totQte+=m.qte;byArt[m.article].totRev+=(m.revient||0);byArt[m.article].totCA+=m.ca;byArt[m.article].totMg+=m.marge;
   });
-  const arts=Object.values(byArt).sort((a,b)=>b.totQte-a.totQte);
+  const arts=Object.values(byArt).map(a=>({...a,paMoy:a.totQte>0?a.totRev/a.totQte:0})).sort((a,b)=>b.totQte-a.totQte);
   function hl(str){const idx=str.toUpperCase().indexOf(qUp);if(idx<0)return str;return str.substring(0,idx)+'<span class="highlight">'+str.substring(idx,idx+qUp.length)+'</span>'+str.substring(idx+qUp.length);}
   const allSts=stationsToSearch;
   const hasManyStations=allSts.length>1;
   let html=`<div class="search-results">
-    <div class="sr-header"><span>Produit${hasManyStations?' / Station':''}</span><span>Quantité</span><span>Prix achat</span><span>Qté ${ROT}m</span><span>CA HT</span><span>Marge €</span></div>`;
+    <div class="sr-header"><span>Produit${hasManyStations?' / Station':''}</span><span>Quantité</span><span>PA moyen</span><span>PA réf</span><span>Qté ${ROT}m</span><span>CA HT</span><span>Marge €</span></div>`;
   arts.forEach(art=>{
     const stKeys=Object.keys(art.stations);
     const totMgPct=art.totCA>0?art.totMg/art.totCA*100:0;
     const px=art.match?fE2(art.match.p):'—';
+    const paMoy=art.paMoy>0?fE2(art.paMoy):'—';
     const fourn=art.match?art.match.s:'';
     const qteRot=art.match?Math.ceil(art.totQte/12*ROT):null;
     if(hasManyStations&&stKeys.length>1){
       html+=`<div class="sr-row" style="background:rgba(79,142,247,.06)">
         <span class="sr-name">${hl(art.article)}${fourn?`<span style="font-size:9px;color:var(--gold2);margin-left:6px;font-weight:600">📋 ${fourn.substring(0,22)}</span>`:''}<span style="font-size:10px;color:#94a3b8;margin-left:6px;font-weight:500">— toutes stations</span></span>
-        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span><span class="sr-val">${fE(art.totCA)}</span><span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
+        <span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span><span class="sr-val" style="color:#a78bfa">${paMoy}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span><span class="sr-val">${fE(art.totCA)}</span><span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span>
       </div>`;
       stKeys.forEach(st=>{
         const s=art.stations[st];const col=stCols[st]||'#94a3b8';const qteRotSt=art.match?Math.ceil(s.qte/12*ROT):null;
-        html+=`<div class="sr-row"><span class="sr-name" style="padding-left:16px;font-size:12px;color:#94a3b8"><span style="color:${col};font-weight:700;font-size:10px;letter-spacing:.5px">${(stNames[st]||st).toUpperCase()}</span></span><span class="sr-val" style="color:${col}">${f0(s.qte)}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRotSt?f0(qteRotSt):'—'}</span><span class="sr-val">${fE(s.ca)}</span><span class="sr-val" style="color:#10b981">${fE(s.marge)}</span></div>`;
+        const paMoySt=s.paMoy>0?fE2(s.paMoy):'—';
+        html+=`<div class="sr-row"><span class="sr-name" style="padding-left:16px;font-size:12px;color:#94a3b8"><span style="color:${col};font-weight:700;font-size:10px;letter-spacing:.5px">${(stNames[st]||st).toUpperCase()}</span></span><span class="sr-val" style="color:${col}">${f0(s.qte)}</span><span class="sr-val" style="color:#a78bfa">${paMoySt}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRotSt?f0(qteRotSt):'—'}</span><span class="sr-val">${fE(s.ca)}</span><span class="sr-val" style="color:#10b981">${fE(s.marge)}</span></div>`;
       });
     }else{
-      html+=`<div class="sr-row"><span class="sr-name">${hl(art.article)}${fourn?`<div style="font-size:9px;color:var(--gold2);margin-top:2px;font-weight:600">📋 ${fourn}</div>`:''}</span><span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span><span class="sr-val">${fE(art.totCA)}</span><span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span></div>`;
+      html+=`<div class="sr-row"><span class="sr-name">${hl(art.article)}${fourn?`<div style="font-size:9px;color:var(--gold2);margin-top:2px;font-weight:600">📋 ${fourn}</div>`:''}</span><span class="sr-val" style="color:#4f8ef7">${f0(art.totQte)}</span><span class="sr-val" style="color:#a78bfa">${paMoy}</span><span class="sr-val sr-val-px">${px}</span><span class="sr-val sr-val-rot">${qteRot?f0(qteRot):'—'}</span><span class="sr-val">${fE(art.totCA)}</span><span class="sr-val" style="color:#10b981">${fE(art.totMg)}</span></div>`;
     }
   });
   if(arts.length>1){
     const tQ=arts.reduce((s,a)=>s+a.totQte,0);const tC=arts.reduce((s,a)=>s+a.totCA,0);const tM=arts.reduce((s,a)=>s+a.totMg,0);
+    const tRev=arts.reduce((s,a)=>s+a.totRev,0);
+    const paMoyG=tQ>0?fE2(tRev/tQ):'—';
     const tBud=arts.reduce((s,a)=>s+(a.match?(a.totQte/12*ROT)*a.match.p:0),0);
-    html+=`<div class="sr-total"><span style="font-size:12px;color:#4f8ef7">${arts.length} références · Budget ${ROT}m: ${fE(tBud)}</span><span class="sr-val" style="color:#4f8ef7">${f0(tQ)}</span><span class="sr-val">—</span><span class="sr-val sr-val-rot">${arts.filter(a=>a.match).reduce((s,a)=>s+Math.ceil(a.totQte/12*ROT),0)}</span><span class="sr-val">${fE(tC)}</span><span class="sr-val" style="color:#10b981">${fE(tM)}</span></div>`;
+    html+=`<div class="sr-total"><span style="font-size:12px;color:#4f8ef7">${arts.length} références · Budget ${ROT}m: ${fE(tBud)}</span><span class="sr-val" style="color:#4f8ef7">${f0(tQ)}</span><span class="sr-val" style="color:#a78bfa">${paMoyG}</span><span class="sr-val">—</span><span class="sr-val sr-val-rot">${arts.filter(a=>a.match).reduce((s,a)=>s+Math.ceil(a.totQte/12*ROT),0)}</span><span class="sr-val">${fE(tC)}</span><span class="sr-val" style="color:#10b981">${fE(tM)}</span></div>`;
   }
   html+='</div>';res.innerHTML=html;res.style.display='block';
 }
@@ -1355,8 +1385,7 @@ function renderPfYearSel(){
 }
 
 function getPfSalesQty(){
-  // Retourne les ventes annuelles agrégées par _aggKey (nom produit + format détecté)
-  // Permet de fusionner toutes les variantes vente d'un même produit/format
+  // Retourne les ventes annuelles agrégées par _aggKey + revient cumulé pour PA moyen
   const out={};
   if(!PF_AY||!YEARS[PF_AY])return out;
   const yd=YEARS[PF_AY];
@@ -1365,8 +1394,9 @@ function getPfSalesQty(){
     (yd[st].articles||[]).forEach(a=>{
       if(!a.match)return;
       const k=a.match._aggKey||(a.match.a+'|'+(a.match.f||''));
-      if(!out[k])out[k]=0;
-      out[k]+=a.qte;
+      if(!out[k])out[k]={qte:0,revient:0};
+      out[k].qte+=a.qte;
+      out[k].revient+=(a.revient||0);
     });
   });
   return out;
@@ -1393,11 +1423,12 @@ function renderProforma(){
   const lines=PROFORMA.lines;
   // Pour chaque ligne du proforma, calculer écart vs besoin
   const enriched=lines.map(l=>{
-    let salesQtyAnnual=null,qteCible=null,gap=null,status='nomatch';
+    let salesQtyAnnual=null,qteCible=null,gap=null,status='nomatch',paMoy=null;
     if(l.match){
       const k=l.match._aggKey||(l.match.a+'|'+(l.match.f||''));
       if(salesByRef[k]!==undefined){
-        salesQtyAnnual=salesByRef[k];
+        salesQtyAnnual=salesByRef[k].qte;
+        paMoy=salesByRef[k].qte>0?salesByRef[k].revient/salesByRef[k].qte:0;
         qteCible=Math.ceil(salesQtyAnnual/12*PF_ROT);
         gap=l.qty-qteCible; // positif = trop, négatif = manque
         if(Math.abs(gap)<=qteCible*0.05||(qteCible<=5&&Math.abs(gap)<=2))status='ok';
@@ -1405,7 +1436,7 @@ function renderProforma(){
         else status='surplus';
       }
     }
-    return{...l,salesQtyAnnual,qteCible,gap,status};
+    return{...l,salesQtyAnnual,qteCible,gap,status,paMoy};
   });
 
   // KPIs
@@ -1445,7 +1476,8 @@ function renderProforma(){
       <th>Ligne proforma</th>
       <th>Matché référentiel</th>
       <th class="num">Qté proforma</th>
-      <th class="num">Prix HT</th>
+      <th class="num">Prix HT<br><span style="font-weight:500;text-transform:none;font-size:9px;color:var(--text3)">proforma</span></th>
+      <th class="num">PA moyen<br><span style="font-weight:500;text-transform:none;font-size:9px;color:var(--text3)">${PF_AY||'ventes'}</span></th>
       <th class="num">Total HT</th>
       <th class="num">Vendu/an</th>
       <th class="num">Cible ${PF_ROT}m</th>
@@ -1461,12 +1493,22 @@ function renderProforma(){
       else if(l.status==='ok')statusBadge='<span class="proforma-status ps-ok">✅ Conforme</span>';
       else statusBadge='<span class="proforma-status ps-nomatch">— Non rapproché</span>';
       const gapHtml=l.gap===null?'<span style="color:var(--text3)">—</span>':l.status==='shortage'?`<span class="gap-negative">${f0(l.gap)}</span>`:l.status==='surplus'?`<span class="gap-positive">+${f0(l.gap)}</span>`:`<span class="gap-ok">${l.gap>0?'+':''}${f0(l.gap)}</span>`;
+      // Comparer prix proforma vs PA moyen
+      let prixCmp='';
+      if(l.paMoy&&l.paMoy>0&&l.px>0){
+        const ecart=l.px-l.paMoy;
+        const ecartPct=(ecart/l.paMoy)*100;
+        const cls=ecartPct<-3?'delta-up':ecartPct>3?'delta-down':'delta-flat';
+        const sign=ecart>=0?'+':'';
+        prixCmp=`<div style="font-size:9px;margin-top:2px"><span class="prod-delta ${cls}">${sign}${ecartPct.toFixed(0)}% vs PA moy</span></div>`;
+      }
       return`<tr>
         <td style="font-family:var(--mono);color:var(--text3);font-size:10px">${i+1}</td>
         <td><div class="proforma-prod">${l.desc.substring(0,55)}${l.manual?' <span style="font-size:9px;color:#a78bfa;font-weight:700">📝</span>':''}</div>${l.ref?`<div style="font-size:9px;color:var(--text3)">Réf: ${l.ref}</div>`:''}</td>
         <td>${l.match?`<div style="font-size:11px;font-weight:700;color:var(--gold2)">${l.match.a}</div><div style="font-size:9px;color:var(--text3)">${l.match._fmtLabel||l.match.f||''} · ${l.match.s||''}</div>`:'<span style="color:var(--text3);font-style:italic;font-size:11px">non matché</span>'}</td>
         <td class="num" style="color:var(--text)">${f0(l.qty)}</td>
-        <td class="num reassort-px">${l.px>0?fE2(l.px):'—'}</td>
+        <td class="num"><div class="reassort-px">${l.px>0?fE2(l.px):'—'}</div>${prixCmp}</td>
+        <td class="num" style="color:#a78bfa;font-weight:700">${l.paMoy&&l.paMoy>0?fE2(l.paMoy):'—'}</td>
         <td class="num" style="color:#4f8ef7">${fE(l.total)}</td>
         <td class="num" style="color:#94a3b8">${l.salesQtyAnnual!==null?f0(l.salesQtyAnnual):'—'}</td>
         <td class="num reassort-qty">${l.qteCible!==null?f0(l.qteCible):'—'}</td>
@@ -1539,8 +1581,20 @@ function pfManualSelect(idx){
   PF_MANUAL_SELECTED=p;
   document.getElementById('pfManualSearch').value=p.a+(p.f?' · '+p.f:'');
   sug.style.display='none';
+  // Calculer le PA moyen sur les ventes pour ce produit
+  const refFmt=extractFormat((p.a||'')+' '+(p.f||''));
+  const aggKey=p.a+'|'+(refFmt.vol||0)+'|'+(refFmt.cont||'');
+  const salesByRef=getPfSalesQty();
+  const s=salesByRef[aggKey];
+  let paMoyHtml='';
+  let qteAnnHtml='';
+  if(s&&s.qte>0){
+    const paMoy=s.revient/s.qte;
+    paMoyHtml=` · PA moy sur ventes : <b style="color:#a78bfa">${fE2(paMoy)}</b>`;
+    qteAnnHtml=` · Vendu/an : <b style="color:#4f8ef7">${f0(s.qte)} u.</b>`;
+  }
   const sel=document.getElementById('pfManualSelected');
-  sel.innerHTML=`✅ <b>${p.a}</b> · ${p.f||'(sans format)'} · Fournisseur actuel : <b style="color:var(--gold2)">${p.s||'—'}</b> · Prix réf : <b style="color:var(--gold2)">${fE2(p.p)}</b>`;
+  sel.innerHTML=`✅ <b>${p.a}</b> · ${p.f||'(sans format)'} · Fournisseur actuel : <b style="color:var(--gold2)">${p.s||'—'}</b> · Prix réf : <b style="color:var(--gold2)">${fE2(p.p)}</b>${paMoyHtml}${qteAnnHtml}`;
   sel.style.display='block';
   // Pré-remplir prix si vide
   const px=document.getElementById('pfManualPx');
