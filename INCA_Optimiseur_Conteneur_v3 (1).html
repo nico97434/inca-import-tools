@@ -194,10 +194,10 @@ td{padding:8px 9px;vertical-align:middle}
 
 <div class="cbar" id="cbarVis" style="display:none">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-    <div style="font-size:12px;font-weight:700">Remplissage conteneur 40' HC</div>
+    <div style="font-size:12px;font-weight:700">Remplissage conteneur 40' HC <span style="font-weight:500;color:var(--text3);font-size:10px">— contrainte la + saturée (palettes ou unités)</span></div>
     <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue)" id="cPct">0%</div>
   </div>
-  <div class="cbar-track"><div class="cbar-fill" id="cFill" style="width:0%"></div><div class="cbar-lbl" id="cLbl">0 / 34 560 unités</div></div>
+  <div class="cbar-track"><div class="cbar-fill" id="cFill" style="width:0%"></div><div class="cbar-lbl" id="cLbl">0 / 25 palettes</div></div>
   <div style="display:flex;gap:1rem;font-size:9px;color:var(--text3);font-weight:600;margin-top:3px">
     <span>🟢 &lt;80% optimal</span><span>🟡 80–95% bien chargé</span><span>🔴 &gt;95% plein</span>
   </div>
@@ -241,7 +241,8 @@ td{padding:8px 9px;vertical-align:middle}
     <div class="field"><label>TVA import</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_tva" value="2.1" step="0.1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
     <div class="field"><label>Fret 40'</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_fret" value="3850" oninput="recalcAll()"><span class="sfx">€</span></div></div>
     <div class="field"><label>Transit DSG</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_dsg" value="1329" oninput="recalcAll()"><span class="sfx">€</span></div></div>
-    <div class="field"><label>Capacité ctnr</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_qte" value="34560" oninput="recalcAll()"><span class="sfx">u</span></div></div>
+    <div class="field"><label>Capacité unités</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_qte" value="34560" oninput="recalcAll()"><span class="sfx">u</span></div></div>
+    <div class="field" title="40' HC ≈ 25 palettes au sol (Europe), jusqu'à ~50 si gerbage 2 niveaux"><label style="color:var(--amber)">Capacité palettes ⚠</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_qte_pal" value="25" step="1" oninput="recalcAll()"><span class="sfx">pal</span></div></div>
     <div class="field"><label>Stickering</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_sticker" value="0.05" step="0.01" oninput="recalcAll()"><span class="sfx">€/u</span></div></div>
     <div class="field"><label>Marge cible</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_margin" value="30" step="1" oninput="recalcAll()"><span class="sfx">%</span></div></div>
     <div class="field"><label>Saisonnalité</label><div class="inp-wrap"><input class="inp sf" type="number" id="p_season" value="1.0" step="0.1" oninput="recalcAll()"><span class="sfx">×</span></div></div>
@@ -834,7 +835,8 @@ function recalcAll() {
   updateSummary();
 }
 function autoOptimize() {
-  const cap=gP('p_qte')||34560;
+  const capU=gP('p_qte')||34560;          // capacité unités
+  const capPal=gP('p_qte_pal')||25;        // capacité palettes (contrainte physique réelle)
   const moqMin=parseInt(document.getElementById('p_moq_min').value)||1;
   const useMaxStock=gC('p_maxstock');
   const stockMois=parseFloat(document.getElementById('p_stock_mois').value)||3;
@@ -842,61 +844,89 @@ function autoOptimize() {
   const available=products.filter(p=>enabledCats.has(p.stationCat));
   selQty={};
 
-  // 1) Cible idéale = N mois de ventes station (× saisonnalité), arrondie au MOQ
-  let plan=[]; // {p, unitSize, minUnits, idealUnits}
+  // helpers : cartons par palette (≥1)
+  const cpp = p => Math.max(1, Math.round(p.pcsPallet / p.pcsCase));
+
+  // 1) Cible idéale (en CARTONS) = N mois de ventes, arrondie au MOQ
+  let plan=[]; // {p, minCartons, idealCartons, cartonsPerPallet}
   available.forEach(p=>{
-    const unitSize=moqUnit==='palette'?p.pcsPallet:p.pcsCase;
-    const minUnits=moqMin*unitSize;
-    let idealUnits=0;
+    const cartonsPerPallet = cpp(p);
+    const unitSizeC = moqUnit==='palette' ? cartonsPerPallet : 1; // pas de commande en cartons
+    const minCartons = moqMin * (moqUnit==='palette' ? cartonsPerPallet : 1);
     const q=effQty(p);
-    if (q>0) {
-      // besoin = ventes/an /12 * mois
-      idealUnits=(q*season/12)*stockMois;
-    } else if (p.score>0) {
-      // produit sans demande connue : petite mise minimale au MOQ si score positif
-      idealUnits=minUnits;
-    }
+    let idealUnits=0;
+    if (q>0) idealUnits=(q*season/12)*stockMois;
+    else if (p.score>0) idealUnits=minCartons*p.pcsCase;
     if (idealUnits<=0) return;
-    // arrondi au multiple d'unité de commande
-    idealUnits=Math.round(idealUnits/unitSize)*unitSize;
-    if (idealUnits<minUnits) idealUnits=minUnits;
-    if (useMaxStock) idealUnits=Math.min(idealUnits, p.maxUnits);
-    plan.push({p, unitSize, minUnits, idealUnits});
+    let idealCartons=Math.round(idealUnits/p.pcsCase);
+    // arrondi au pas de commande (palette si mode palette)
+    idealCartons=Math.round(idealCartons/unitSizeC)*unitSizeC;
+    if (idealCartons<minCartons) idealCartons=minCartons;
+    // plafond stock dispo fournisseur
+    if (useMaxStock && p.maxUnits<999999) {
+      const maxC=Math.floor(p.maxUnits/p.pcsCase);
+      idealCartons=Math.min(idealCartons, maxC);
+    }
+    // garde-fou anti-absurde : jamais plus que la capacité palette entière pour 1 seul produit
+    idealCartons=Math.min(idealCartons, capPal*cartonsPerPallet);
+    if (idealCartons<=0) return;
+    plan.push({p, minCartons, idealCartons, cartonsPerPallet, unitSizeC});
   });
+  if (!plan.length) { renderTable(); updateSummary(); return; }
 
-  let totalIdeal=plan.reduce((s,x)=>s+x.idealUnits,0);
-
-  // 2) Si dépassement capacité conteneur → réduction proportionnelle
-  if (totalIdeal>cap && totalIdeal>0) {
-    const ratio=cap/totalIdeal;
+  // 2) Réduction proportionnelle si dépassement (unités OU palettes)
+  const totU = () => plan.reduce((s,x)=>s+x.idealCartons*x.p.pcsCase,0);
+  const totP = () => plan.reduce((s,x)=>s+x.idealCartons/x.cartonsPerPallet,0);
+  let guard=0;
+  while ((totU()>capU || totP()>capPal) && guard<40) {
+    const rU = capU/Math.max(totU(),1);
+    const rP = capPal/Math.max(totP(),1);
+    const ratio = Math.min(rU, rP, 0.999);
     plan.forEach(x=>{
-      let u=Math.floor((x.idealUnits*ratio)/x.unitSize)*x.unitSize;
-      if (u<x.minUnits) u=0; // ne pas descendre sous le MOQ
-      x.idealUnits=u;
+      let c=Math.floor((x.idealCartons*ratio)/x.unitSizeC)*x.unitSizeC;
+      if (c<x.minCartons) c=0;
+      x.idealCartons=c;
     });
+    plan=plan.filter(x=>x.idealCartons>0);
+    guard++;
+    if (!plan.length) break;
   }
 
-  // 3) Application
-  let rem=cap;
+  // 3) Application (par score décroissant), double suivi unités + palettes
+  let remU=capU, remP=capPal;
   plan.sort((a,b)=>b.p.score-a.p.score);
   plan.forEach(x=>{
-    const u=Math.min(x.idealUnits, rem);
-    if (u>=x.minUnits && u>0) {
-      selQty[x.p.id]=Math.round(u/x.p.pcsCase);
-      rem-=u;
+    let c=x.idealCartons;
+    // ne pas dépasser le reliquat unités ni palettes
+    const maxByU=Math.floor(remU/x.p.pcsCase);
+    const maxByP=Math.floor((remP*x.cartonsPerPallet));
+    c=Math.min(c, maxByU, maxByP);
+    c=Math.floor(c/x.unitSizeC)*x.unitSizeC;
+    if (c>=x.minCartons && c>0) {
+      selQty[x.p.id]=c;
+      remU-=c*x.p.pcsCase;
+      remP-=c/x.cartonsPerPallet;
     }
   });
 
-  // 4) Reliquat éventuel rempli par les meilleurs scores (sans dépasser N mois ×1.5)
-  if (rem>0) {
+  // 4) Reliquat : compléter par meilleurs scores, sans dépasser 1,5× la cible N mois ni les capacités
+  if (remP>0.05 && remU>0) {
     for (const x of plan) {
-      if (rem<=0) break;
+      if (remP<=0.05 || remU<=0) break;
       const p=x.p;
-      const cur=(selQty[p.id]||0)*p.pcsCase;
-      const plafond=effQty(p)>0?(effQty(p)*season/12)*stockMois*1.5:x.maxUnits||rem;
-      const extra=Math.min(rem, Math.max(0, plafond-cur), useMaxStock?(p.maxUnits-cur):rem);
-      const extraCartons=Math.floor(extra/p.pcsCase);
-      if (extraCartons>0) { selQty[p.id]=(selQty[p.id]||0)+extraCartons; rem-=extraCartons*p.pcsCase; }
+      const curC=selQty[p.id]||0;
+      const plafondC = effQty(p)>0
+        ? Math.floor(((effQty(p)*season/12)*stockMois*1.5)/p.pcsCase)
+        : (useMaxStock?Math.floor(p.maxUnits/p.pcsCase):curC+x.cartonsPerPallet);
+      const maxByU=Math.floor(remU/p.pcsCase);
+      const maxByP=Math.floor(remP*x.cartonsPerPallet);
+      let extra=Math.min(plafondC-curC, maxByU, maxByP);
+      extra=Math.floor(extra/x.unitSizeC)*x.unitSizeC;
+      if (extra>0) {
+        selQty[p.id]=curC+extra;
+        remU-=extra*p.pcsCase;
+        remP-=extra/x.cartonsPerPallet;
+      }
     }
   }
   renderTable();
@@ -1206,23 +1236,28 @@ function updQ(id, val) {
 function clearAll() { selQty={}; renderTable(); updateSummary(); }
 function updateSummary() {
   const cap=gP('p_qte')||34560;
-  let totCartons=0,totUnits=0,totM=0,totCA=0,totC=0,totGain=0,cnt=0,brk=[];
+  const capPal=gP('p_qte_pal')||25;
+  let totCartons=0,totUnits=0,totM=0,totCA=0,totC=0,totGain=0,cnt=0,totPal=0,brk=[];
   Object.entries(selQty).forEach(([id,cartons])=>{
     if (cartons<=0) return;
     const p=products.find(x=>x.id==id); if(!p) return;
     if (!enabledCats.has(p.stationCat)) return;
     const units=cartons*p.pcsCase;
+    const cartonsPerPallet=Math.max(1,Math.round(p.pcsPallet/p.pcsCase));
+    totPal+=cartons/cartonsPerPallet;
     totCartons+=cartons; totUnits+=units;
     totM+=units*p.marginU; totCA+=units*(p.pv||0); totC+=units*p.crr; cnt++;
     if (p.gainEur !== null) totGain += units * p.gainEur;
     brk.push({name:p.name,cartons,units,m:units*p.marginU,gain:p.gainEur?units*p.gainEur:0,cat:p.stationCat});
   });
-  const pct=Math.min(totUnits/cap*100,100);
+  const pctU=totUnits/cap*100;
+  const pctP=totPal/capPal*100;
+  const pct=Math.min(Math.max(pctU,pctP),100);  // contrainte la plus saturée
   const fill=document.getElementById('cFill');
   fill.style.width=pct+'%';
   fill.className='cbar-fill'+(pct>95?' over':pct>80?' warn':'');
   document.getElementById('cPct').textContent=pct.toFixed(1)+'%';
-  document.getElementById('cLbl').textContent=f0(totUnits)+' / '+f0(cap)+' unités';
+  document.getElementById('cLbl').textContent=`${totPal.toFixed(1)} / ${capPal} pal · ${f0(totUnits)} u`;
   document.getElementById('k1').textContent=f0(totCartons)+' ctn';
   document.getElementById('k1b').textContent=f0(totUnits);
   document.getElementById('k2').textContent=totM>0?'€ '+f0(totM):'—';
@@ -1250,7 +1285,7 @@ function updateSummary() {
   document.getElementById('rpContent').innerHTML=`
     <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:.4rem">MARGE TOTALE</div>
     <div style="font-family:var(--mono);font-size:26px;font-weight:800">€ ${f0(totM)}</div>
-    <div style="font-size:10px;opacity:.65;margin-top:2px">${f0(totUnits)} u · ${f0(totCartons)} cartons · ROI ${roi.toFixed(1)}%</div>
+    <div style="font-size:10px;opacity:.65;margin-top:2px">${totPal.toFixed(1)} pal · ${f0(totUnits)} u · ${f0(totCartons)} ctn · ROI ${roi.toFixed(1)}%</div>
     <div class="rp-div"></div>
     <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.7;margin-bottom:.4rem">CA POTENTIEL</div>
     <div style="font-family:var(--mono);font-size:18px;font-weight:800;opacity:.9">€ ${f0(totCA)}</div>
@@ -1345,6 +1380,7 @@ function exportPlan() {
     {Paramètre:'MOQ unité',Valeur:moqUnit},
     {Paramètre:'MOQ min',Valeur:gP('p_moq_min')},
     {Paramètre:'Stock cible (mois)',Valeur:gP('p_stock_mois')},
+    {Paramètre:'Capacité palettes',Valeur:gP('p_qte_pal')},
     {Paramètre:'Date export',Valeur:new Date().toLocaleDateString('fr-FR')},
     {Paramètre:'Référentiel prix',Valeur:PRIX_ACHATS_DB.length+' produits'},
   ]),'Paramètres');
