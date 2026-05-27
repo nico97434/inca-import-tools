@@ -671,24 +671,54 @@ function loadFile(file) {
 }
 function parseFile(rows, fname) {
   let hRow=-1, cM={};
+  let priceUnit='unit'; // 'unit' | 'case' | 'display'
+  // détection d'en-tête par mots-clés (FR/EN/PL/DE)
+  const isProduct = v => /^(product|produit|article|nom produit|name|nazwa|produkt|artikel|bezeichnung|description|designation|désignation|item name|item description)$/.test(v) || v==='product name';
+  const isPrice = v => (/(price|prix|cena|preis)/.test(v)) && !/total|value|valeur|selling|gross|brut/.test(v);
+  const isProducer = v => /^(producer|brand|marque|fabricant|manufacturer|marka|producent|hersteller|supplier|fournisseur|catégorie \/ marque|categorie \/ marque)$/.test(v);
+  const isBarcode = v => /^(barcode|ean|code|ean13|gtin|kod|barcode \(ean\)|code ean)$/.test(v) || /gtin/.test(v);
+  // pcs/carton (vente unitaire par carton)
+  const isPcsCase = v => /(pcs\s*\/?\s*ct|pcs\s*\/?\s*case|pcs\s*\/?\s*carton|unit\s*\/?\s*cs|units?\s*\/?\s*case|units?\s*\/?\s*carton|unit(é|e)s?\s*\/?\s*carton|qte\s*\/?\s*carton|qty\s*\/?\s*case|per case|par carton|packing|conditionnement|units per carton|colisage|pcs in box|pc\/box|sztuk\s*\/?\s*karton|szt\s*\/?\s*krt)/.test(v) && !/pallet|palet|palette|paleta|display|20ft|20'|container/.test(v);
+  // pcs/palette direct
+  const isPcsPallet = v => /(pcs\s*\/?\s*pallet|pcs\s*\/?\s*pal|units?\s*\/?\s*pallet|unit(é|e)s?\s*\/?\s*palette|qte\s*\/?\s*palette|qty\s*\/?\s*pallet|per pallet|par palette|sztuk\s*\/?\s*paleta|szt\s*\/?\s*pal)/.test(v) && !/available|dispo|disponib|qté \(plt\)|qty \(plt\)/.test(v);
+  // cartons/palette
+  const isCasePallet = v => /(cartons?\s*\/?\s*pallet|cartons?\s*\/?\s*palette|cartons \/ palette|case\s*\/?\s*pallet|colis\s*\/?\s*palette|krt\s*\/?\s*pal|boxes?\s*\/?\s*pallet|cartons par palette)/.test(v);
+  // colonnes auxiliaires
+  const isPcsDisplay = v => /(pcs\s*\/?\s*display|unit(é|e)s?\s*\/?\s*display)/.test(v);
+  const isDisplayCarton = v => /(display\s*\/?\s*carton|display\s*\/?\s*ct|displays? par carton)/.test(v);
+  const isQtyPallets = v => /^(qté \(plt\)|qty \(plt\)|qté\(plt\)|plt|pallets|palettes|qté palette)$/.test(v) || /qté \(plt\)|qty \(plt\)/.test(v);
+  const isQtyCartons = v => /^(qté \(ct\)|qty \(ct\)|qté\(ct\)|cartons|qté carton)$/.test(v) || /qté \(ct\)|qty \(ct\)/.test(v);
+  const isQtyPcs = v => /^(qté \(pcs\)|qty \(pcs\)|qté\(pcs\))$/.test(v) || /qté \(pcs\)|qty \(pcs\)/.test(v);
+  const isUnitVente = v => /^(unité de vente|unit(é|e) de vente)$/.test(v);
+
   for (let i=0; i<Math.min(rows.length,25); i++) {
     const row=rows[i]; if(!row) continue;
     const vals=row.map(c=>String(c||'').toLowerCase().trim());
-    const hasProduct = vals.findIndex(v=>v==='product'||v==='produit'||v==='article'||v==='nom produit');
-    const hasPrice = vals.findIndex(v=>v==='price'||v==='prix'||v==='unit price'||v==='prix unitaire');
+    const hasProduct = vals.findIndex(isProduct);
+    const hasPrice = vals.findIndex(isPrice);
     if (hasProduct>=0 && hasPrice>=0) {
       hRow=i;
       vals.forEach((v,j)=>{
-        if (v==='product'||v==='produit'||v==='article'||v==='nom produit') cM.product=j;
-        else if (v==='producer'||v==='brand'||v==='marque'||v==='fabricant') cM.producer=j;
-        else if (v==='price'||v==='prix'||v==='unit price'||v==='prix unitaire') cM.price=j;
-        else if (v==='barcode'||v==='ean'||v==='code') cM.barcode=j;
-        else if (v==='pcs/case'||v==='pcs case'||v==='unites/carton'||v==='qte/carton') cM.pcsCase=j;
-        else if (v==='pcs/pallet'||v==='pcs pallet'||v==='qte/palette') cM.pcsPallet=j;
-        else if (v.includes('bbd')||v==='dlc'||v.includes('expir')||v.includes('best before')) cM.bbd=j;
-        else if (v.includes('available pallet')||v.includes('palette dispo')) cM.pallets=j;
-        else if (v.includes('note')||v.includes('comment')||v.includes('remark')) cM.notes=j;
+        if (cM.product===undefined && isProduct(v)) cM.product=j;
+        else if (cM.price===undefined && isPrice(v)) { cM.price=j;
+          if (/\/\s*ct|\/\s*carton|\/ct|net \/ct|prix net \/ct|\(cs\)|\/cs|case|par carton/.test(v)) priceUnit='case'; }
+        else if (cM.producer===undefined && isProducer(v)) cM.producer=j;
+        else if (cM.barcode===undefined && isBarcode(v)) cM.barcode=j;
+        else if (cM.pcsDisplay===undefined && isPcsDisplay(v)) cM.pcsDisplay=j;
+        else if (cM.displayCarton===undefined && isDisplayCarton(v)) cM.displayCarton=j;
+        else if (cM.qtyPallets===undefined && isQtyPallets(v)) cM.qtyPallets=j;
+        else if (cM.qtyPcs===undefined && isQtyPcs(v)) cM.qtyPcs=j;
+        else if (cM.qtyCartons===undefined && isQtyCartons(v)) cM.qtyCartons=j;
+        else if (cM.casePallet===undefined && isCasePallet(v)) cM.casePallet=j;
+        else if (cM.pcsPallet===undefined && isPcsPallet(v)) cM.pcsPallet=j;
+        else if (cM.pcsCase===undefined && isPcsCase(v)) cM.pcsCase=j;
+        else if (cM.unitVente===undefined && isUnitVente(v)) cM.unitVente=j;
+        else if (cM.bbd===undefined && (v.includes('bbd')||v==='dlc'||v.includes('expir')||v.includes('best before')||v.includes('mhd')||v.includes('shelf life')||v.includes('shelf'))) cM.bbd=j;
+        else if (cM.pallets===undefined && (v.includes('available pallet')||v.includes('palette dispo')||v.includes('pallets avail')||v.includes('avail. pallet')||v.includes('stock pallet'))) cM.pallets=j;
+        else if (cM.notes===undefined && (v.includes('note')||v.includes('comment')||v.includes('remark')||v.includes('uwagi'))) cM.notes=j;
       });
+      // MILEX : prix par display si colonne "unité de vente"=Display détectée
+      if (cM.pcsDisplay!==undefined && cM.displayCarton!==undefined) priceUnit='display';
       break;
     }
   }
@@ -710,18 +740,79 @@ function parseFile(rows, fname) {
     return;
   }
   const parsed=[];
+  const num = x => { const n=parseFloat(String(x==null?'':x).replace(/\s/g,'').replace(',','.')); return isNaN(n)?NaN:n; };
+  const firstInt = x => { const m=String(x==null?'':x).match(/\d{1,5}/); return m?parseInt(m[0]):NaN; }; // "100-110" → 100
   for (let i=hRow+1; i<rows.length; i++) {
     const row=rows[i]; if(!row) continue;
     const productName=row[cM.product];
     if (!productName||String(productName).trim()==='') continue;
     const priceRaw=row[cM.price];
     if (priceRaw===null||priceRaw===undefined) continue;
-    const price=parseFloat(String(priceRaw).replace(',','.'));
-    if (isNaN(price)||price<=0) continue;
-    const pcsCase=parseInt(row[cM.pcsCase])||1;
-    const pcsPalletRaw=parseInt(row[cM.pcsPallet]);
-    const pcsPalletGuessed = !(pcsPalletRaw>0);
-    const pcsPallet=pcsPalletGuessed ? pcsCase*20 : pcsPalletRaw;
+    let priceVal=num(priceRaw);
+    if (isNaN(priceVal)||priceVal<=0) continue;
+    const name0=String(productName).trim();
+    // ignorer lignes de service (transport, stickering, pallet, customs…)
+    if (/^(sea transport|transport|stickering|shrinkwrap|euro-?pallet|certificate|custom|airbag|service|document|handload|frais|shipping)\b/i.test(name0)) continue;
+    const note0 = cM.notes!==undefined?String(row[cM.notes]||''):'';
+    const blob = (name0+' '+note0).toLowerCase();
+
+    // ── pcs/carton ──
+    let pcsCase = firstInt(row[cM.pcsCase]);
+    // MILEX : Pcs/Display × Display/Carton
+    if (cM.pcsDisplay!==undefined && cM.displayCarton!==undefined) {
+      const pd=firstInt(row[cM.pcsDisplay]), dc=firstInt(row[cM.displayCarton]);
+      if (pd>0 && dc>0) pcsCase = pd*dc;
+    }
+    if (!(pcsCase>0)) {
+      const mc = blob.match(/(\d{1,3})\s*(?:pcs\/case|pcs\/ct|pcs\/carton|pcs in box|per case|par carton|szt\/krt)/);
+      const cand = blob.match(/\bx\s*(\d{1,3})\b/) || blob.match(/\b(12|24|6|10|15|18|20|25|30|36|48)\b/);
+      pcsCase = mc?parseInt(mc[1]) : (cand?parseInt(cand[1]||cand[0]):1);
+    }
+    const pcsCaseFinal = Math.max(1,pcsCase);
+
+    // ── prix unitaire (selon l'unité du prix) ──
+    let price = priceVal;
+    if (priceUnit==='case') price = priceVal / pcsCaseFinal;
+    else if (priceUnit==='display') {
+      const pd=cM.pcsDisplay!==undefined?firstInt(row[cM.pcsDisplay]):NaN;
+      if (pd>0) price = priceVal / pd; // prix par display → par unité
+    }
+    if (!(price>0)) continue;
+
+    // ── unités/palette ──
+    let pcsPallet=NaN, pcsPalletGuessed=true;
+    // 1) colonne pcs/pallet directe
+    const palRaw = cM.pcsPallet!==undefined ? firstInt(row[cM.pcsPallet]) : NaN;
+    if (palRaw>0) { pcsPallet=palRaw; pcsPalletGuessed=false; }
+    // 2) déduire depuis totaux proforma : pcs ÷ palettes
+    if (!(pcsPallet>0) && cM.qtyPcs!==undefined && cM.qtyPallets!==undefined) {
+      const tp=num(row[cM.qtyPcs]), tpl=num(row[cM.qtyPallets]);
+      if (tp>0 && tpl>0) { pcsPallet=Math.round(tp/tpl); pcsPalletGuessed=false; }
+    }
+    // 2b) cartons-total ÷ palettes-total × pcsCase
+    if (!(pcsPallet>0) && cM.qtyCartons!==undefined && cM.qtyPallets!==undefined) {
+      const tc=num(row[cM.qtyCartons]), tpl=num(row[cM.qtyPallets]);
+      if (tc>0 && tpl>0) { pcsPallet=Math.round(tc/tpl)*pcsCaseFinal; pcsPalletGuessed=false; }
+    }
+    // 3) colonne cartons/palette → ×pcsCase ("100-110" → 100)
+    if (!(pcsPallet>0) && cM.casePallet!==undefined) {
+      const cpRaw=firstInt(row[cM.casePallet]);
+      if (cpRaw>0) { pcsPallet=cpRaw*pcsCaseFinal; pcsPalletGuessed=false; }
+    }
+    // 4) extraction texte
+    if (!(pcsPallet>0)) {
+      const mp = blob.match(/(\d{2,4})\s*(?:pcs|pc|units?|szt|u)?\s*(?:\/|:|=|par |per |\s)+\s*(?:pallet|palette|paleta|pal)\b/);
+      const mp2 = blob.match(/(?:pallet|palette|paleta|pal)\s*(?:\/|:|=|\s)+\s*(\d{2,4})\b/);
+      const v = (mp?parseInt(mp[1]):0)||(mp2?parseInt(mp2[1]):0);
+      if (v>0) { pcsPallet=v; pcsPalletGuessed=false; }
+      if (!(pcsPallet>0)) {
+        const mcp = blob.match(/(\d{1,3})\s*(?:cartons?|colis|krt|boxes?|kart|box)\s*(?:\/|:|=|par |per |\s)+\s*(?:pallet|palette|paleta|pal)\b/);
+        if (mcp) { const w=parseInt(mcp[1]); if(w>0){pcsPallet=w*pcsCaseFinal; pcsPalletGuessed=false;} }
+      }
+    }
+    // 5) défaut prudent
+    if (!(pcsPallet>0)) { pcsPallet = 8*pcsCaseFinal; pcsPalletGuessed=true; }
+
     const palletsAvail=parseFloat(row[cM.pallets])||0;
     const maxUnits=palletsAvail>0 ? Math.floor(palletsAvail)*pcsPallet : 999999;
     let bbdStr='';
@@ -729,7 +820,7 @@ function parseFile(rows, fname) {
       const bv=row[cM.bbd];
       bbdStr = bv instanceof Date ? bv.toLocaleDateString('fr-FR') : String(bv).split(' - ')[0].trim();
     }
-    const name=String(productName).trim();
+    const name=name0;
     const producer=cM.producer!==undefined?String(row[cM.producer]||'').trim():'';
     const crr=calcCRR(price);
     const stMatch=matchStation(name, producer);
@@ -739,9 +830,9 @@ function parseFile(rows, fname) {
     const p={
       id:i, name, producer,
       barcode:cM.barcode!==undefined?String(row[cM.barcode]||''):'',
-      price, pcsCase, pcsPallet, pcsPalletGuessed, palletsAvail, maxUnits,
+      price, pcsCase:pcsCaseFinal, pcsPallet, pcsPalletGuessed, palletsAvail, maxUnits,
       bbd:bbdStr,
-      notes:cM.notes!==undefined?String(row[cM.notes]||''):'',
+      notes:note0,
       ...crr,
       stationMatch:stMatch?stMatch.keys[0]:null,
       stationQty, stationCat,
@@ -775,6 +866,7 @@ function parseFile(rows, fname) {
   const matchedPrix=products.filter(p=>p.prixRef).length;
   const winners=products.filter(p=>p.gainPct && p.gainPct > 0).length;
   const losers=products.filter(p=>p.gainPct && p.gainPct < 0).length;
+  const guessedPal=products.filter(p=>p.pcsPalletGuessed).length;
   document.getElementById('fnDisplay').textContent=`✓ ${fname} · ${products.length} produits`;
   document.getElementById('fnDisplay').style.display='block';
   document.getElementById('upZone').classList.add('loaded');
@@ -783,6 +875,7 @@ function parseFile(rows, fname) {
   infoMsg += `<strong style="color:var(--purple)">${matchedPrix}/${products.length}</strong> matchés prix d'achats actuels · `;
   infoMsg += `<strong style="color:var(--green)">${winners} gagnants</strong> (import - cher) / `;
   infoMsg += `<strong style="color:var(--red)">${losers} perdants</strong> (import + cher)`;
+  if (guessedPal>0) infoMsg += `<br>⚠️ <strong style="color:var(--red)">${guessedPal}</strong> produit(s) avec u/palette <strong>estimé</strong> (champ rouge) — corrige-les avant d'optimiser.`;
   document.getElementById('matchInfo').innerHTML = infoMsg;
   document.getElementById('matchInfo').className = 'sts inf';
   document.getElementById('matchInfo').style.display = 'block';
