@@ -719,7 +719,9 @@ function parseFile(rows, fname) {
     const price=parseFloat(String(priceRaw).replace(',','.'));
     if (isNaN(price)||price<=0) continue;
     const pcsCase=parseInt(row[cM.pcsCase])||1;
-    const pcsPallet=parseInt(row[cM.pcsPallet])||pcsCase*20;
+    const pcsPalletRaw=parseInt(row[cM.pcsPallet]);
+    const pcsPalletGuessed = !(pcsPalletRaw>0);
+    const pcsPallet=pcsPalletGuessed ? pcsCase*20 : pcsPalletRaw;
     const palletsAvail=parseFloat(row[cM.pallets])||0;
     const maxUnits=palletsAvail>0 ? Math.floor(palletsAvail)*pcsPallet : 999999;
     let bbdStr='';
@@ -737,7 +739,7 @@ function parseFile(rows, fname) {
     const p={
       id:i, name, producer,
       barcode:cM.barcode!==undefined?String(row[cM.barcode]||''):'',
-      price, pcsCase, pcsPallet, palletsAvail, maxUnits,
+      price, pcsCase, pcsPallet, pcsPalletGuessed, palletsAvail, maxUnits,
       bbd:bbdStr,
       notes:cM.notes!==undefined?String(row[cM.notes]||''):'',
       ...crr,
@@ -1171,7 +1173,17 @@ function renderTable() {
           <span class="tag ${catCl}">${p.stationCat}</span>
           ${p.stationQty>0?'<span class="tag t-m">✓ ventes</span>':(p.manualQty!=null?'<span class="tag t-s">✍️ demande saisie</span>':'<span class="tag t-nm">nouveau</span>')}
           ${p.prixRef?'<span class="tag t-px">✓ prix réf</span>':''}
-          <span style="font-size:9px;color:var(--text4)">${p.pcsCase}u/c · ${p.pcsPallet}u/pal</span>
+        </div>
+        <div style="margin-top:4px;display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:8px;color:var(--text4)">u/carton</span>
+          <input type="number" min="1" step="1" value="${p.pcsCase}" title="Unités par carton"
+            onchange="setPcsCase(${p.id},this.value)" onclick="event.stopPropagation()"
+            style="width:44px;font-family:var(--mono);font-size:10px;font-weight:700;text-align:center;border:1.5px solid var(--border);border-radius:5px;padding:2px;background:var(--bg)">
+          <span style="font-size:8px;color:var(--text4)">u/palette</span>
+          <input type="number" min="1" step="1" value="${p.pcsPallet}" title="${p.pcsPalletGuessed?'⚠ Estimé (cartons×20) — corrige avec la vraie valeur':'Unités par palette'}"
+            onchange="setPcsPallet(${p.id},this.value)" onclick="event.stopPropagation()"
+            style="width:54px;font-family:var(--mono);font-size:10px;font-weight:700;text-align:center;border:1.5px solid ${p.pcsPalletGuessed?'var(--red)':'var(--amber)'};border-radius:5px;padding:2px;background:${p.pcsPalletGuessed?'var(--red-soft)':'var(--gold-soft)'};color:var(--amber)">
+          <span style="font-size:8px;color:var(--text3)">= ${Math.max(1,Math.round(p.pcsPallet/p.pcsCase))} c/pal${p.pcsPalletGuessed?' <span style="color:var(--red)" title="valeur estimée">⚠</span>':''}</span>
         </div>
       </td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">€${f2(p.price)}</td>
@@ -1232,6 +1244,22 @@ function updQ(id, val) {
   selQty[id]=v;
   updateSummary();
   renderTable();
+}
+function setPcsCase(id, val) {
+  const p=products.find(x=>x.id==id); if(!p) return;
+  const v=Math.max(1,parseInt(val)||1);
+  p.pcsCase=v;
+  if (p.pcsPallet<v) p.pcsPallet=v; // cohérence
+  p.maxUnits = p.palletsAvail>0 ? Math.floor(p.palletsAvail)*p.pcsPallet : 999999;
+  renderTable(); updateSummary();
+}
+function setPcsPallet(id, val) {
+  const p=products.find(x=>x.id==id); if(!p) return;
+  const v=Math.max(p.pcsCase,parseInt(val)||p.pcsCase); // au moins 1 carton/palette
+  p.pcsPallet=v;
+  p.pcsPalletGuessed=false;
+  p.maxUnits = p.palletsAvail>0 ? Math.floor(p.palletsAvail)*p.pcsPallet : 999999;
+  renderTable(); updateSummary();
 }
 function clearAll() { selQty={}; renderTable(); updateSummary(); }
 function updateSummary() {
