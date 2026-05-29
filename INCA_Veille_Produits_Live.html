@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Veille Produits Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4ff;--white:#fff;--border:#e2e8f8;--border2:#c7d2f0;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue3:#748ffc;--blue-soft:#eef2ff;
+  --green:#0ca678;--green2:#12b886;--green-soft:#e6fcf5;
+  --orange:#e8590c;--orange-soft:#fff4e6;
+  --amber:#e67700;--amber-soft:#fff8e1;
+  --red:#e03131;--red-soft:#fff5f5;
+  --purple:#7048e8;--purple-soft:#f3f0ff;
+  --pink:#d6336c;--pink-soft:#fff0f6;
+  --teal:#0891b2;--teal-soft:#ecfeff;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:16px;
+  --sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.06);
+  --sh2:0 4px 20px rgba(59,91,219,.14),0 1px 4px rgba(59,91,219,.08);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(59,91,219,.05)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 12px;border-radius:8px;text-transform:uppercase}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;color:var(--text3);margin-top:1px;font-weight:500}
+.live-badge{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px;box-shadow:0 2px 12px rgba(220,38,38,.3)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:livepulse 1s infinite}
+@keyframes livepulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.7)}}
+.layout{display:grid;grid-template-columns:310px 1fr;min-height:calc(100vh - 64px)}
+.sidebar{background:var(--white);border-right:1px solid var(--border);padding:1.5rem;overflow-y:auto;display:flex;flex-direction:column;gap:1.25rem}
+.sec-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:.65rem;display:flex;align-items:center;gap:6px}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.search-box{position:relative}
+.search-box input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:11px 14px 11px 40px;font-family:var(--sans);font-size:14px;color:var(--text);outline:none;transition:all .2s}
+.search-box input:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(59,91,219,.1)}
+.search-icon{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cat-btn{padding:8px 10px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px}
+.cat-btn:hover{border-color:var(--blue3);color:var(--blue)}
+.cat-btn.active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.filter-group{display:flex;flex-direction:column;gap:6px}
+.filter-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px}
+.filter-label{font-size:11px;font-weight:600;color:var(--text2)}
+.filter-select{background:transparent;border:none;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--blue);outline:none;cursor:pointer;max-width:150px}
+.zone-info{background:linear-gradient(135deg,#ecfeff,#e6fcf5);border:1.5px solid rgba(8,145,178,.2);border-radius:var(--r);padding:12px}
+.zi-title{font-size:11px;font-weight:800;color:var(--teal);margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.zi-row{font-size:10px;color:#0e7490;font-weight:500;line-height:1.85;display:flex;align-items:flex-start;gap:5px}
+.live-info{background:linear-gradient(135deg,#fff5f5,#fef2f2);border:1.5px solid rgba(220,38,38,.2);border-radius:var(--r);padding:12px}
+.li-title{font-size:11px;font-weight:800;color:#dc2626;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.li-row{font-size:10px;color:#991b1b;font-weight:500;line-height:1.9;display:flex;align-items:flex-start;gap:5px}
+.context-box{background:var(--blue-soft);border:1px solid rgba(59,91,219,.15);border-radius:var(--r);padding:12px}
+.ctx-title{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:8px}
+.ctx-tags{display:flex;flex-wrap:wrap;gap:5px}
+.ctx-tag{background:var(--white);border:1px solid rgba(59,91,219,.15);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:600;color:var(--blue2)}
+.go-btn{width:100%;padding:14px;background:linear-gradient(135deg,#dc2626,#ef4444,#f87171);border:none;border-radius:var(--r);color:#fff;font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(220,38,38,.3);display:flex;align-items:center;justify-content:center;gap:8px}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(220,38,38,.4)}
+.go-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.loading .spin{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hist-item{padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.hist-item:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.main{padding:2rem;overflow-y:auto}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem}
+.welcome-icon{font-size:56px;opacity:.35}
+.welcome h2{font-size:24px;font-weight:800;color:var(--text2)}
+.welcome p{font-size:14px;color:var(--text3);max-width:460px;line-height:1.7}
+.tips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:.5rem}
+.tip{background:var(--white);border:1.5px solid var(--border);border-radius:20px;padding:7px 15px;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s}
+.tip:hover{border-color:#dc2626;color:#dc2626;background:#fff5f5}
+.loading-state{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:2rem}
+.loading-animation{display:flex;gap:6px}
+.ld{width:10px;height:10px;border-radius:50%;animation:bounce .8s infinite}
+.ld:nth-child(1){background:#dc2626}
+.ld:nth-child(2){background:var(--blue);animation-delay:.15s}
+.ld:nth-child(3){background:var(--green);animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.loading-steps{display:flex;flex-direction:column;gap:8px;min-width:340px}
+.lstep{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;transition:all .4s;background:var(--bg);color:var(--text4)}
+.lstep.active{background:var(--blue-soft);color:var(--blue);border:1px solid rgba(59,91,219,.2)}
+.lstep.done{background:var(--green-soft);color:var(--green);border:1px solid rgba(12,166,120,.2)}
+.results-wrap{display:none}
+.results-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:12px;flex-wrap:wrap}
+.results-title{font-size:18px;font-weight:800}
+.results-meta{font-size:12px;color:var(--text3);font-weight:500;margin-top:3px}
+.btn-sm{padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:var(--sans);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all .2s}
+.btn-sm:hover{border-color:var(--blue);color:var(--blue)}
+.timestamp{display:inline-flex;align-items:center;gap:6px;background:#fff5f5;border:1px solid rgba(220,38,38,.2);color:#dc2626;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;margin-bottom:1rem}
+.sources-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--sh)}
+.src-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.src-tag{background:var(--teal-soft);border:1px solid rgba(8,145,178,.2);color:var(--teal);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.analysis-box{background:linear-gradient(160deg,#1e3a8a,#3b5bdb,#4c6ef5);color:#fff;border-radius:var(--r2);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 8px 40px rgba(59,91,219,.3)}
+.ab-header{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+.ab-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.75}
+.ab-live{background:rgba(220,38,38,.85);font-size:8px;font-weight:800;letter-spacing:1px;padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.ab-content{font-size:13px;line-height:1.85;opacity:.92}
+.sort-bar{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.sort-btn{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--white);font-family:var(--sans);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer;transition:all .2s}
+.sort-btn:hover,.sort-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+.products-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem}
+.prod-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:1.25rem;box-shadow:var(--sh);transition:all .25s;position:relative;overflow:hidden;animation:fadeUp .35s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.prod-card:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.prod-accent-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r2) var(--r2) 0 0}
+.score-badge{position:absolute;top:14px;right:14px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;border:2px solid}
+.prod-cat{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;display:inline-block;margin-bottom:.65rem}
+.prod-name{font-size:16px;font-weight:800;margin-bottom:.35rem;padding-right:54px;line-height:1.2}
+.prod-brand{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:.5rem}
+.flag{font-size:13px}
+.prod-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.85rem}
+.ptag{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text3)}
+.ptag.hot{background:var(--orange-soft);border-color:rgba(232,89,12,.2);color:var(--orange)}
+.ptag.tiktok{background:var(--pink-soft);border-color:rgba(214,51,108,.2);color:var(--pink)}
+.ptag.new{background:var(--purple-soft);border-color:rgba(112,72,232,.2);color:var(--purple)}
+.ptag.halal{background:#f0fdf4;border-color:rgba(22,101,52,.2);color:#166534}
+.ptag.live{background:#fff5f5;border-color:rgba(220,38,38,.2);color:#dc2626}
+.ptag.logi{background:var(--teal-soft);border-color:rgba(8,145,178,.2);color:var(--teal)}
+.prod-why{font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:.85rem;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:3px solid}
+.meters{display:flex;flex-direction:column;gap:6px;margin-bottom:.85rem}
+.trend-meter{display:flex;align-items:center;gap:8px}
+.tm-label{font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;min-width:64px}
+.tm-bar{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.tm-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.tm-val{font-family:var(--mono);font-size:10px;font-weight:700;min-width:30px;text-align:right}
+.prod-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:.85rem}
+.pm{background:var(--bg);border-radius:7px;padding:7px 8px;text-align:center}
+.pm-v{font-family:var(--mono);font-size:11px;font-weight:700}
+.pm-l{font-size:8px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--text4);margin-top:2px}
+.maker-box{background:linear-gradient(135deg,#f3f0ff,#faf5ff);border:1.5px solid rgba(112,72,232,.2);border-radius:10px;padding:11px 13px;margin-bottom:.6rem}
+.mb-lbl{font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--purple);margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.mb-name{font-size:13px;font-weight:800;color:var(--text);margin-bottom:2px}
+.mb-loc{font-size:10px;color:var(--text3);font-weight:600;margin-bottom:7px}
+.contact-row{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:3px}
+.contact-row .ci{width:15px;text-align:center;flex-shrink:0}
+.contact-row a{color:var(--purple);text-decoration:none;font-weight:700;word-break:break-all}
+.contact-row a:hover{text-decoration:underline}
+.contact-person{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.distrib-note{font-size:10px;color:var(--text3);font-weight:500;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border2);line-height:1.5}
+.distrib-note strong{color:var(--teal)}
+.confidence{font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;margin-left:auto}
+.confidence.verified{background:var(--green-soft);color:var(--green)}
+.confidence.likely{background:var(--amber-soft);color:var(--amber)}
+.confidence.guess{background:var(--red-soft);color:var(--red)}
+.copy-btn{background:none;border:1px solid var(--border2);border-radius:5px;font-size:9px;font-weight:700;color:var(--text3);padding:2px 7px;cursor:pointer;margin-left:6px;transition:all .15s}
+.copy-btn:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-soft)}
+@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid var(--border)}.products-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<!-- ═══ NAV INCA IMPORT ═══ -->
+<style>
+.inca-nav{position:fixed;top:0;left:0;right:0;height:38px;background:#0f172a;color:#fff;display:flex;align-items:center;gap:0;padding:0 1rem;z-index:300;box-shadow:0 2px 12px rgba(15,23,42,.3);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700}
+.inca-nav-logo{background:linear-gradient(135deg,#3b5bdb,#7048e8);font-weight:800;font-size:10px;letter-spacing:1.5px;padding:4px 10px;border-radius:6px;margin-right:1rem}
+.inca-nav-item{padding:7px 14px;border-radius:7px;cursor:pointer;color:#cbd5e1;text-decoration:none;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.inca-nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.inca-nav-item.active{background:rgba(112,72,232,.25);color:#fff}
+body{padding-top:38px !important}
+@media(max-width:720px){.inca-nav{overflow-x:auto;padding:0 .5rem}.inca-nav-item{padding:6px 10px;font-size:10px}}
+</style>
+<nav class="inca-nav">
+  <span class="inca-nav-logo">INCA</span>
+  <a class="inca-nav-item" data-tool="optimiseur" href="INCA_Optimiseur_Conteneur_v4.html">📦 Optimiseur conteneur</a>
+  <a class="inca-nav-item" data-tool="veille" href="INCA_Veille_Produits_Live.html">📡 Veille produits</a>
+  <a class="inca-nav-item" data-tool="grossistes" href="INCA_Scanner_Grossistes.html">🛡 Scanner grossistes</a>
+  <a class="inca-nav-item" data-tool="privatelabel" href="INCA_Sourcing_Private_Label.html">🏭 Private label</a>
+</nav>
+<script>
+(function(){
+  const map={INCA_Optimiseur_Conteneur_v4:'optimiseur',INCA_Veille_Produits_Live:'veille',INCA_Scanner_Grossistes:'grossistes',INCA_Sourcing_Private_Label:'privatelabel'};
+  const fname=location.pathname.split('/').pop().replace(/\.html$/,'');
+  const cur=map[fname];
+  if(cur)document.querySelectorAll('.inca-nav-item').forEach(a=>{if(a.dataset.tool===cur)a.classList.add('active');});
+})();
+</script>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">INCA IMPORT</div>
+    <div>
+      <div class="hdr-title">Veille Produits — Fabricants & Contacts</div>
+      <div class="hdr-sub">Tendances mondiales · Priorité logistique Europe · Claude + Web Search</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div>LIVE — Claude + Web Search</div>
+</div>
+<div class="layout">
+<div class="sidebar">
+  <div>
+    <div class="sec-lbl">Recherche</div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="ex: energy drink viral Pologne…" onkeydown="if(event.key==='Enter')launch()">
+    </div>
+  </div>
+  <div>
+    <div class="sec-lbl">Catégorie</div>
+    <div class="cat-grid">
+      <button class="cat-btn active" onclick="setCat(this,'all')">🌍 Tout</button>
+      <button class="cat-btn" onclick="setCat(this,'boissons')">🥤 Boissons</button>
+      <button class="cat-btn" onclick="setCat(this,'energy')">⚡ Energy</button>
+      <button class="cat-btn" onclick="setCat(this,'chips')">🍟 Chips</button>
+      <button class="cat-btn" onclick="setCat(this,'snacks')">🍜 Snacks</button>
+      <button class="cat-btn" onclick="setCat(this,'confiseries')">🍬 Confiseries</button>
+      <button class="cat-btn" onclick="setCat(this,'kfood')">🇰🇷 K-Food</button>
+      <button class="cat-btn" onclick="setCat(this,'healthy')">💚 Healthy</button>
+    </div>
+  </div>
+  <div>
+    <div class="sec-lbl">Zone logistique</div>
+    <div class="filter-group">
+      <div class="filter-row">
+        <span class="filter-label">Priorité sourcing</span>
+        <select class="filter-select" id="fZone">
+          <option value="europe_first">🇪🇺 Europe en priorité</option>
+          <option value="europe_only">🇪🇺 Europe uniquement</option>
+          <option value="europe_asia">🇪🇺+🌏 Europe & Asie</option>
+          <option value="all">🌍 Toutes zones</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Tendance</span>
+        <select class="filter-select" id="fTendance">
+          <option value="viral">Viral maintenant</option>
+          <option value="emerging">Émergent</option>
+          <option value="all">Tous</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Halal certifié</span>
+        <select class="filter-select" id="fHalal">
+          <option value="all">Indifférent</option>
+          <option value="yes">Oui seulement</option>
+        </select>
+      </div>
+      <div class="filter-row" style="background:linear-gradient(135deg,#f3f0ff,#faf5ff);border-color:rgba(112,72,232,.2)">
+        <span class="filter-label" style="color:var(--purple);font-weight:700">🔍 Notoriété</span>
+        <select class="filter-select" id="fNoto" style="color:var(--purple)">
+          <option value="discovery" selected>Découverte (inconnus)</option>
+          <option value="niche">Niche établie</option>
+          <option value="all">Tous niveaux</option>
+        </select>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">Type de source</span>
+        <select class="filter-select" id="fSource">
+          <option value="maker">Fabricant direct</option>
+          <option value="any">Fabricant ou grossiste</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="zone-info">
+    <div class="zi-title">🚢 Tes routes logistiques</div>
+    <div class="zi-row">🇪🇺 <strong>Europe → Fos-sur-Mer → Le Port</strong> (~22j, route principale CMA CGM)</div>
+    <div class="zi-row">🇵🇱🇱🇹🇩🇪🇦🇹 Pologne, Lituanie, Allemagne, Autriche (tes fournisseurs actuels)</div>
+    <div class="zi-row">🌏 Asie (KR/MY/SG) via contacts directs — hors Détroit d'Ormuz</div>
+    <div class="zi-row">⚠️ USA : logistique complexe → pénalisé sauf si vraiment unique</div>
+  </div>
+  <div class="live-info">
+    <div class="li-title">🔴 Claude + Web Search</div>
+    <div class="li-row">🏭 Recherche le <strong>fabricant réel</strong>, pas le revendeur</div>
+    <div class="li-row">📧 Contact export : email / tél / LinkedIn</div>
+    <div class="li-row">🌐 TikTok · FoodNavigator · sites fabricants</div>
+    <div class="li-row">💰 <strong>~$0.01–0.02 par recherche · Claude Haiku</strong></div>
+  </div>
+  <div class="context-box">
+    <div class="ctx-title">🏝 Contexte : La Réunion</div>
+    <div class="ctx-tags">
+      <span class="ctx-tag">Stations OLA/TOTAL/VITO</span>
+      <span class="ctx-tag">DOM-TOM · DAAF</span>
+      <span class="ctx-tag">Gen Z · Jeune</span>
+      <span class="ctx-tag">Halal friendly</span>
+      <span class="ctx-tag">PV €1.50–€3.50</span>
+      <span class="ctx-tag">Conteneur 40' HC</span>
+    </div>
+  </div>
+  <button class="go-btn" id="goBtn" onclick="launch()">
+    <div class="spin"></div>
+    <span id="btnTxt">🔴 Lancer la veille live</span>
+  </button>
+  <button onclick="resetKey()" style="width:100%;padding:8px;background:transparent;border:1px solid var(--border2);border-radius:8px;font-family:var(--sans);font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--text3)'">🔑 Changer la clé API</button>
+  <div id="histSection" style="display:none">
+    <div class="sec-lbl">Historique</div>
+    <div id="histList"></div>
+  </div>
+</div>
+<div class="main" id="mainArea">
+  <div class="welcome" id="welcomeState">
+    <div class="welcome-icon">📡</div>
+    <h2>Veille en temps réel — fabricants & contacts</h2>
+    <p>Recherche les <strong>marques inconnues</strong> que tes concurrents n'ont pas. Filtre auto des blockbusters (Red Bull, Monster, Coca, Haribo…). Remonte au <strong>fabricant réel</strong> + <strong>contact export</strong>.</p>
+    <div class="tips">
+      <div class="tip" onclick="quickSearch('new indie energy drink brand launch 2025 Europe Asia not Red Bull')">⚡ Energy drinks indie</div>
+      <div class="tip" onclick="quickSearch('emerging snack startup brand 2025 Poland Lithuania Germany')">📱 Snacks startup EU</div>
+      <div class="tip" onclick="quickSearch('small Korean drink brand RTD startup 2025 not Samyang')">🇰🇷 K-drinks indé</div>
+      <div class="tip" onclick="quickSearch('niche aloe vera or coconut water brand manufacturer Eastern Europe Turkey')">🌿 Aloe / coco niche</div>
+      <div class="tip" onclick="quickSearch('craft chips startup European manufacturer 2025 regional')">🍟 Chips craft</div>
+      <div class="tip" onclick="quickSearch('bubble tea RTD canned startup brand Europe Taiwan Vietnam 2025')">🧋 Bubble Tea startups</div>
+      <div class="tip" onclick="quickSearch('halal candy emerging brand Turkey Poland Malaysia 2025')">✅ Confiseries halal niche</div>
+      <div class="tip" onclick="quickSearch('functional prebiotic mushroom adaptogenic drink startup 2025 Europe')">💚 Boissons fonctionnelles</div>
+      <div class="tip" onclick="quickSearch('kefir kombucha probiotic RTD small brand Eastern Europe 2025')">🦠 Probiotiques RTD</div>
+      <div class="tip" onclick="quickSearch('Polish Lithuanian Czech regional FMCG brand export catalog')">🇵🇱 Marques régionales EU</div>
+    </div>
+  </div>
+  <div class="loading-state" id="loadingState">
+    <div class="loading-animation">
+      <div class="ld"></div><div class="ld"></div><div class="ld"></div>
+    </div>
+    <div class="loading-steps">
+      <div class="lstep" id="step1">🌐 Recherche web des tendances…</div>
+      <div class="lstep" id="step2">🏭 Identification des fabricants réels…</div>
+      <div class="lstep" id="step3">📧 Recherche des contacts export…</div>
+      <div class="lstep" id="step4">🚢 Évaluation logistique vers La Réunion…</div>
+      <div class="lstep" id="step5">✦ Génération des fiches produits…</div>
+    </div>
+  </div>
+  <div class="results-wrap" id="resultsWrap">
+    <div class="results-header">
+      <div>
+        <div class="results-title" id="resultsTitle">Résultats</div>
+        <div class="results-meta" id="resultsMeta"></div>
+      </div>
+      <button class="btn-sm" onclick="resetSearch()">↩ Nouvelle recherche</button>
+    </div>
+    <div class="timestamp" id="timestamp">🔴 LIVE</div>
+    <div class="sources-bar" id="sourcesBar" style="display:none">
+      <span class="src-label">Sources consultées :</span>
+      <div id="sourcesList" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="analysis-box" id="analysisBox" style="display:none">
+      <div class="ab-header">
+        <div class="ab-title">✦ Analyse — Tendances × Logistique × Potentiel Réunion</div>
+        <div class="ab-live">LIVE</div>
+      </div>
+      <div class="ab-content" id="analysisContent"></div>
+    </div>
+    <div class="sort-bar" id="sortBar" style="display:none">
+      <span style="font-size:11px;font-weight:700;color:var(--text3);align-self:center">Trier :</span>
+      <button class="sort-btn active" onclick="sortProducts(this,'novelty')">🔍 Nouveauté</button>
+      <button class="sort-btn" onclick="sortProducts(this,'score')">🎯 Score global</button>
+      <button class="sort-btn" onclick="sortProducts(this,'logistique')">🚢 Facilité logistique</button>
+      <button class="sort-btn" onclick="sortProducts(this,'tendance')">📈 Tendance</button>
+      <button class="sort-btn" onclick="sortProducts(this,'marge')">💰 Marge</button>
+    </div>
+    <div class="products-grid" id="productsGrid"></div>
+  </div>
+</div>
+</div>
+<script>
+// CLÉ API CLAUDE — console.anthropic.com → API Keys
+let API_KEY = localStorage.getItem('inca_claude_key') || '';
+function checkApiKey(){
+  if(!API_KEY){
+    const k=prompt('Entre ta clé API Anthropic (sk-ant-...) \nOù la trouver : console.anthropic.com → API Keys');
+    if(k && k.startsWith('sk-')){API_KEY=k;localStorage.setItem('inca_claude_key',k);return true;}
+    alert('Clé invalide. Elle doit commencer par sk-ant-\nVa sur console.anthropic.com → API Keys');return false;
+  }
+  return true;
+}
+let activeCat='all', hist=[], lastProducts=[];
+const SC={high:{bg:'var(--green-soft)',text:'var(--green)',border:'rgba(12,166,120,.3)'},med:{bg:'var(--amber-soft)',text:'var(--amber)',border:'rgba(230,119,0,.3)'},low:{bg:'var(--red-soft)',text:'var(--red)',border:'rgba(224,49,49,.3)'}};
+const FLAGS={Pologne:'🇵🇱',Poland:'🇵🇱',Lituanie:'🇱🇹',Lithuania:'🇱🇹',Allemagne:'🇩🇪',Germany:'🇩🇪',Autriche:'🇦🇹',Austria:'🇦🇹',France:'🇫🇷',Espagne:'🇪🇸',Spain:'🇪🇸',Italie:'🇮🇹',Italy:'🇮🇹',"Pays-Bas":'🇳🇱',Netherlands:'🇳🇱',Belgique:'🇧🇪',Belgium:'🇧🇪',Turquie:'🇹🇷',Turkey:'🇹🇷',"Royaume-Uni":'🇬🇧',UK:'🇬🇧',"Corée":'🇰🇷',"Corée du Sud":'🇰🇷',Korea:'🇰🇷',Japon:'🇯🇵',Japan:'🇯🇵',Malaisie:'🇲🇾',Malaysia:'🇲🇾',Singapour:'🇸🇬',Singapore:'🇸🇬',Thaïlande:'🇹🇭',Thailand:'🇹🇭',Vietnam:'🇻🇳',Chine:'🇨🇳',China:'🇨🇳',"États-Unis":'🇺🇸',USA:'🇺🇸',Mexique:'🇲🇽',Mexico:'🇲🇽',Tchéquie:'🇨🇿',"République tchèque":'🇨🇿'};
+function flag(c){if(!c)return'🌍';for(const k in FLAGS){if(c.toLowerCase().includes(k.toLowerCase()))return FLAGS[k];}return'🌍';}
+
+function setCat(btn,cat){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');activeCat=cat}
+function quickSearch(q){document.getElementById('searchInput').value=q;launch()}
+
+function animateSteps(){
+  const steps=['step1','step2','step3','step4','step5'];let i=0;
+  const iv=setInterval(()=>{
+    if(i>0)document.getElementById(steps[i-1]).className='lstep done';
+    if(i<steps.length){document.getElementById(steps[i]).className='lstep active';i++;}
+    else clearInterval(iv);
+  },2200);
+  return iv;
+}
+
+// Marques à exclure par catégorie — les blockbusters que tout le monde connaît
+const MAINSTREAM_EXCLUDE = {
+  energy: ['Red Bull','Monster','Rockstar','Burn','Bang','Reign','NOS','Hell','Tiger','XL Energy','Bum Bum','Predator','Mr Big','3 Horses','Hype','Carabao','RedBull','M-150','Lucozade'],
+  boissons: ['Coca-Cola','Coca Cola','Pepsi','Sprite','Fanta','Orangina','7Up','Schweppes','Dr Pepper','Lipton','Nestea','Mountain Dew','Mirinda','Capri-Sun','Capri Sun','Oasis','Tropico','Ice Tea','Snapple','Arizona','Pokka','Yeo\'s','Vimto','Innocent','Tropicana','Minute Maid','Joker','Andros','Granini'],
+  chips: ['Lays','Lay\'s','Pringles','Doritos','Cheetos','Ruffles','Tostitos','Fritos','Bret\'s','Walkers','Vico','Belin','Tuc','Bénénuts'],
+  snacks: ['Pringles','Lays','Doritos','Cheetos','Bret\'s'],
+  confiseries: ['Haribo','M&M\'s','M&Ms','Skittles','Mars','Snickers','Twix','Bounty','Kit Kat','KitKat','Kinder','Maltesers','Smarties','Toblerone','Lion','Crunch','Milka','Nutella','Ferrero','Hershey','Cadbury','Mentos','Tic Tac','Werther\'s','Chupa Chups','Fini','Trolli','Vidal','Lutti','Carambar','Hollywood','Mentos','Airwaves','Freedent'],
+  biscuits: ['Oreo','LU','Bahlsen','McVitie\'s','Mikado','Belvita','BN','Granola','Pepito','Petit Écolier','Prince','Tuc','Loacker','Bahlsen'],
+  kfood: ['Samyang','Nongshim','Lotte','Orion','Binggrae','CJ','Haitai','Pulmuone','Paldo'],
+  healthy: ['Innocent','Tropicana','Vitamin Water','Alpro','Oatly','Yeo Valley','Activia','Actimel'],
+  all: []
+};
+function getBlacklist(cat){
+  const set=new Set();
+  const add=arr=>arr.forEach(x=>set.add(x));
+  if(cat==='all'||!MAINSTREAM_EXCLUDE[cat]){Object.values(MAINSTREAM_EXCLUDE).forEach(add);}
+  else{add(MAINSTREAM_EXCLUDE[cat]);}
+  // Cross-category mega-brands à exclure partout
+  ['Coca-Cola','Pepsi','Red Bull','Monster','Haribo','Kinder','Lays','Pringles','Oreo','Mars','Snickers'].forEach(b=>set.add(b));
+  return[...set];
+}
+
+function buildPrompt(){
+  const q=document.getElementById('searchInput').value.trim();
+  const tendance=document.getElementById('fTendance').value;
+  const zone=document.getElementById('fZone').value;
+  const halal=document.getElementById('fHalal').value;
+  const source=document.getElementById('fSource').value;
+  const noto=document.getElementById('fNoto')?.value||'discovery';
+  const catMap={all:'all FMCG categories',boissons:'fresh beverages soft drinks',energy:'energy drinks functional beverages',chips:'chips crisps salty snacks',snacks:'asian snacks noodle snacks',confiseries:'candy confectionery sweets',kfood:'Korean food K-snacks',healthy:'healthy functional better-for-you'};
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+
+  const zoneRules={
+    europe_first:'PRIORITIZE European manufacturers (Poland, Lithuania, Germany, Austria, Czech, France, Spain, Italy, Netherlands, Belgium, Turkey, UK). You MAY include 1-2 Asian products (Korea, Malaysia, Singapore, Thailand) ONLY if they have a European importer/distributor. Avoid USA-only products entirely unless truly unique with no European equivalent.',
+    europe_only:'ONLY European manufacturers (EU + Turkey + UK). Absolutely no USA, no Asia unless they have an established EU production or warehouse.',
+    europe_asia:'European manufacturers preferred, Asian manufacturers (Korea, Japan, Malaysia, Singapore, Thailand, Vietnam) acceptable — these are accessible via direct shipping NOT through Strait of Hormuz. Avoid USA.',
+    all:'All origins acceptable but rank by logistics ease toward Réunion.'
+  };
+
+  const notoRules={
+    discovery:`DISCOVERY MODE — Find UNKNOWN / EMERGING brands that the buyer doesn't already sell. STRICT RULES:
+- Products must be FROM BRANDS LAUNCHED IN THE LAST 4 YEARS (2022 or later), OR established niche/regional brands not sold globally.
+- Brands must NOT be present in MOST European supermarkets or gas stations already.
+- Annual revenue/sales: prefer brands under ~€50M annual revenue, indie / craft / regional players.
+- Look on: ProductHunt FMCG, Indie food press (FoodNavigator new launches section, BeverageDaily startups), TikTok small-creator product reviews, regional FMCG news (Poland/Lithuania trade press), Polish/Czech/Turkish wholesale catalogs (Dabex, Lider, Stanro, Aleo Drinks, Big Brands Group).
+- Do NOT suggest any product whose brand is mentioned in the BLACKLIST below.`,
+    niche:`NICHE BRANDS — Established but not mainstream. Mid-size regional or specialty brands. Skip any blacklisted mega-brand.`,
+    all:`Any notoriety level allowed BUT still exclude blacklisted mega-brands.`
+  };
+
+  const blacklist=getBlacklist(activeCat);
+
+  return `You are a senior FMCG sourcing & product-DISCOVERY expert working FOR the buyer (INCA IMPORT). Today is ${today}.
+
+═══ CLIENT & LOGISTICS REALITY ═══
+INCA IMPORT is a purchasing center in La Réunion (French Indian Ocean island) supplying 3 gas stations (OLA/TOTAL/VITO). Main shipping: EUROPE → Fos-sur-Mer → Le Port, ~22 days, 40' HC, via CMA CGM. Trusted suppliers: Poland, Lithuania, Germany, Austria, France. Asia (Korea/Malaysia/Singapore) reachable by direct sea route (NOT via Hormuz). USA logistics avoided.
+Clientele: 15-40yo, TikTok-driven, large Muslim community (halal matters), single-serve format, retail €1.20–€3.50.
+The buyer ALREADY SELLS mainstream brands. He needs to DISCOVER products his competitors don't have.
+
+═══ SOURCING ZONE RULE ═══
+${zoneRules[zone]}
+
+═══ DISCOVERY / NOTORIETY RULE ═══
+${notoRules[noto]}
+
+═══ ⛔ BLACKLIST — DO NOT PROPOSE ANY OF THESE BRANDS OR ANY OF THEIR PRODUCTS ⛔ ═══
+${blacklist.join(', ')}
+If you are about to mention any of these, STOP and find a different brand. The buyer already sells these or knows them all — they have ZERO value as a recommendation.
+
+═══ HOW TO ACTUALLY FIND UNKNOWN PRODUCTS ═══
+Use web search to dig into:
+- "new energy drink brand launch 2024" / "2025" / "2026" (filter by recency)
+- "indie FMCG brand Poland" / "Lithuania" / "Turkey" / "Germany" / "South Korea startup"
+- "FoodNavigator new launches", "BeverageDaily startups", "Innova new products"
+- Wholesale catalogs that carry parallel-import / regional brands: Dabex.pl, Lider, MPT Stanro, Aleo Drinks, Big Brands Group Poland, Candy Market FR, Delidrinks, Famobra
+- TikTok product trends from SMALL creators (not viral content already mainstream)
+- Halal-certified beverage / snack producers from Turkey, Malaysia, UAE-export-to-EU
+- K-food brands not yet imported widely (smaller Korean labels beyond Samyang/Nongshim)
+- Bubble tea RTD startups, functional water startups, prebiotic soda startups, mushroom drinks, kefir RTD, kombucha small brands
+
+═══ MISSION ═══
+SEARCH QUERY: "${q||'new emerging FMCG brand discovery 2025 2026 Europe Asia'}"
+CATEGORY: ${catMap[activeCat]||'all'}
+TREND: ${tendance==='viral'?'Going viral RIGHT NOW (but small/emerging brands, not mainstream)':tendance==='emerging'?'Early-stage emerging products':'Any niche/discovery products'}
+HALAL: ${halal==='yes'?'Halal certification REQUIRED':'Halal a plus, not required'}
+SOURCE TYPE: ${source==='maker'?'Manufacturer direct preferred':'Manufacturer or established niche wholesaler'}
+
+═══ FABRICANT & CONTACT (mandatory) ═══
+For EACH product identify:
+1. The REAL MANUFACTURER (the producing company) — not a reseller.
+2. Country, city, departure port.
+3. Direct export contact: email / phone / website / LinkedIn / named person. Mark contactConfidence: verified | likely | guess.
+4. Do NOT invent contacts. If unknown say "À rechercher" and lower confidence.
+
+═══ SCORING ═══
+- score (0-100): overall fit Réunion gas stations
+- tendanceScore (0-100): momentum (small but accelerating > viral mainstream)
+- logistiqueScore (0-100): import ease to Réunion
+- noveltyScore (0-100): how UNKNOWN/fresh — 100 = nobody knows it, 0 = global mainstream. AIM HIGH.
+
+Find 6 concrete REAL discovery products. REJECT any that fail the blacklist check.
+
+Respond ONLY with valid JSON (no markdown, no backticks):
+{"searchDate":"${today}","sources":["site1.com","site2.com","site3.com","site4.com"],"analysis":"3-4 sentences focused on the DISCOVERY angle: what under-the-radar brands you found, why they fit Réunion, and what makes them differentiated from the mainstream products the buyer already sells.","products":[{"nom":"Exact product name","marque":"Brand (NOT in blacklist)","categorie":"Short category","origine":"Manufacturing country","villeFabricant":"City","portDepart":"Departure port","annee_lancement":"2024/2025/2026","score":82,"scoreLevel":"high","logistiqueScore":90,"tendanceScore":75,"noveltyScore":92,"pourquoi":"Why this NEW/NICHE product is relevant for Réunion gas stations — cite concrete recent evidence and why it differentiates from mainstream offer.","tags":["Nouveauté 2025","Halal","Niche"],"prixAchatEst":"€0.40 – €0.55","pvSuggere":"€2.00 – €2.50","margeEst":"45%","fabricant":"REAL manufacturer name","fabricantPays":"Country","fabricantSite":"site.com","contactPersonne":"Name + role","contactEmail":"export@... or empty","contactTel":"+..","contactLinkedin":"linkedin or empty","contactConfidence":"verified|likely|guess","noteDistribution":"How to buy: direct maker / which niche EU distributor / MOQ hint","accentColor":"#3b5bdb"}]}
+scoreLevel: "high">=75,"med" 50-74,"low"<50. accentColors rotate: #3b5bdb,#0ca678,#e8590c,#7048e8,#d6336c,#0891b2`;
+}
+
+async function launch(){if(!checkApiKey())return;
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;btn.classList.add('loading');
+  document.getElementById('btnTxt').textContent='Recherche en cours…';
+  document.getElementById('welcomeState').style.display='none';
+  document.getElementById('resultsWrap').style.display='none';
+  const ls=document.getElementById('loadingState');ls.style.display='flex';
+  ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep');
+  const iv=animateSteps();
+  const q=document.getElementById('searchInput').value.trim();
+  if(q&&!hist.includes(q)){hist.unshift(q);if(hist.length>6)hist.pop();renderHist();}
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:6000,
+        tools:[{type:'web_search_20250305',name:'web_search',max_uses:8}],
+        messages:[{role:'user',content:buildPrompt()}]
+      })
+    });
+    clearInterval(iv);
+    ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep done');
+    const data=await res.json();
+    if(data.error){throw new Error(data.error.message||JSON.stringify(data.error));}
+    let raw='';
+    if(data.content){for(const b of data.content){if(b.type==='text')raw+=b.text;}}
+    raw=raw.replace(/```json|```/g,'').trim();
+    const js=raw.indexOf('{'),je=raw.lastIndexOf('}')+1;
+    if(js>=0&&je>js)raw=raw.slice(js,je);
+    const parsed=JSON.parse(raw);
+    setTimeout(()=>{ls.style.display='none';renderResults(parsed,q);},400);
+  }catch(e){
+    clearInterval(iv);ls.style.display='none';
+    document.getElementById('welcomeState').style.display='flex';
+    document.getElementById('welcomeState').innerHTML=`<div class="welcome-icon">⚠️</div><h2>Erreur</h2><p style="color:var(--red)">Impossible de contacter l'API Claude.<br><small style="font-family:var(--mono);font-size:10px">${e.message}</small></p><button class="go-btn" style="max-width:200px;margin-top:1rem" onclick="location.reload()">Réessayer</button>`;
+    console.error(e);
+  }
+  btn.disabled=false;btn.classList.remove('loading');document.getElementById('btnTxt').textContent='🔴 Lancer la veille live';
+}
+
+function copyTxt(t,btn){navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='✓';setTimeout(()=>btn.textContent=o,1200);});}
+
+function cardHTML(p,idx){
+  const sl=p.scoreLevel||'med';const sc=SC[sl];const col=p.accentColor||'#3b5bdb';
+  const ts=p.tendanceScore||p.score||70;const lg=p.logistiqueScore||50;const nv=p.noveltyScore||60;
+  const lgCol=lg>=75?'var(--green)':lg>=45?'var(--amber)':'var(--red)';
+  const tags=(p.tags||[]).map(t=>{let c='ptag';if(/tiktok|viral/i.test(t))c+=' tiktok';else if(/halal/i.test(t))c+=' halal';else if(/nouveau|2025|2026|launch/i.test(t))c+=' new';else if(/épicé|spicy|hot|piment/i.test(t))c+=' hot';else if(/europe|logist|fos/i.test(t))c+=' logi';else if(/live|tendance/i.test(t))c+=' live';return`<span class="${c}">${t}</span>`;}).join('');
+  const conf=p.contactConfidence||'guess';
+  const confLbl={verified:'✓ vérifié',likely:'~ probable',guess:'? à vérifier'}[conf];
+  // contact rows
+  let contacts='';
+  if(p.contactPersonne)contacts+=`<div class="contact-person">👤 ${p.contactPersonne}</div>`;
+  if(p.contactEmail&&p.contactEmail!=='À rechercher'){contacts+=`<div class="contact-row"><span class="ci">📧</span><a href="mailto:${p.contactEmail}">${p.contactEmail}</a><button class="copy-btn" onclick="copyTxt('${p.contactEmail}',this)">copier</button></div>`;}
+  if(p.contactTel&&p.contactTel!=='À rechercher')contacts+=`<div class="contact-row"><span class="ci">📞</span><a href="tel:${p.contactTel.replace(/\s/g,'')}">${p.contactTel}</a></div>`;
+  if(p.contactLinkedin)contacts+=`<div class="contact-row"><span class="ci">in</span><a href="${p.contactLinkedin.startsWith('http')?p.contactLinkedin:'https://'+p.contactLinkedin}" target="_blank" rel="noopener">LinkedIn</a></div>`;
+  if(p.fabricantSite)contacts+=`<div class="contact-row"><span class="ci">🌐</span><a href="https://${p.fabricantSite.replace(/^https?:\/\//,'')}" target="_blank" rel="noopener">${p.fabricantSite.replace(/^https?:\/\//,'')}</a></div>`;
+  if(!contacts)contacts=`<div class="contact-row" style="color:var(--text4)"><span class="ci">📧</span>Contact à rechercher</div>`;
+  const fab=p.fabricant||p.marque||'Fabricant à identifier';
+  const fabLoc=[p.fabricantPays||p.origine,p.villeFabricant].filter(Boolean).join(' · ');
+  return`<div class="prod-card" style="animation-delay:${idx*.06}s">
+    <div class="prod-accent-bar" style="background:linear-gradient(90deg,${col},${col}70)"></div>
+    <div class="score-badge" style="background:${sc.bg};color:${sc.text};border-color:${sc.border}">${p.score}</div>
+    <div class="prod-cat" style="background:${col}15;color:${col}">${p.categorie}${p.annee_lancement?' · '+p.annee_lancement:''}</div>
+    <div class="prod-name">${p.nom}</div>
+    <div class="prod-brand"><span class="flag">${flag(p.origine)}</span> ${p.marque} · ${p.origine}${p.portDepart?` · 🚢 ${p.portDepart}`:''}</div>
+    <div class="prod-tags">${tags}</div>
+    <div class="prod-why" style="border-color:${col}">${p.pourquoi}</div>
+    <div class="meters">
+      <div class="trend-meter"><span class="tm-label">📈 Tendance</span><div class="tm-bar"><div class="tm-fill" style="width:${ts}%;background:${col}"></div></div><span class="tm-val" style="color:${col}">${ts}</span></div>
+      <div class="trend-meter"><span class="tm-label">🚢 Logistique</span><div class="tm-bar"><div class="tm-fill" style="width:${lg}%;background:${lgCol}"></div></div><span class="tm-val" style="color:${lgCol}">${lg}</span></div>
+      <div class="trend-meter"><span class="tm-label">🔍 Nouveauté</span><div class="tm-bar"><div class="tm-fill" style="width:${nv}%;background:var(--purple)"></div></div><span class="tm-val" style="color:var(--purple)">${nv}</span></div>
+    </div>
+    <div class="prod-metrics">
+      <div class="pm"><div class="pm-v" style="color:${col}">${p.prixAchatEst||'—'}</div><div class="pm-l">Achat est.</div></div>
+      <div class="pm"><div class="pm-v">${p.pvSuggere||'—'}</div><div class="pm-l">PV station</div></div>
+      <div class="pm"><div class="pm-v" style="color:var(--green)">${p.margeEst||'—'}</div><div class="pm-l">Marge est.</div></div>
+    </div>
+    <div class="maker-box">
+      <div class="mb-lbl">🏭 Fabricant${fabLoc?'':''}<span class="confidence ${conf}">${confLbl}</span></div>
+      <div class="mb-name">${fab}</div>
+      ${fabLoc?`<div class="mb-loc">${flag(p.fabricantPays||p.origine)} ${fabLoc}</div>`:''}
+      ${contacts}
+      ${p.noteDistribution?`<div class="distrib-note"><strong>Comment acheter :</strong> ${p.noteDistribution}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function renderResults(data,query){
+  const noto=document.getElementById('fNoto')?.value||'discovery';
+  let all=data.products||[];
+  let filtered=all, removed=[];
+  if(noto!=='all'){
+    const bl=getBlacklist(activeCat).map(b=>b.toLowerCase());
+    filtered=all.filter(p=>{
+      const hay=((p.marque||'')+' '+(p.nom||'')+' '+(p.fabricant||'')).toLowerCase();
+      const hit=bl.find(b=>hay.includes(b.toLowerCase()));
+      if(hit){removed.push({p,hit});return false;}
+      return true;
+    });
+  }
+  lastProducts=filtered;
+  document.getElementById('resultsWrap').style.display='block';
+  document.getElementById('resultsTitle').textContent=query?`Veille : "${query}"`:'Tendances FMCG Live';
+  const metaExtra = removed.length ? ` · ⛔ ${removed.length} marque(s) mainstream filtrée(s)` : '';
+  document.getElementById('resultsMeta').textContent=`${lastProducts.length} produits${metaExtra} · fabricants & contacts`;
+  const now=new Date();
+  document.getElementById('timestamp').innerHTML=`🔴 LIVE — ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}${removed.length?` <span style="margin-left:6px;background:rgba(112,72,232,.15);color:var(--purple);padding:2px 8px;border-radius:10px;font-size:9px">⛔ filtrés: ${removed.map(r=>r.hit).join(', ')}</span>`:''}`;
+  if(data.sources?.length){
+    document.getElementById('sourcesBar').style.display='flex';
+    document.getElementById('sourcesList').innerHTML=data.sources.map(s=>`<span class="src-tag">🌐 ${s}</span>`).join('');
+  }
+  if(data.analysis){document.getElementById('analysisBox').style.display='block';document.getElementById('analysisContent').textContent=data.analysis;}
+  document.getElementById('sortBar').style.display=lastProducts.length?'flex':'none';
+  document.querySelectorAll('.sort-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  drawGrid(lastProducts);
+}
+function drawGrid(arr){document.getElementById('productsGrid').innerHTML=arr.map((p,i)=>cardHTML(p,i)).join('');}
+function sortProducts(btn,key){
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  const keyMap={score:'score',logistique:'logistiqueScore',tendance:'tendanceScore',novelty:'noveltyScore',marge:p=>parseFloat((p.margeEst||'0').replace(/[^0-9.]/g,''))||0};
+  const arr=[...lastProducts].sort((a,b)=>{
+    const ka=typeof keyMap[key]==='function'?keyMap[key](a):(a[keyMap[key]]||0);
+    const kb=typeof keyMap[key]==='function'?keyMap[key](b):(b[keyMap[key]]||0);
+    return kb-ka;
+  });
+  drawGrid(arr);
+}
+function renderHist(){
+  const s=document.getElementById('histSection'),l=document.getElementById('histList');
+  if(!hist.length){s.style.display='none';return;}
+  s.style.display='block';
+  l.innerHTML=hist.map(h=>`<div class="hist-item" onclick="quickSearch('${h.replace(/'/g,"\\'")}')">↩ ${h}</div>`).join('');
+}
+function resetKey(){localStorage.removeItem('inca_claude_key');API_KEY='';alert('Clé Claude supprimée. Elle te sera redemandée au prochain lancement.');}
+function resetSearch(){
+  document.getElementById('resultsWrap').style.display='none';
+  document.getElementById('welcomeState').style.display='flex';
+  document.getElementById('searchInput').value='';
+  document.querySelectorAll('.cat-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  activeCat='all';
+  ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep');
+}
+
+</script>
+</body>
+</html>

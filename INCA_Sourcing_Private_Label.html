@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Sourcing Private Label</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4ff;--white:#fff;--border:#e2e8f8;--border2:#c7d2f0;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue3:#748ffc;--blue-soft:#eef2ff;
+  --green:#0ca678;--green2:#12b886;--green-soft:#e6fcf5;
+  --orange:#e8590c;--orange-soft:#fff4e6;
+  --amber:#e67700;--amber-soft:#fff8e1;
+  --red:#e03131;--red-soft:#fff5f5;
+  --purple:#7048e8;--purple-soft:#f3f0ff;
+  --pink:#d6336c;--pink-soft:#fff0f6;
+  --teal:#0891b2;--teal-soft:#ecfeff;
+  --gold:#f59f00;--gold-soft:#fff9db;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
+  --mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:16px;--sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.06);
+  --sh2:0 4px 20px rgba(59,91,219,.14),0 1px 4px rgba(59,91,219,.08);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.hdr{background:linear-gradient(135deg,#1e3a8a,var(--blue));color:#fff;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(59,91,219,.2)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:rgba(255,255,255,.2);font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 12px;border-radius:8px;text-transform:uppercase}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;opacity:.78;margin-top:1px;font-weight:500}
+.wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+.search-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:1.5rem;box-shadow:var(--sh);margin-bottom:1.5rem}
+.sc-title{font-size:13px;font-weight:800;margin-bottom:.25rem}
+.sc-sub{font-size:12px;color:var(--text3);margin-bottom:1rem;line-height:1.6}
+.search-row{display:flex;gap:10px;flex-wrap:wrap}
+.search-box{position:relative;flex:1;min-width:240px}
+.search-box input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:13px 14px 13px 42px;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--text);outline:none;transition:all .2s}
+.search-box input:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(59,91,219,.1)}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;pointer-events:none}
+.opts{display:flex;gap:8px;flex-wrap:wrap;margin-top:.85rem}
+.opt{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:7px 11px}
+.opt label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.opt select{background:transparent;border:none;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--blue);outline:none;cursor:pointer}
+.opt input[type=checkbox]{width:15px;height:15px;cursor:pointer}
+.go-btn{padding:13px 28px;background:linear-gradient(135deg,var(--purple),#845ef7);border:none;border-radius:var(--r);color:#fff;font-family:var(--sans);font-size:14px;font-weight:800;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(112,72,232,.3);display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(112,72,232,.4)}
+.go-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.loading .spin{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.examples{display:flex;flex-wrap:wrap;gap:7px;margin-top:1rem}
+.ex{background:var(--purple-soft);border:1.5px solid rgba(112,72,232,.15);border-radius:20px;padding:6px 14px;font-size:11px;font-weight:700;color:var(--purple);cursor:pointer;transition:all .2s}
+.ex:hover{background:var(--purple);color:#fff}
+.api-note{font-size:10px;color:var(--text4);margin-top:.85rem;display:flex;align-items:center;gap:6px}
+.api-note a{color:var(--blue);cursor:pointer;text-decoration:underline}
+/* loading */
+.loading-state{display:none;flex-direction:column;align-items:center;gap:1.5rem;padding:3rem 1rem}
+.loading-animation{display:flex;gap:6px}
+.ld{width:11px;height:11px;border-radius:50%;animation:bounce .8s infinite}
+.ld:nth-child(1){background:var(--purple)}.ld:nth-child(2){background:var(--blue);animation-delay:.15s}.ld:nth-child(3){background:var(--green);animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.lsteps{display:flex;flex-direction:column;gap:8px;min-width:340px}
+.lstep{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;transition:all .4s;background:var(--bg);color:var(--text4)}
+.lstep.active{background:var(--purple-soft);color:var(--purple);border:1px solid rgba(112,72,232,.2)}
+.lstep.done{background:var(--green-soft);color:var(--green);border:1px solid rgba(12,166,120,.2)}
+/* results */
+.results{display:none}
+.res-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:1rem}
+.res-title{font-size:22px;font-weight:800}
+.res-meta{font-size:12px;color:var(--text3);margin-top:3px}
+.btn-sm{padding:7px 15px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:var(--sans);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer}
+.btn-sm:hover{border-color:var(--blue);color:var(--blue)}
+.sources-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--sh)}
+.src-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
+.src-tag{background:var(--teal-soft);border:1px solid rgba(8,145,178,.2);color:var(--teal);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.block{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:1.4rem;box-shadow:var(--sh);margin-bottom:1.25rem}
+.block-title{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+.block-title .num{width:22px;height:22px;border-radius:50%;background:var(--purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+/* identity */
+.identity{background:linear-gradient(160deg,#1e3a8a,var(--blue),var(--blue2));color:#fff}
+.identity .block-title{color:rgba(255,255,255,.7)}
+.identity .block-title .num{background:rgba(255,255,255,.25)}
+.id-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem}
+.id-name{font-size:24px;font-weight:800;margin-bottom:.4rem}
+.id-desc{font-size:13px;line-height:1.7;opacity:.9;margin-bottom:1rem}
+.id-facts{display:flex;flex-direction:column;gap:7px}
+.id-fact{display:flex;gap:8px;font-size:12px;align-items:flex-start}
+.id-fact .k{opacity:.65;min-width:120px;font-weight:600}
+.id-fact .v{font-weight:700;flex:1}
+.id-maker{background:rgba(255,255,255,.12);border-radius:var(--r);padding:14px;align-self:start}
+.id-maker-lbl{font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;opacity:.7;margin-bottom:6px}
+.id-maker-name{font-size:15px;font-weight:800;margin-bottom:3px}
+.id-maker-loc{font-size:11px;opacity:.85;margin-bottom:8px}
+.id-maker a{color:#fff;font-weight:700;font-size:11px;text-decoration:underline;word-break:break-all}
+/* compo */
+.compo-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+.ingr-list{display:flex;flex-direction:column;gap:6px}
+.ingr{display:flex;align-items:center;gap:10px;padding:8px 11px;background:var(--bg);border-radius:8px}
+.ingr-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.ingr-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--purple),var(--blue))}
+.ingr-name{font-size:12px;font-weight:700;min-width:130px}
+.ingr-pct{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--purple);min-width:42px;text-align:right}
+.spec-row{display:flex;gap:8px;font-size:12px;padding:7px 0;border-bottom:1px solid var(--border)}
+.spec-row:last-child{border:none}
+.spec-row .k{color:var(--text3);min-width:140px;font-weight:600}
+.spec-row .v{font-weight:700;flex:1}
+.process-steps{display:flex;flex-direction:column;gap:8px;margin-top:.5rem}
+.pstep{display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.5}
+.pstep .pn{width:20px;height:20px;border-radius:6px;background:var(--teal-soft);color:var(--teal);font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.factory-type{background:var(--amber-soft);border:1px solid rgba(230,119,0,.2);border-radius:10px;padding:12px 14px;margin-top:1rem;font-size:12px;line-height:1.6}
+.factory-type strong{color:var(--amber)}
+/* factories */
+.fact-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;transition:all .2s;animation:fadeUp .35s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.fact-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.fact-card .bar{position:absolute;top:0;left:0;right:0;height:3px}
+.fact-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:.6rem}
+.fact-name{font-size:16px;font-weight:800;line-height:1.2}
+.fact-loc{font-size:11px;color:var(--text3);font-weight:600;margin-top:3px}
+.fact-rank{width:30px;height:30px;border-radius:8px;background:var(--purple-soft);color:var(--purple);font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fact-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.7rem}
+.ftag{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text3)}
+.ftag.pl{background:var(--purple-soft);border-color:rgba(112,72,232,.2);color:var(--purple)}
+.ftag.eu{background:var(--teal-soft);border-color:rgba(8,145,178,.2);color:var(--teal)}
+.ftag.halal{background:#f0fdf4;border-color:rgba(22,101,52,.2);color:#166534}
+.ftag.cost{background:var(--green-soft);border-color:rgba(12,166,120,.2);color:var(--green)}
+.fact-why{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:.8rem;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--purple)}
+.fact-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:.8rem}
+.fm{background:var(--bg);border-radius:7px;padding:7px 6px;text-align:center}
+.fm-v{font-family:var(--mono);font-size:11px;font-weight:800}
+.fm-l{font-size:7.5px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--text4);margin-top:2px}
+.fact-contact{background:linear-gradient(135deg,#f3f0ff,#faf5ff);border:1.5px solid rgba(112,72,232,.18);border-radius:10px;padding:11px 13px}
+.fc-lbl{font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.fc-row{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:3px}
+.fc-row .ci{width:15px;text-align:center;flex-shrink:0}
+.fc-row a{color:var(--purple);text-decoration:none;font-weight:700;word-break:break-all}
+.fc-row a:hover{text-decoration:underline}
+.fc-person{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.confidence{font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;margin-left:auto}
+.confidence.verified{background:var(--green-soft);color:var(--green)}
+.confidence.likely{background:var(--amber-soft);color:var(--amber)}
+.confidence.guess{background:var(--red-soft);color:var(--red)}
+.copy-btn{background:none;border:1px solid var(--border2);border-radius:5px;font-size:9px;font-weight:700;color:var(--text3);padding:2px 7px;cursor:pointer;margin-left:6px}
+.copy-btn:hover{border-color:var(--purple);color:var(--purple)}
+.email-btn{margin-top:8px;width:100%;padding:8px;background:var(--purple);border:none;border-radius:7px;color:#fff;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s}
+.email-btn:hover{background:#5f3dc4}
+.welcome-hint{text-align:center;color:var(--text3);font-size:13px;line-height:1.7;padding:2rem;max-width:600px;margin:0 auto}
+.disclaimer{font-size:10px;color:var(--text4);font-style:italic;margin-top:.5rem;line-height:1.5}
+/* modal email */
+.modal-ov{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:2rem}
+.modal-ov.show{display:flex}
+.modal{background:var(--white);border-radius:var(--r2);max-width:640px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 80px rgba(0,0,0,.3)}
+.modal-hd{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-bd{padding:1.25rem;overflow-y:auto}
+.modal-cls{cursor:pointer;font-size:18px;color:var(--text3);background:none;border:none;padding:4px 10px;border-radius:6px}
+.modal-cls:hover{background:var(--bg)}
+.email-ta{width:100%;min-height:320px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text);resize:vertical;outline:none}
+.email-ta:focus{border-color:var(--purple)}
+</style>
+</head>
+<body>
+<!-- ═══ NAV INCA IMPORT ═══ -->
+<style>
+.inca-nav{position:fixed;top:0;left:0;right:0;height:38px;background:#0f172a;color:#fff;display:flex;align-items:center;gap:0;padding:0 1rem;z-index:300;box-shadow:0 2px 12px rgba(15,23,42,.3);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700}
+.inca-nav-logo{background:linear-gradient(135deg,#3b5bdb,#7048e8);font-weight:800;font-size:10px;letter-spacing:1.5px;padding:4px 10px;border-radius:6px;margin-right:1rem}
+.inca-nav-item{padding:7px 14px;border-radius:7px;cursor:pointer;color:#cbd5e1;text-decoration:none;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.inca-nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.inca-nav-item.active{background:rgba(112,72,232,.25);color:#fff}
+body{padding-top:38px !important}
+@media(max-width:720px){.inca-nav{overflow-x:auto;padding:0 .5rem}.inca-nav-item{padding:6px 10px;font-size:10px}}
+</style>
+<nav class="inca-nav">
+  <span class="inca-nav-logo">INCA</span>
+  <a class="inca-nav-item" data-tool="optimiseur" href="INCA_Optimiseur_Conteneur_v4.html">📦 Optimiseur conteneur</a>
+  <a class="inca-nav-item" data-tool="veille" href="INCA_Veille_Produits_Live.html">📡 Veille produits</a>
+  <a class="inca-nav-item" data-tool="grossistes" href="INCA_Scanner_Grossistes.html">🛡 Scanner grossistes</a>
+  <a class="inca-nav-item" data-tool="privatelabel" href="INCA_Sourcing_Private_Label.html">🏭 Private label</a>
+</nav>
+<script>
+(function(){
+  const map={INCA_Optimiseur_Conteneur_v4:'optimiseur',INCA_Veille_Produits_Live:'veille',INCA_Scanner_Grossistes:'grossistes',INCA_Sourcing_Private_Label:'privatelabel'};
+  const fname=location.pathname.split('/').pop().replace(/\.html$/,'');
+  const cur=map[fname];
+  if(cur)document.querySelectorAll('.inca-nav-item').forEach(a=>{if(a.dataset.tool===cur)a.classList.add('active');});
+})();
+</script>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">INCA IMPORT</div>
+    <div>
+      <div class="hdr-title">Sourcing Private Label / MDD</div>
+      <div class="hdr-sub">Identifie le fabricant · décompose la recette · trouve l'usine au meilleur coût</div>
+    </div>
+  </div>
+  <div style="background:linear-gradient(135deg,#7048e8,#845ef7);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px"><div style="width:7px;height:7px;border-radius:50%;background:#fff;animation:bounce 1s infinite"></div>Claude + Web Search</div>
+</div>
+
+<div class="wrap">
+  <div class="search-card">
+    <div class="sc-title">🏭 Quel produit veux-tu fabriquer en marque blanche ?</div>
+    <div class="sc-sub">Donne un nom de produit (ex. <strong>Cocodo</strong>, <strong>Bum Bum</strong>, <strong>Pokka Milk Coffee</strong>). L'outil identifie qui le fabrique, décompose sa recette/specs, puis cherche les usines capables de le produire en private label au meilleur coût — priorité à ta logistique.</div>
+    <div class="search-row">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="prodInput" placeholder="ex: Cocodo, Bum Bum, aloe vera drink, ramen instantané…" onkeydown="if(event.key==='Enter')launch()">
+      </div>
+      <button class="go-btn" id="goBtn" onclick="launch()"><div class="spin"></div><span id="btnTxt">Analyser & sourcer</span></button>
+    </div>
+    <div class="opts">
+      <div class="opt"><label>Catégorie</label>
+        <select id="oCat">
+          <option value="auto">Auto-détect</option>
+          <option value="boisson">Boisson</option>
+          <option value="energy">Energy drink</option>
+          <option value="snack">Snack salé</option>
+          <option value="confiserie">Confiserie</option>
+          <option value="biscuit">Biscuit</option>
+          <option value="laitier">Lacté / café RTD</option>
+        </select>
+      </div>
+      <div class="opt"><label>Usines</label>
+        <select id="oZone">
+          <option value="europe_asia" selected>Europe + Asie</option>
+          <option value="europe_first">Europe d'abord</option>
+          <option value="cheapest">Le moins cher</option>
+        </select>
+      </div>
+      <div class="opt"><label>Halal</label>
+        <select id="oHalal">
+          <option value="plus">Atout</option>
+          <option value="req">Obligatoire</option>
+          <option value="no">Indifférent</option>
+        </select>
+      </div>
+      <div class="opt"><input type="checkbox" id="oWeb" checked><label>Recherche web live</label></div>
+    </div>
+    <div class="examples">
+      <div class="ex" onclick="quickP('Cocodo')">🥥 Cocodo</div>
+      <div class="ex" onclick="quickP('Bum Bum energy drink')">⚡ Bum Bum</div>
+      <div class="ex" onclick="quickP('Pokka Milk Coffee')">☕ Pokka Milk Coffee</div>
+      <div class="ex" onclick="quickP('aloe vera drink 500ml')">🌿 Aloe Vera drink</div>
+      <div class="ex" onclick="quickP('Capri-Sun pouch juice')">🧃 Capri-Sun</div>
+      <div class="ex" onclick="quickP('sparkling water flavored')">💧 Eau aromatisée</div>
+    </div>
+    <div class="api-note">🔑 Clé API Anthropic requise · <a onclick="resetKey()">changer la clé</a> · ~$0.01–0.03 / analyse (Haiku)</div>
+  </div>
+
+  <div class="loading-state" id="loadingState">
+    <div class="loading-animation"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>
+    <div class="lsteps">
+      <div class="lstep" id="step1">🔎 Identification du produit & fabricant d'origine…</div>
+      <div class="lstep" id="step2">🧪 Décomposition recette / specs techniques…</div>
+      <div class="lstep" id="step3">🏭 Type d'usine requis pour reproduire…</div>
+      <div class="lstep" id="step4">🌍 Recherche d'usines private label (Europe d'abord)…</div>
+      <div class="lstep" id="step5">📧 Contacts export & estimation des coûts…</div>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="res-head">
+      <div><div class="res-title" id="resTitle">Résultat</div><div class="res-meta" id="resMeta"></div></div>
+      <button class="btn-sm" onclick="resetSearch()">↩ Nouvelle analyse</button>
+    </div>
+    <div class="sources-bar" id="sourcesBar" style="display:none">
+      <span class="src-label">Sources :</span><div id="sourcesList" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div id="resBody"></div>
+  </div>
+
+  <div class="welcome-hint" id="welcomeHint">
+    👆 Entre un produit ci-dessus pour lancer l'analyse private label complète.
+  </div>
+</div>
+
+<div class="modal-ov" id="emailModal">
+  <div class="modal">
+    <div class="modal-hd"><div style="font-size:13px;font-weight:800" id="emailTitle">Email de prise de contact</div><button class="modal-cls" onclick="closeEmail()">✕</button></div>
+    <div class="modal-bd">
+      <textarea class="email-ta" id="emailBody"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="email-btn" style="flex:1" onclick="copyEmail()">📋 Copier le texte</button>
+        <button class="email-btn" style="flex:1;background:var(--blue)" onclick="openMailto()">✉️ Ouvrir dans Mail</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let API_KEY = localStorage.getItem('inca_claude_key') || '';
+function checkApiKey(){
+  if(!API_KEY){
+    const k=prompt('Entre ta clé API Anthropic (sk-ant-...)\nconsole.anthropic.com → API Keys');
+    if(k&&k.startsWith('sk-')){API_KEY=k;localStorage.setItem('inca_claude_key',k);return true;}
+    alert('Clé invalide (doit commencer par sk-ant-)');return false;
+  }
+  return true;
+}
+function resetKey(){localStorage.removeItem('inca_claude_key');API_KEY='';alert('Clé supprimée. Redemandée au prochain lancement.');}
+let lastData=null;
+const FLAGS={Pologne:'🇵🇱',Poland:'🇵🇱',Lituanie:'🇱🇹',Lithuania:'🇱🇹',Allemagne:'🇩🇪',Germany:'🇩🇪',Autriche:'🇦🇹',Austria:'🇦🇹',France:'🇫🇷',Espagne:'🇪🇸',Spain:'🇪🇸',Italie:'🇮🇹',Italy:'🇮🇹',"Pays-Bas":'🇳🇱',Netherlands:'🇳🇱',Belgique:'🇧🇪',Belgium:'🇧🇪',Turquie:'🇹🇷',Turkey:'🇹🇷',"Royaume-Uni":'🇬🇧',UK:'🇬🇧',"Corée":'🇰🇷',Korea:'🇰🇷',Japon:'🇯🇵',Japan:'🇯🇵',Malaisie:'🇲🇾',Malaysia:'🇲🇾',Singapour:'🇸🇬',Singapore:'🇸🇬',Thaïlande:'🇹🇭',Thailand:'🇹🇭',Vietnam:'🇻🇳',Chine:'🇨🇳',China:'🇨🇳',"États-Unis":'🇺🇸',USA:'🇺🇸',Tchéquie:'🇨🇿'};
+function flag(c){if(!c)return'🌍';for(const k in FLAGS){if(c.toLowerCase().includes(k.toLowerCase()))return FLAGS[k];}return'🌍';}
+
+function quickP(p){document.getElementById('prodInput').value=p;launch();}
+function animateSteps(){
+  const steps=['step1','step2','step3','step4','step5'];let i=0;
+  const iv=setInterval(()=>{
+    if(i>0)document.getElementById(steps[i-1]).className='lstep done';
+    if(i<steps.length){document.getElementById(steps[i]).className='lstep active';i++;}else clearInterval(iv);
+  },2400);
+  return iv;
+}
+
+function buildPrompt(){
+  const prod=document.getElementById('prodInput').value.trim();
+  const cat=document.getElementById('oCat').value;
+  const zone=document.getElementById('oZone').value;
+  const halal=document.getElementById('oHalal').value;
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  const zoneRules={
+    europe_first:'PRIORITIZE European private-label manufacturers/co-packers (Poland, Lithuania, Germany, Austria, Czech, France, Spain, Italy, Netherlands, Belgium, Turkey). Asia (Korea, Malaysia, Thailand) only as 1 fallback if no European co-packer exists. Avoid USA.',
+    europe_asia:'European co-packers preferred; Asian co-packers (Malaysia, Thailand, Vietnam, Korea) acceptable (direct sea route, not via Hormuz). Avoid USA.',
+    cheapest:'Rank purely by landed cost to Réunion, any country, but still note logistics complexity.'
+  };
+  const halalRule={plus:'Halal is a plus.',req:'Halal certification is REQUIRED — only propose halal-capable factories.',no:'Halal not relevant.'}[halal];
+
+  return `You are a senior FMCG private-label (MDD) sourcing expert working FOR the buyer INCA IMPORT. Today is ${today}.
+
+═══ BUYER CONTEXT ═══
+INCA IMPORT = purchasing center in La Réunion (French Indian Ocean island), supplies 3 gas stations. Wants to create its OWN private-label version of an existing product. Main logistics: EUROPE → Fos-sur-Mer → Le Port Réunion, ~22 days, 40' HC container. Trusted regions: Poland, Lithuania, Germany, Austria, France. Retail price target €1.20–€3.50. Young, TikTok-driven, large Muslim community.
+
+═══ TASK ═══
+The buyer wants to private-label this product: "${prod}"
+Category hint: ${cat==='auto'?'auto-detect':cat}
+Factory zone rule: ${zoneRules[zone]}
+${halalRule}
+${document.getElementById('oWeb').checked?'USE WEB SEARCH to find the real original manufacturer, real composition, and real co-packers with contacts.':'Use your knowledge; web search disabled.'}
+
+═══ DELIVER (5 parts) ═══
+1. IDENTIFY the product: what it is, format, the ORIGINAL manufacturer (real company), its country/city/site.
+2. DECOMPOSE: typical recipe/ingredient breakdown with approx % (best estimate), key technical specs (volume, packaging type, pasteurization/UHT, shelf life), required certifications.
+3. FACTORY TYPE: what kind of industrial co-packer can reproduce this (e.g. "UHT dairy-drink filler with retort capability", "PET carbonated soft drink bottler", "extruded-snack line").
+4. CO-PACKERS: find 4-5 REAL private-label manufacturers able to produce it. For EACH: real company name, country/city, why suitable, estimated MOQ, estimated target cost per unit (FCA/EXW, EUR), a direct export contact (named person if possible + email + phone + website), contactConfidence (verified/likely/guess). Do NOT invent contacts — if unknown put "À rechercher" and lower confidence. Prefer factories that openly do private label / contract manufacturing.
+5. COST: estimated target landed cost vs typical market buy price, and feasibility note.
+
+Respond ONLY with valid JSON (no markdown/backticks/text outside):
+{"searchDate":"${today}","sources":["s1.com","s2.com"],
+"identity":{"nom":"Product","description":"1-2 sentences what it is","format":"e.g. 250ml can","origine":"country","fabricantOrigine":"original maker company","fabricantLieu":"city, country","fabricantSite":"site.com","prixMarcheEst":"€0.40–0.55 typical wholesale"},
+"composition":{"ingredients":[{"nom":"Water","pct":85},{"nom":"Sugar","pct":9}],"specs":[{"k":"Volume","v":"250 ml"},{"k":"Emballage","v":"Canette alu"},{"k":"Process","v":"Pasteurisé"},{"k":"DLUO","v":"12 mois"}],"certifications":["Halal possible","ISO 22000"]},
+"process":["Step 1...","Step 2...","Step 3..."],
+"typeUsine":"Description of the kind of factory needed",
+"usines":[{"nom":"Real co-packer name","pays":"Country","ville":"City","rank":1,"pourquoi":"Why suitable for this product + private label capability","moqEst":"e.g. 1 FCL / 10 000 u","coutCibleEst":"€0.30–0.40 /u FCA","logistiqueScore":90,"coutScore":80,"capacitePL":"Confirmé / Probable","halal":"Oui/Non/Inconnu","contactPersonne":"name+role or empty","contactEmail":"export@...","contactTel":"+..","contactSite":"site.com","contactConfidence":"verified|likely|guess","accentColor":"#7048e8"}],
+"coutAnalyse":"2-3 sentences: target landed cost to Réunion vs current market, and whether private label makes economic sense at INCA volumes."}
+accentColors rotate: #7048e8,#3b5bdb,#0ca678,#e8590c,#0891b2`;
+}
+
+async function launch(){
+  const prod=document.getElementById('prodInput').value.trim();
+  if(!prod){alert('Entre un nom de produit');return;}
+  if(!checkApiKey())return;
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;btn.classList.add('loading');document.getElementById('btnTxt').textContent='Analyse…';
+  document.getElementById('welcomeHint').style.display='none';
+  document.getElementById('results').style.display='none';
+  const ls=document.getElementById('loadingState');ls.style.display='flex';
+  ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep');
+  const iv=animateSteps();
+  try{
+    const tools=document.getElementById('oWeb').checked?[{type:'web_search_20250305',name:'web_search',max_uses:5}]:undefined;
+    const body={model:'claude-haiku-4-5-20251001',max_tokens:6000,messages:[{role:'user',content:buildPrompt()}]};
+    if(tools)body.tools=tools;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify(body)
+    });
+    clearInterval(iv);
+    ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep done');
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
+    let raw='';if(data.content)for(const b of data.content)if(b.type==='text')raw+=b.text;
+    raw=raw.replace(/```json|```/g,'').trim();
+    const js=raw.indexOf('{'),je=raw.lastIndexOf('}')+1;if(js>=0&&je>js)raw=raw.slice(js,je);
+    const parsed=JSON.parse(raw);
+    setTimeout(()=>{ls.style.display='none';render(parsed,prod);},400);
+  }catch(e){
+    clearInterval(iv);ls.style.display='none';
+    document.getElementById('welcomeHint').style.display='block';
+    document.getElementById('welcomeHint').innerHTML=`<div style="font-size:40px">⚠️</div><h2 style="color:var(--red);margin:.5rem 0">Erreur</h2><p style="color:var(--red)">${e.message}</p>${/rate limit/i.test(e.message)?'<p style="margin-top:.5rem">💡 Limite de débit atteinte. Attends ~1 min, décoche "Recherche web live", ou réduis la fréquence.</p>':''}`;
+    console.error(e);
+  }
+  btn.disabled=false;btn.classList.remove('loading');document.getElementById('btnTxt').textContent='Analyser & sourcer';
+}
+
+function copyTxt(t,btn){navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='✓';setTimeout(()=>btn.textContent=o,1200);});}
+
+function render(d,prod){
+  lastData=d;
+  document.getElementById('results').style.display='block';
+  document.getElementById('resTitle').textContent=`Private Label : ${d.identity?.nom||prod}`;
+  document.getElementById('resMeta').textContent=`${d.usines?.length||0} usines candidates · priorité logistique · ${d.searchDate||''}`;
+  if(d.sources?.length){document.getElementById('sourcesBar').style.display='flex';document.getElementById('sourcesList').innerHTML=d.sources.map(s=>`<span class="src-tag">🌐 ${s}</span>`).join('');}
+  else document.getElementById('sourcesBar').style.display='none';
+
+  let h='';
+  // 1 IDENTITÉ
+  const id=d.identity||{};
+  h+=`<div class="block identity"><div class="block-title" style="color:rgba(255,255,255,.7)"><span class="num">1</span>Produit & fabricant d'origine</div>
+    <div class="id-grid">
+      <div>
+        <div class="id-name">${id.nom||prod}</div>
+        <div class="id-desc">${id.description||''}</div>
+        <div class="id-facts">
+          ${id.format?`<div class="id-fact"><span class="k">Format</span><span class="v">${id.format}</span></div>`:''}
+          ${id.origine?`<div class="id-fact"><span class="k">Origine</span><span class="v">${flag(id.origine)} ${id.origine}</span></div>`:''}
+          ${id.prixMarcheEst?`<div class="id-fact"><span class="k">Prix marché</span><span class="v">${id.prixMarcheEst}</span></div>`:''}
+        </div>
+      </div>
+      <div class="id-maker">
+        <div class="id-maker-lbl">🏭 Fabricant d'origine</div>
+        <div class="id-maker-name">${id.fabricantOrigine||'À identifier'}</div>
+        ${id.fabricantLieu?`<div class="id-maker-loc">${flag(id.fabricantLieu)} ${id.fabricantLieu}</div>`:''}
+        ${id.fabricantSite?`<a href="https://${id.fabricantSite.replace(/^https?:\/\//,'')}" target="_blank" rel="noopener">🌐 ${id.fabricantSite.replace(/^https?:\/\//,'')}</a>`:''}
+      </div>
+    </div></div>`;
+
+  // 2 COMPOSITION
+  const c=d.composition||{};
+  h+=`<div class="block"><div class="block-title"><span class="num">2</span>Décomposition recette & specs</div><div class="compo-grid">
+    <div><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:.6rem">🧪 Composition estimée</div><div class="ingr-list">
+      ${(c.ingredients||[]).map(i=>`<div class="ingr"><span class="ingr-name">${i.nom}</span><div class="ingr-bar"><div class="ingr-fill" style="width:${Math.min(i.pct||0,100)}%"></div></div><span class="ingr-pct">${i.pct||'?'}%</span></div>`).join('')||'<div style="font-size:11px;color:var(--text4)">Non déterminée</div>'}
+    </div></div>
+    <div><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:.6rem">📋 Specs techniques</div>
+      ${(c.specs||[]).map(s=>`<div class="spec-row"><span class="k">${s.k}</span><span class="v">${s.v}</span></div>`).join('')}
+      ${(c.certifications||[]).length?`<div style="margin-top:.7rem;display:flex;flex-wrap:wrap;gap:5px">${c.certifications.map(x=>`<span class="ftag halal">${x}</span>`).join('')}</div>`:''}
+    </div>
+  </div>
+  ${(d.process||[]).length?`<div style="margin-top:1.2rem"><div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:.4rem">⚙️ Process de fabrication</div><div class="process-steps">${d.process.map((p,i)=>`<div class="pstep"><span class="pn">${i+1}</span><span>${p}</span></div>`).join('')}</div></div>`:''}
+  ${d.typeUsine?`<div class="factory-type">🏭 <strong>Type d'usine requis :</strong> ${d.typeUsine}</div>`:''}
+  </div>`;
+
+  // 3 USINES
+  h+=`<div class="block"><div class="block-title"><span class="num">3</span>Usines private label candidates</div><div id="factWrap">${(d.usines||[]).map((u,i)=>factHTML(u,i)).join('')}</div></div>`;
+
+  // 4 COÛT
+  if(d.coutAnalyse)h+=`<div class="block" style="background:linear-gradient(160deg,#0ca678,#12b886);color:#fff"><div class="block-title" style="color:rgba(255,255,255,.75)"><span class="num" style="background:rgba(255,255,255,.25)">4</span>Analyse de coût & faisabilité</div><div style="font-size:13px;line-height:1.8;opacity:.95">${d.coutAnalyse}</div></div>`;
+
+  h+=`<div class="disclaimer">⚠️ Compositions et coûts sont des estimations générées par IA à vérifier avec chaque usine. Les contacts marqués "à vérifier" sont des pistes : confirme avant tout envoi. Demande toujours une fiche technique + échantillon + cotation FCA avant engagement.</div>`;
+  document.getElementById('resBody').innerHTML=h;
+}
+
+function factHTML(u,i){
+  const col=u.accentColor||'#7048e8';
+  const conf=u.contactConfidence||'guess';
+  const confLbl={verified:'✓ vérifié',likely:'~ probable',guess:'? à vérifier'}[conf];
+  const lg=u.logistiqueScore||50,co=u.coutScore||50;
+  const lgC=lg>=75?'var(--green)':lg>=45?'var(--amber)':'var(--red)';
+  const coC=co>=75?'var(--green)':co>=45?'var(--amber)':'var(--red)';
+  let contacts='';
+  if(u.contactPersonne)contacts+=`<div class="fc-person">👤 ${u.contactPersonne}</div>`;
+  if(u.contactEmail&&u.contactEmail!=='À rechercher')contacts+=`<div class="fc-row"><span class="ci">📧</span><a href="mailto:${u.contactEmail}">${u.contactEmail}</a><button class="copy-btn" onclick="copyTxt('${u.contactEmail}',this)">copier</button></div>`;
+  if(u.contactTel&&u.contactTel!=='À rechercher')contacts+=`<div class="fc-row"><span class="ci">📞</span><a href="tel:${u.contactTel.replace(/\s/g,'')}">${u.contactTel}</a></div>`;
+  if(u.contactSite)contacts+=`<div class="fc-row"><span class="ci">🌐</span><a href="https://${u.contactSite.replace(/^https?:\/\//,'')}" target="_blank" rel="noopener">${u.contactSite.replace(/^https?:\/\//,'')}</a></div>`;
+  if(!contacts)contacts=`<div class="fc-row" style="color:var(--text4)"><span class="ci">📧</span>Contact à rechercher</div>`;
+  const tags=[];
+  if(u.capacitePL)tags.push(`<span class="ftag pl">PL ${u.capacitePL}</span>`);
+  if(flag(u.pays)!=='🌍')tags.push(`<span class="ftag eu">${flag(u.pays)} ${u.pays}</span>`);
+  if(u.halal&&/oui|yes/i.test(u.halal))tags.push(`<span class="ftag halal">Halal</span>`);
+  return`<div class="fact-card" style="animation-delay:${i*.06}s">
+    <div class="bar" style="background:linear-gradient(90deg,${col},${col}70)"></div>
+    <div class="fact-head">
+      <div><div class="fact-name">${u.nom}</div><div class="fact-loc">${flag(u.pays)} ${[u.ville,u.pays].filter(Boolean).join(', ')}</div></div>
+      <div class="fact-rank">#${u.rank||i+1}</div>
+    </div>
+    <div class="fact-tags">${tags.join('')}</div>
+    <div class="fact-why" style="border-color:${col}">${u.pourquoi||''}</div>
+    <div class="fact-metrics">
+      <div class="fm"><div class="fm-v" style="color:${col}">${u.coutCibleEst||'—'}</div><div class="fm-l">Coût cible</div></div>
+      <div class="fm"><div class="fm-v">${u.moqEst||'—'}</div><div class="fm-l">MOQ est.</div></div>
+      <div class="fm"><div class="fm-v" style="color:${lgC}">${lg}</div><div class="fm-l">Logistique</div></div>
+      <div class="fm"><div class="fm-v" style="color:${coC}">${co}</div><div class="fm-l">Coût score</div></div>
+    </div>
+    <div class="fact-contact">
+      <div class="fc-lbl">📧 Contact export<span class="confidence ${conf}">${confLbl}</span></div>
+      ${contacts}
+      <button class="email-btn" onclick='openEmail(${JSON.stringify(JSON.stringify(u))})'>✉️ Générer l'email de prise de contact</button>
+    </div>
+  </div>`;
+}
+
+// ── Email generator (conditions INCA IMPORT) ──
+function openEmail(uStr){
+  const u=JSON.parse(JSON.parse(uStr));
+  const id=lastData?.identity||{};
+  const prod=id.nom||document.getElementById('prodInput').value.trim();
+  const person=u.contactPersonne?u.contactPersonne.split('(')[0].split('-')[0].trim():'Sir or Madam';
+  const fmt=id.format?` (${id.format})`:'';
+  const body=`Subject: Private label inquiry — ${prod}${fmt}
+
+Dear ${person},
+
+We are INCA IMPORT, a purchasing center based in La Réunion (French overseas territory, Indian Ocean), supplying a network of retail outlets and service stations.
+
+We are looking for a private-label / contract manufacturing partner for the following product:
+- Product: ${prod}${fmt}
+- Estimated annual volume: starting at 1x40' HC container, recurring orders
+- Target market: La Réunion (DOM-TOM, French regulations / DAAF)
+
+Could you please share:
+1. Confirmation you can produce this product under private label
+2. Your technical data sheet and available formats
+3. MOQ and price (FCA / EXW, EUR)
+4. Lead time and certifications available (incl. Halal if possible)
+5. A product sample if available
+
+Our preferred terms: incoterm CFR Le Port (Réunion) or FCA, payment 30% deposit / 70% against copy B/L, sea freight via Fos-sur-Mer.
+
+We look forward to your reply.
+
+Best regards,
+Nicolas INCANA
+SAS INCA IMPORT — La Réunion
+VAT: FR44945112753 · EORI: FR94511275300013
+29 Route des Premiers Français, 97460 Saint-Paul, Réunion`;
+  document.getElementById('emailTitle').textContent=`Email → ${u.nom}`;
+  document.getElementById('emailBody').value=body;
+  document.getElementById('emailBody').dataset.email=u.contactEmail&&u.contactEmail!=='À rechercher'?u.contactEmail:'';
+  document.getElementById('emailModal').classList.add('show');
+}
+function closeEmail(){document.getElementById('emailModal').classList.remove('show');}
+function copyEmail(){const t=document.getElementById('emailBody').value;navigator.clipboard.writeText(t).then(()=>alert('Email copié ✓'));}
+function openMailto(){
+  const ta=document.getElementById('emailBody');const full=ta.value;
+  const subj=(full.match(/^Subject:\s*(.+)$/m)||[])[1]||'Private label inquiry';
+  const body=full.replace(/^Subject:.*\n\n?/m,'');
+  const to=ta.dataset.email||'';
+  window.location.href=`mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+}
+document.getElementById('emailModal').addEventListener('click',e=>{if(e.target.id==='emailModal')closeEmail();});
+
+function resetSearch(){
+  document.getElementById('results').style.display='none';
+  document.getElementById('welcomeHint').style.display='block';
+  document.getElementById('prodInput').value='';
+  ['step1','step2','step3','step4','step5'].forEach(s=>document.getElementById(s).className='lstep');
+}
+
+</script>
+</body>
+</html>

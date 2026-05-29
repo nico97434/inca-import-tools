@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Scanner Grossistes Vérifiés</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f4ff;--white:#fff;--border:#e2e8f8;--border2:#c7d2f0;
+  --blue:#3b5bdb;--blue2:#4c6ef5;--blue-soft:#eef2ff;
+  --green:#0ca678;--green2:#12b886;--green-soft:#e6fcf5;
+  --orange:#e8590c;--orange-soft:#fff4e6;
+  --amber:#e67700;--amber-soft:#fff8e1;
+  --red:#e03131;--red-soft:#fff5f5;
+  --purple:#7048e8;--purple-soft:#f3f0ff;
+  --pink:#d6336c;--pink-soft:#fff0f6;
+  --teal:#0891b2;--teal-soft:#ecfeff;
+  --gold:#f59f00;--gold-soft:#fff9db;
+  --text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
+  --mono:'JetBrains Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+  --r:12px;--r2:16px;--sh:0 1px 3px rgba(59,91,219,.08),0 4px 16px rgba(59,91,219,.06);
+  --sh2:0 4px 20px rgba(59,91,219,.14),0 1px 4px rgba(59,91,219,.08);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+.hdr{background:linear-gradient(135deg,#0d3b66,var(--teal));color:#fff;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 4px 20px rgba(8,145,178,.2)}
+.hdr-l{display:flex;align-items:center;gap:14px}
+.logo{background:rgba(255,255,255,.2);font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 12px;border-radius:8px;text-transform:uppercase}
+.hdr-title{font-size:17px;font-weight:700}
+.hdr-sub{font-size:11px;opacity:.78;margin-top:1px;font-weight:500}
+.live-badge{background:rgba(255,255,255,.18);padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;display:flex;align-items:center;gap:7px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:livepulse 1s infinite}
+@keyframes livepulse{0%,100%{opacity:1}50%{opacity:.3}}
+.wrap{max-width:1200px;margin:0 auto;padding:2rem 1.5rem}
+.step-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r2);padding:1.5rem;box-shadow:var(--sh);margin-bottom:1.25rem}
+.step-card.disabled{opacity:.45;pointer-events:none}
+.sc-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:var(--teal);color:#fff;font-weight:800;font-size:12px;margin-right:8px}
+.sc-title{font-size:13px;font-weight:800;margin-bottom:.4rem;display:flex;align-items:center}
+.sc-sub{font-size:12px;color:var(--text3);margin-bottom:1rem;line-height:1.6}
+
+/* upload */
+.upload-zone{background:var(--bg);border:2.5px dashed var(--border2);border-radius:var(--r);padding:2rem 1.5rem;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover{border-color:var(--teal);background:var(--teal-soft)}
+.upload-zone.loaded{border-color:var(--green);background:var(--green-soft);border-style:solid}
+.upload-zone .ic{font-size:36px;margin-bottom:.5rem}
+.upload-zone .t{font-size:14px;font-weight:700}
+.upload-zone .s{font-size:11px;color:var(--text3);margin-top:4px}
+#fi{display:none}
+.fn-display{margin-top:.7rem;font-size:12px;font-weight:700;color:var(--green);display:none}
+
+/* products list */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:1rem}
+.prod-item{background:var(--bg);border:1.5px solid var(--border);border-radius:9px;padding:9px 11px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .15s}
+.prod-item:hover{border-color:var(--teal)}
+.prod-item.selected{background:var(--teal-soft);border-color:var(--teal)}
+.prod-item .chk{width:16px;height:16px;border-radius:4px;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--white)}
+.prod-item.selected .chk{background:var(--teal);border-color:var(--teal)}
+.prod-item.selected .chk::after{content:'✓';color:#fff;font-size:10px;font-weight:800}
+.prod-info{flex:1;min-width:0}
+.prod-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-meta{font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+.sel-actions{display:flex;gap:7px;margin-top:.8rem;flex-wrap:wrap}
+.btn-mini{padding:5px 11px;border:1.5px solid var(--border);border-radius:7px;background:var(--white);font-family:var(--sans);font-size:10px;font-weight:700;color:var(--text3);cursor:pointer;transition:all .15s}
+.btn-mini:hover{border-color:var(--teal);color:var(--teal)}
+.btn-mini.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* countries */
+.country-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px;margin-top:.4rem}
+.country-btn{padding:10px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.country-btn:hover{border-color:var(--teal);background:var(--teal-soft)}
+.country-btn.active{background:var(--teal-soft);border-color:var(--teal);color:var(--teal)}
+.country-btn .fl{font-size:18px}
+
+/* trust criteria */
+.trust-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:.4rem}
+.trust-item{padding:9px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:9px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .15s}
+.trust-item:hover{border-color:var(--gold)}
+.trust-item.active{background:var(--gold-soft);border-color:var(--gold)}
+.trust-item .chk{width:15px;height:15px;border-radius:4px;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--white)}
+.trust-item.active .chk{background:var(--gold);border-color:var(--gold)}
+.trust-item.active .chk::after{content:'✓';color:#fff;font-size:9px;font-weight:800}
+.trust-item .lbl{font-size:11px;font-weight:700;color:var(--text2)}
+
+/* launch */
+.go-btn{padding:14px 32px;background:linear-gradient(135deg,var(--teal),var(--blue));border:none;border-radius:var(--r);color:#fff;font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .25s;box-shadow:0 4px 20px rgba(8,145,178,.3);display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(8,145,178,.4)}
+.go-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.loading .spin{display:block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.api-note{font-size:10px;color:var(--text4);margin-top:.6rem;text-align:center}
+.api-note a{color:var(--blue);cursor:pointer;text-decoration:underline}
+
+/* loading */
+.loading-state{display:none;flex-direction:column;align-items:center;gap:1.5rem;padding:3rem 1rem}
+.loading-anim{display:flex;gap:6px}
+.ld{width:11px;height:11px;border-radius:50%;animation:bounce .8s infinite}
+.ld:nth-child(1){background:var(--teal)}.ld:nth-child(2){background:var(--blue);animation-delay:.15s}.ld:nth-child(3){background:var(--green);animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.lsteps{display:flex;flex-direction:column;gap:8px;min-width:340px}
+.lstep{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:600;transition:all .4s;background:var(--bg);color:var(--text4)}
+.lstep.active{background:var(--teal-soft);color:var(--teal);border:1px solid rgba(8,145,178,.2)}
+.lstep.done{background:var(--green-soft);color:var(--green);border:1px solid rgba(12,166,120,.2)}
+
+/* results */
+.results{display:none}
+.res-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:1rem}
+.res-title{font-size:22px;font-weight:800}
+.res-meta{font-size:12px;color:var(--text3);margin-top:3px}
+.btn-sm{padding:7px 15px;border:1.5px solid var(--border);border-radius:8px;background:var(--white);font-family:var(--sans);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer}
+.btn-sm:hover{border-color:var(--blue);color:var(--blue)}
+.sources-bar{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:1.25rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--sh)}
+.src-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase}
+.src-tag{background:var(--teal-soft);border:1px solid rgba(8,145,178,.2);color:var(--teal);font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px}
+.analysis-box{background:linear-gradient(160deg,#0d3b66,var(--teal),var(--blue));color:#fff;border-radius:var(--r2);padding:1.5rem;margin-bottom:1.5rem;box-shadow:0 8px 40px rgba(8,145,178,.25)}
+.ab-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;opacity:.75;margin-bottom:.6rem}
+.ab-content{font-size:13px;line-height:1.85;opacity:.94}
+
+/* sort */
+.sort-bar{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.sort-btn{padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--white);font-family:var(--sans);font-size:11px;font-weight:700;color:var(--text3);cursor:pointer}
+.sort-btn:hover,.sort-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-soft)}
+
+/* grossiste card */
+.wh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:1rem}
+.wh-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r2);padding:1.25rem;box-shadow:var(--sh);transition:all .25s;position:relative;overflow:hidden;animation:fadeUp .35s both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.wh-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.wh-card .bar{position:absolute;top:0;left:0;right:0;height:3px}
+.wh-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:.7rem}
+.wh-name{font-size:17px;font-weight:800;line-height:1.2}
+.wh-loc{font-size:11px;color:var(--text3);font-weight:600;margin-top:3px;display:flex;align-items:center;gap:5px}
+.wh-trust{width:54px;height:54px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;border:3px solid}
+.wht-val{font-family:var(--mono);font-size:15px;font-weight:800;line-height:1}
+.wht-lbl{font-size:7px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;margin-top:1px}
+
+.wh-since{font-size:10px;color:var(--text3);font-weight:600;margin-bottom:.6rem;display:flex;flex-wrap:wrap;gap:9px}
+.wh-since span{display:flex;align-items:center;gap:4px}
+
+.wh-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.7rem}
+.whtag{font-size:9px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--text3)}
+.whtag.cert{background:#f0fdf4;border-color:rgba(22,101,52,.2);color:#166534}
+.whtag.salon{background:var(--gold-soft);border-color:rgba(245,159,0,.2);color:#b45309}
+.whtag.vrf{background:var(--green-soft);border-color:rgba(12,166,120,.2);color:var(--green)}
+
+.wh-summary{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:.8rem;padding:10px 12px;background:var(--bg);border-radius:8px;border-left:3px solid var(--teal)}
+
+.wh-prods{margin-bottom:.7rem}
+.wh-prods-lbl{font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+.wh-prod-row{display:flex;justify-content:space-between;align-items:center;padding:5px 9px;background:var(--blue-soft);border-radius:6px;margin-bottom:3px;font-size:11px}
+.wh-prod-row .nm{font-weight:700;color:var(--text)}
+.wh-prod-row .pr{font-family:var(--mono);font-weight:700;color:var(--blue);font-size:11px}
+
+.wh-trust-detail{background:var(--gold-soft);border:1.5px solid rgba(245,159,0,.2);border-radius:10px;padding:11px 13px;margin-bottom:.7rem}
+.wtd-lbl{font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.wtd-row{font-size:11px;line-height:1.6;color:#78350f;margin-bottom:2px;display:flex;gap:6px}
+.wtd-row .ic{flex-shrink:0;width:14px;text-align:center}
+
+.wh-contact{background:linear-gradient(135deg,#f3f0ff,#faf5ff);border:1.5px solid rgba(112,72,232,.18);border-radius:10px;padding:11px 13px}
+.wc-lbl{font-size:8px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.wc-person{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.wc-row{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:3px}
+.wc-row .ci{width:15px;text-align:center;flex-shrink:0}
+.wc-row a{color:var(--purple);text-decoration:none;font-weight:700;word-break:break-all}
+.wc-row a:hover{text-decoration:underline}
+.confidence{font-size:8px;font-weight:700;padding:2px 6px;border-radius:5px;margin-left:auto}
+.confidence.verified{background:var(--green-soft);color:var(--green)}
+.confidence.likely{background:var(--amber-soft);color:var(--amber)}
+.confidence.guess{background:var(--red-soft);color:var(--red)}
+.copy-btn{background:none;border:1px solid var(--border2);border-radius:5px;font-size:9px;font-weight:700;color:var(--text3);padding:2px 7px;cursor:pointer;margin-left:6px}
+.copy-btn:hover{border-color:var(--purple);color:var(--purple)}
+.email-btn{margin-top:8px;width:100%;padding:8px;background:var(--purple);border:none;border-radius:7px;color:#fff;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer}
+.email-btn:hover{background:#5f3dc4}
+
+.country-section{margin-bottom:1.5rem}
+.country-section-hdr{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px;margin-bottom:.7rem;box-shadow:var(--sh)}
+.css-flag{font-size:24px}
+.css-name{font-size:15px;font-weight:800}
+.css-count{font-size:11px;color:var(--text3);font-weight:600;margin-left:auto}
+
+/* modal */
+.modal-ov{position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:2rem}
+.modal-ov.show{display:flex}
+.modal{background:var(--white);border-radius:var(--r2);max-width:680px;width:100%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 80px rgba(0,0,0,.3)}
+.modal-hd{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-bd{padding:1.25rem;overflow-y:auto}
+.modal-cls{cursor:pointer;font-size:18px;color:var(--text3);background:none;border:none;padding:4px 10px;border-radius:6px}
+.email-ta{width:100%;min-height:340px;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:14px;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text);resize:vertical;outline:none}
+.disclaimer{font-size:10px;color:var(--text4);font-style:italic;margin-top:.5rem;line-height:1.5}
+</style>
+</head>
+<body>
+<!-- ═══ NAV INCA IMPORT ═══ -->
+<style>
+.inca-nav{position:fixed;top:0;left:0;right:0;height:38px;background:#0f172a;color:#fff;display:flex;align-items:center;gap:0;padding:0 1rem;z-index:300;box-shadow:0 2px 12px rgba(15,23,42,.3);font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700}
+.inca-nav-logo{background:linear-gradient(135deg,#3b5bdb,#7048e8);font-weight:800;font-size:10px;letter-spacing:1.5px;padding:4px 10px;border-radius:6px;margin-right:1rem}
+.inca-nav-item{padding:7px 14px;border-radius:7px;cursor:pointer;color:#cbd5e1;text-decoration:none;transition:all .15s;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.inca-nav-item:hover{background:rgba(255,255,255,.08);color:#fff}
+.inca-nav-item.active{background:rgba(112,72,232,.25);color:#fff}
+body{padding-top:38px !important}
+@media(max-width:720px){.inca-nav{overflow-x:auto;padding:0 .5rem}.inca-nav-item{padding:6px 10px;font-size:10px}}
+</style>
+<nav class="inca-nav">
+  <span class="inca-nav-logo">INCA</span>
+  <a class="inca-nav-item" data-tool="optimiseur" href="INCA_Optimiseur_Conteneur_v4.html">📦 Optimiseur conteneur</a>
+  <a class="inca-nav-item" data-tool="veille" href="INCA_Veille_Produits_Live.html">📡 Veille produits</a>
+  <a class="inca-nav-item" data-tool="grossistes" href="INCA_Scanner_Grossistes.html">🛡 Scanner grossistes</a>
+  <a class="inca-nav-item" data-tool="privatelabel" href="INCA_Sourcing_Private_Label.html">🏭 Private label</a>
+</nav>
+<script>
+(function(){
+  const map={INCA_Optimiseur_Conteneur_v4:'optimiseur',INCA_Veille_Produits_Live:'veille',INCA_Scanner_Grossistes:'grossistes',INCA_Sourcing_Private_Label:'privatelabel'};
+  const fname=location.pathname.split('/').pop().replace(/\.html$/,'');
+  const cur=map[fname];
+  if(cur)document.querySelectorAll('.inca-nav-item').forEach(a=>{if(a.dataset.tool===cur)a.classList.add('active');});
+})();
+</script>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="logo">INCA IMPORT</div>
+    <div>
+      <div class="hdr-title">Scanner Grossistes Vérifiés</div>
+      <div class="hdr-sub">Top produits × Pays cibles × Score de confiance (salons, certifications, ancienneté)</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div>Claude + Web Search</div>
+</div>
+
+<div class="wrap">
+
+<!-- STEP 1: Upload ventes -->
+<div class="step-card" id="step1Card">
+  <div class="sc-title"><span class="sc-num">1</span>Charge ton fichier de ventes</div>
+  <div class="sc-sub">Excel de tes ventes (ex. PRIX_D_ACHATS_2026 ou « Récapitulatif achats »). L'outil détecte tes top produits par CA.</div>
+  <div class="upload-zone" id="upZone" onclick="document.getElementById('fi').click()" ondragover="onDragOver(event,this)" ondragleave="onDragLeave(this)" ondrop="onDrop(event,this)">
+    <div class="ic">📊</div>
+    <div class="t">Glisser l'Excel des ventes</div>
+    <div class="s">Compatible PRIX_D_ACHATS_2026.xlsx · Récapitulatif achats · etc.</div>
+    <div class="fn-display" id="fnDisplay"></div>
+  </div>
+  <input type="file" id="fi" accept=".xlsx,.xls,.csv" onchange="loadFile(this.files[0])">
+</div>
+
+<!-- STEP 2: Sélection produits -->
+<div class="step-card disabled" id="step2Card">
+  <div class="sc-title"><span class="sc-num">2</span>Sélectionne les produits à sourcer</div>
+  <div class="sc-sub">Les <strong id="topN">top vendeurs</strong> sont pré-sélectionnés. Ajoute/retire à ta guise — max 12 produits par scan.</div>
+  <div class="sel-actions">
+    <button class="btn-mini" onclick="selectTop(10)">⭐ Top 10</button>
+    <button class="btn-mini" onclick="selectTop(20)">Top 20</button>
+    <button class="btn-mini" onclick="selectByCat('Boissons')">🥤 Boissons</button>
+    <button class="btn-mini" onclick="selectByCat('Confiseries')">🍬 Confiseries</button>
+    <button class="btn-mini" onclick="selectByCat('Chips')">🍟 Chips</button>
+    <button class="btn-mini" onclick="selectByCat('Biscuiterie')">🍪 Biscuits</button>
+    <button class="btn-mini" onclick="clearSelection()">✕ Tout désélectionner</button>
+  </div>
+  <div class="prod-grid" id="prodGrid"></div>
+  <div style="margin-top:.7rem;font-size:11px;color:var(--text3)" id="selCount">0 produit sélectionné</div>
+</div>
+
+<!-- STEP 3: Pays -->
+<div class="step-card disabled" id="step3Card">
+  <div class="sc-title"><span class="sc-num">3</span>Pays à scanner</div>
+  <div class="sc-sub">Sélectionne les pays où chercher tes grossistes. Tous tes fournisseurs actuels + tes pays cibles sont préselectionnés.</div>
+  <div class="country-grid" id="countryGrid"></div>
+</div>
+
+<!-- STEP 4: Critères confiance -->
+<div class="step-card disabled" id="step4Card">
+  <div class="sc-title"><span class="sc-num">4</span>Critères de confiance</div>
+  <div class="sc-sub">Tous cochés par défaut. Le score de confiance est calculé à partir des critères que tu vérifies.</div>
+  <div class="trust-grid" id="trustGrid"></div>
+</div>
+
+<!-- STEP 5: Lancer -->
+<div class="step-card disabled" id="step5Card">
+  <div class="sc-title"><span class="sc-num">5</span>Lance le scan</div>
+  <div class="sc-sub">Claude + recherche web va, pour chaque pays sélectionné, trouver les grossistes les plus fiables qui peuvent fournir tes top produits aux meilleurs prix.</div>
+  <button class="go-btn" id="goBtn" onclick="launch()"><div class="spin"></div><span id="btnTxt">🚀 Scanner les grossistes</span></button>
+  <div class="api-note">🔑 Clé API Anthropic requise · <a onclick="resetKey()">changer la clé</a> · ~$0.02–0.05 / scan complet</div>
+</div>
+
+<!-- Loading -->
+<div class="loading-state" id="loadingState">
+  <div class="loading-anim"><div class="ld"></div><div class="ld"></div><div class="ld"></div></div>
+  <div class="lsteps">
+    <div class="lstep" id="lstep1">🌐 Recherche grossistes par pays…</div>
+    <div class="lstep" id="lstep2">🏛 Vérification présence salons (SIAL, Anuga, ISM, Gulfood…)…</div>
+    <div class="lstep" id="lstep3">📜 Recherche certifications (IFS, BRC, ISO, Halal)…</div>
+    <div class="lstep" id="lstep4">💰 Comparaison prix vs tes prix actuels…</div>
+    <div class="lstep" id="lstep5">📧 Contacts export & calcul score de confiance…</div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="results" id="results">
+  <div class="res-head">
+    <div><div class="res-title" id="resTitle">Grossistes vérifiés</div><div class="res-meta" id="resMeta"></div></div>
+    <button class="btn-sm" onclick="resetScan()">↩ Nouveau scan</button>
+  </div>
+  <div class="sources-bar" id="sourcesBar" style="display:none">
+    <span class="src-label">Sources :</span><div id="sourcesList" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  </div>
+  <div class="analysis-box" id="analysisBox" style="display:none">
+    <div class="ab-title">✦ Synthèse stratégique sourcing</div>
+    <div class="ab-content" id="analysisContent"></div>
+  </div>
+  <div class="sort-bar" id="sortBar" style="display:none">
+    <span style="font-size:11px;font-weight:700;color:var(--text3);align-self:center">Trier :</span>
+    <button class="sort-btn active" onclick="sortWh(this,'trust')">🛡 Confiance</button>
+    <button class="sort-btn" onclick="sortWh(this,'price')">💰 Meilleur prix</button>
+    <button class="sort-btn" onclick="sortWh(this,'breadth')">📦 Largeur gamme</button>
+    <button class="sort-btn" onclick="sortWh(this,'country')">🌍 Par pays</button>
+  </div>
+  <div id="resBody"></div>
+  <div class="disclaimer">⚠️ Les scores et données sont générés par IA à partir de recherches web. Vérifie toujours les certifications, VAT, et l'historique via une visite ou un échantillon avant tout engagement commercial significatif.</div>
+</div>
+
+</div>
+
+<div class="modal-ov" id="emailModal">
+  <div class="modal">
+    <div class="modal-hd"><div style="font-size:13px;font-weight:800" id="emailTitle">Email RFQ</div><button class="modal-cls" onclick="closeEmail()">✕</button></div>
+    <div class="modal-bd">
+      <textarea class="email-ta" id="emailBody"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="email-btn" style="flex:1" onclick="copyEmail()">📋 Copier</button>
+        <button class="email-btn" style="flex:1;background:var(--blue)" onclick="openMailto()">✉️ Ouvrir dans Mail</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═════════ API KEY ═════════
+let API_KEY = localStorage.getItem('inca_claude_key') || '';
+function checkApiKey(){
+  if(!API_KEY){
+    const k=prompt('Entre ta clé API Anthropic (sk-ant-...)\nconsole.anthropic.com → API Keys');
+    if(k&&k.startsWith('sk-')){API_KEY=k;localStorage.setItem('inca_claude_key',k);return true;}
+    alert('Clé invalide');return false;
+  }
+  return true;
+}
+function resetKey(){localStorage.removeItem('inca_claude_key');API_KEY='';alert('Clé supprimée.');}
+
+// ═════════ STATE ═════════
+let products=[];          // [{name, format, supplier, price, value, cat, id, selected}]
+let selectedIds=new Set();
+let lastData=null;
+
+// ═════════ PAYS ═════════
+const COUNTRIES=[
+  {code:'PL',name:'Pologne',flag:'🇵🇱',default:true,note:'Hub parallel import EU'},
+  {code:'FR',name:'France',flag:'🇫🇷',default:true,note:'Local + DROM'},
+  {code:'IN',name:'Inde',flag:'🇮🇳',default:true,note:'Snack + épices'},
+  {code:'TH',name:'Thaïlande',flag:'🇹🇭',default:true,note:'Boissons + snacks'},
+  {code:'VN',name:'Vietnam',flag:'🇻🇳',default:true,note:'Boissons low cost'},
+  {code:'LT',name:'Lituanie',flag:'🇱🇹',default:true,note:'Tes fournisseurs (Mega Baltic, Aleo)'},
+  {code:'DE',name:'Allemagne',flag:'🇩🇪',default:true,note:'Famobra, grossistes BIO'},
+  {code:'AT',name:'Autriche',flag:'🇦🇹',default:true,note:'Rauch, premium'},
+  {code:'TR',name:'Turquie',flag:'🇹🇷',default:false,note:'Halal + confiseries'},
+  {code:'CZ',name:'Tchéquie',flag:'🇨🇿',default:false,note:'Boissons + biscuits'},
+  {code:'ES',name:'Espagne',flag:'🇪🇸',default:false,note:'Conserves + snacks'},
+  {code:'IT',name:'Italie',flag:'🇮🇹',default:false,note:'Confiseries'},
+  {code:'MY',name:'Malaisie',flag:'🇲🇾',default:false,note:'Halal Asie'},
+  {code:'ID',name:'Indonésie',flag:'🇮🇩',default:false,note:'Halal Asie'},
+];
+let selectedCountries=new Set(COUNTRIES.filter(c=>c.default).map(c=>c.code));
+
+function renderCountries(){
+  document.getElementById('countryGrid').innerHTML=COUNTRIES.map(c=>{
+    const a=selectedCountries.has(c.code)?'active':'';
+    return `<div class="country-btn ${a}" onclick="toggleCountry('${c.code}')"><span class="fl">${c.flag}</span><div style="flex:1"><div>${c.name}</div><div style="font-size:9px;color:var(--text3);font-weight:600;margin-top:1px">${c.note}</div></div></div>`;
+  }).join('');
+}
+function toggleCountry(code){
+  if(selectedCountries.has(code))selectedCountries.delete(code);else selectedCountries.add(code);
+  renderCountries();
+}
+
+// ═════════ CRITÈRES CONFIANCE ═════════
+const TRUST_CRITERIA=[
+  {id:'salons',lbl:'🏛 Présence aux salons (SIAL, Anuga, ISM, Gulfood, ANUFOOD…)',default:true},
+  {id:'cert',lbl:'📜 Certifications (IFS, BRC, ISO 22000, FSSC)',default:true},
+  {id:'halal',lbl:'☪ Halal / Kosher',default:true},
+  {id:'age',lbl:'📅 Ancienneté société (5+ ans)',default:true},
+  {id:'vat',lbl:'🆔 VAT / EORI vérifiable',default:true},
+  {id:'refs',lbl:'🤝 Références clients connues',default:true},
+  {id:'export',lbl:'🚢 Expérience export DOM-TOM',default:false},
+  {id:'website',lbl:'🌐 Site web pro & actif',default:true},
+];
+let selectedTrust=new Set(TRUST_CRITERIA.filter(t=>t.default).map(t=>t.id));
+function renderTrust(){
+  document.getElementById('trustGrid').innerHTML=TRUST_CRITERIA.map(t=>{
+    const a=selectedTrust.has(t.id)?'active':'';
+    return `<div class="trust-item ${a}" onclick="toggleTrust('${t.id}')"><div class="chk"></div><div class="lbl">${t.lbl}</div></div>`;
+  }).join('');
+}
+function toggleTrust(id){if(selectedTrust.has(id))selectedTrust.delete(id);else selectedTrust.add(id);renderTrust();}
+
+// ═════════ DRAG/DROP UPLOAD ═════════
+function onDragOver(e,el){e.preventDefault();el.style.borderColor='var(--teal)';}
+function onDragLeave(el){el.style.borderColor='';}
+function onDrop(e,el){e.preventDefault();el.style.borderColor='';loadFile(e.dataTransfer.files[0]);}
+
+// ═════════ PARSER EXCEL (multi-format) ═════════
+function num(x){const n=parseFloat(String(x==null?'':x).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n;}
+function norm(v){return String(v||'').toLowerCase().trim();}
+
+function loadFile(file){
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+      parseSales(raw,file.name);
+    }catch(err){alert('Erreur lecture: '+err.message);}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function parseSales(rows,fname){
+  // ─── Format A : PRIX_D_ACHATS groupé (ligne ARTICLE + sous-tableau PUAHT) ───
+  let isGrouped=false;
+  for(let i=0;i<Math.min(rows.length,5);i++){
+    const r=rows[i]; if(!r)continue;
+    const c0=norm(r[0]),hdr=r.map(norm);
+    if(c0==='article' && hdr.some(v=>/revient|puv|coeff|marge/.test(v))){isGrouped=true;break;}
+  }
+  if(isGrouped){return parseGroupedFormat(rows,fname);}
+
+  // ─── Format B : tableau plat — détection souple ───
+  // On accepte: une colonne nommée article/produit/désignation/item/nom
+  // ET au moins UNE colonne numérique parmi prix/puaht/cost/revient/value/total/ca/montant
+  let hRow=-1, cM={};
+  const isArt=v=>/^(article|product|produit|désignation|designation|item|nom produit|product name|name|libellé|libelle|nom)$/.test(v.replace(/[^a-zéè]/g,''))
+                || /^(article|product|produit|désignation|designation|item|nom)/.test(v);
+  const isPrix=v=>/^(puaht|pu_ht|pu ht|prix|price|cost|cout|coût|unit price|unit_price|revient|prix achat|prix d'achat|prix unitaire|net price|pu|prix ht)$/.test(v.replace(/[^a-zéèà' _]/g,''))
+                || /(puaht|pu_ht|prix|price|cost|cout|coût|unit price|revient|prix achat|prix d'achat|prix unitaire)/.test(v);
+  const isFmt=v=>/(format|conditionnement|unit format|emballage|format de vente|contenance)/.test(v);
+  const isFourn=v=>/(fournisseur|supplier|fourn|vendor)/.test(v);
+  const isVal=v=>/(value|valeur|total|ca |chiffre|montant|sales)/.test(v) && !/ttc|tva/.test(v);
+  const isQty=v=>/(qte|qty|quantité|quantity|nb_achats|nb achats|achats|nb commandes|frequency|frequence|stock)/.test(v);
+  const isCat=v=>/(category|categorie|catégorie|famille|cat\.|department|département|departement|rayon)/.test(v);
+
+  let allHeaders=[]; // pour diagnostic
+  for(let i=0;i<Math.min(rows.length,25);i++){
+    const row=rows[i]; if(!row)continue;
+    const vals=row.map(c=>norm(c));
+    const hasArt=vals.findIndex(isArt);
+    const hasPrix=vals.findIndex(isPrix);
+    if(hasArt>=0 && hasPrix>=0){
+      hRow=i;
+      vals.forEach((v,j)=>{
+        if(cM.art===undefined && isArt(v)) cM.art=j;
+        else if(cM.fmt===undefined && isFmt(v)) cM.fmt=j;
+        else if(cM.prix===undefined && isPrix(v)) cM.prix=j;
+        else if(cM.fourn===undefined && isFourn(v)) cM.fourn=j;
+        else if(cM.val===undefined && isVal(v)) cM.val=j;
+        else if(cM.qty===undefined && isQty(v)) cM.qty=j;
+        else if(cM.cat===undefined && isCat(v)) cM.cat=j;
+      });
+      allHeaders=vals.filter(v=>v).slice(0,12);
+      break;
+    }
+    // garde une trace pour le diagnostic si on ne trouve rien
+    if(vals.filter(v=>v).length>=2 && allHeaders.length===0){
+      const cleanVals=vals.filter(v=>v);
+      if(cleanVals.length>allHeaders.length)allHeaders=cleanVals.slice(0,12);
+    }
+  }
+
+  // ─── Format C : fallback ultra-tolérant ───
+  // Si on a trouvé "article" mais pas "prix" : prendre la 1ère colonne numérique après l'article
+  if(hRow<0){
+    for(let i=0;i<Math.min(rows.length,25);i++){
+      const row=rows[i]; if(!row)continue;
+      const vals=row.map(c=>norm(c));
+      const artIdx=vals.findIndex(isArt);
+      if(artIdx<0)continue;
+      // chercher la 1ère colonne où les lignes suivantes contiennent majoritairement des nombres
+      for(let j=artIdx+1;j<vals.length;j++){
+        let numCount=0,total=0;
+        for(let k=i+1;k<Math.min(rows.length,i+15);k++){
+          if(!rows[k])continue;
+          const v=rows[k][j];
+          if(v===null||v===undefined||v==='')continue;
+          total++;
+          if(num(v)>0)numCount++;
+        }
+        if(total>=3 && numCount/total>=0.7){
+          hRow=i;cM.art=artIdx;cM.prix=j;
+          allHeaders=vals.filter(v=>v).slice(0,12);
+          break;
+        }
+      }
+      if(hRow>=0)break;
+    }
+  }
+
+  if(hRow<0){
+    const diag = allHeaders.length ? `\n\nEn-têtes trouvés dans ton fichier :\n• ${allHeaders.join('\n• ')}\n\nL'outil cherche au moins une colonne contenant "Article" ou "Produit" ET une colonne numérique de prix (Prix, PUAHT, Revient, Cost…).` : '\n\nAucun en-tête lisible n\'a été trouvé dans les 25 premières lignes.';
+    alert('Format non reconnu.'+diag+'\n\n💡 Astuces :\n— Renomme la colonne des noms en "Article" ou "Produit"\n— Renomme la colonne des prix en "Prix" ou "PUAHT"\n— Ou utilise ton fichier PRIX_D_ACHATS_2026 d\'origine');
+    return;
+  }
+  products=[];
+  let id=1;
+  for(let i=hRow+1;i<rows.length;i++){
+    const row=rows[i]; if(!row)continue;
+    const name=String(row[cM.art]||'').trim();
+    if(!name||name.toLowerCase().startsWith('total'))continue;
+    const price=num(row[cM.prix]);
+    if(!(price>0))continue;
+    const qty=cM.qty!==undefined?num(row[cM.qty]):0;
+    const val=cM.val!==undefined?num(row[cM.val]):0;
+    const fmt=cM.fmt!==undefined?String(row[cM.fmt]||'').trim():'';
+    const fourn=cM.fourn!==undefined?String(row[cM.fourn]||'').trim():'';
+    const cat=cM.cat!==undefined?String(row[cM.cat]||'').trim():guessCat(name);
+    const importance = val>0 ? val : (qty>0 ? price*qty : price);
+    products.push({id:id++,name,format:fmt,supplier:fourn,price,qty,value:val,importance,cat:cat||guessCat(name)});
+  }
+  finalizeLoad(fname);
+}
+
+// Parser pour format PRIX_D_ACHATS_2026 (ligne article puis sous-tableau d'achats)
+function parseGroupedFormat(rows,fname){
+  products=[];
+  let id=1;
+  // Trouver les colonnes : col 0=article, col 1=format, col 3=revient (prix marche)
+  // Sous-section (après ligne "FOURNISSEUR/DATE/PUAHT") : col 1=fournisseur, col 2=date, col 3=puaht
+  let currentArticle=null, currentFormat='', currentRevient=0;
+  let achats=[]; // achats successifs pour l'article courant
+  const flush=()=>{
+    if(!currentArticle)return;
+    // récap : dernier puaht + fournisseur + nb achats
+    const nbAchats=achats.length;
+    let lastPrice=currentRevient, lastFourn='', lastDate=null;
+    if(achats.length){
+      // achat le plus récent par date
+      const sorted=[...achats].sort((a,b)=>(b.date||0)-(a.date||0));
+      lastPrice=sorted[0].price||currentRevient;
+      lastFourn=sorted[0].fourn||'';
+      lastDate=sorted[0].date;
+    }
+    if(lastPrice>0){
+      const cat=guessCat(currentArticle);
+      // importance = nb achats × prix (proxy de récurrence × valeur)
+      const importance = nbAchats>0 ? lastPrice*nbAchats : lastPrice;
+      products.push({id:id++,name:currentArticle,format:currentFormat,supplier:lastFourn,price:lastPrice,qty:nbAchats,value:0,importance,cat});
+    }
+  };
+  for(let i=0;i<rows.length;i++){
+    const r=rows[i]; if(!r)continue;
+    const c0=String(r[0]||'').trim();
+    const c1=String(r[1]||'').trim();
+    const c3=num(r[3]);
+    // ligne header "ARTICLE" → skip
+    if(c0.toUpperCase()==='ARTICLE')continue;
+    // ligne sous-header "FOURNISSEUR DATE PUAHT" → skip
+    if(c1.toUpperCase()==='FOURNISSEUR' || norm(c1)==='fournisseur')continue;
+    // ligne article (col 0 = nom non vide, et c'est en MAJ ou similaire)
+    if(c0 && c0.length>2 && c0!==c0.toLowerCase() && !c1.toUpperCase().includes('FOURNISSEUR')){
+      // c'est une nouvelle ligne article
+      flush();
+      currentArticle=c0;
+      currentFormat=c1;
+      currentRevient=c3;
+      achats=[];
+      continue;
+    }
+    // ligne d'achat (col 0 vide, col 1 = fournisseur, col 3 = puaht)
+    if(!c0 && c1 && c3>0){
+      const date=r[2] instanceof Date ? r[2].getTime() : (r[2]?new Date(r[2]).getTime():null);
+      achats.push({fourn:c1,date,price:c3});
+    }
+  }
+  flush();
+  finalizeLoad(fname);
+}
+
+function finalizeLoad(fname){
+  if(!products.length){alert('Aucun produit valide trouvé dans le fichier.');return;}
+  products.sort((a,b)=>b.importance-a.importance);
+  document.getElementById('fnDisplay').textContent=`✓ ${fname} · ${products.length} produits chargés`;
+  document.getElementById('fnDisplay').style.display='block';
+  document.getElementById('upZone').classList.add('loaded');
+  ['step2Card','step3Card','step4Card','step5Card'].forEach(s=>document.getElementById(s).classList.remove('disabled'));
+  selectTop(10);
+  renderProductGrid();
+  renderCountries();
+  renderTrust();
+}
+
+function guessCat(name){
+  const n=name.toLowerCase();
+  if(/cola|sprite|fanta|eau|coca|orangina|jus|the|tea|energy|drink|boisson|aloe|red bull|monster|pokka|capri|cilaos|edena|oasis|maaza|schweppes|tonic|limonade|panache|nectar/.test(n))return'Boissons';
+  if(/chip|crisp|pringles|ring|tuc|lays/.test(n))return'Chips';
+  if(/kinder|nutella|kit kat|mars|snicker|twix|bounty|mentos|tic tac|lion|m&m|haribo|smarties|maltesers|chocolat|bonbon|caramel|gum/.test(n))return'Confiseries';
+  if(/biscuit|cookie|wafer|oreo|mikado|loacker|granola|lu|prince|petit beurre/.test(n))return'Biscuiterie';
+  return'Autre';
+}
+
+// ═════════ PRODUCT GRID ═════════
+function renderProductGrid(){
+  document.getElementById('prodGrid').innerHTML=products.slice(0,80).map(p=>{
+    const sel=selectedIds.has(p.id)?'selected':'';
+    const meta = p.value>0 ? `€${p.value.toFixed(0)} CA` : p.qty>0 ? `${p.qty} achats · €${p.price.toFixed(2)}` : `€${p.price.toFixed(2)}`;
+    return `<div class="prod-item ${sel}" onclick="toggleProd(${p.id})"><div class="chk"></div><div class="prod-info"><div class="prod-name" title="${p.name}">${p.name}</div><div class="prod-meta">${p.cat} · ${meta}</div></div></div>`;
+  }).join('');
+  document.getElementById('selCount').textContent=`${selectedIds.size} produit${selectedIds.size>1?'s':''} sélectionné${selectedIds.size>1?'s':''} (max 12)`;
+}
+function toggleProd(id){
+  if(selectedIds.has(id))selectedIds.delete(id);
+  else if(selectedIds.size<12)selectedIds.add(id);
+  else alert('Maximum 12 produits par scan (pour rester sous la limite de tokens).');
+  renderProductGrid();
+}
+function selectTop(n){
+  selectedIds.clear();
+  products.slice(0,Math.min(n,12)).forEach(p=>selectedIds.add(p.id));
+  renderProductGrid();
+}
+function selectByCat(cat){
+  selectedIds.clear();
+  products.filter(p=>p.cat===cat).slice(0,12).forEach(p=>selectedIds.add(p.id));
+  renderProductGrid();
+}
+function clearSelection(){selectedIds.clear();renderProductGrid();}
+
+// ═════════ LAUNCH ═════════
+function animateSteps(){
+  const steps=['lstep1','lstep2','lstep3','lstep4','lstep5'];let i=0;
+  const iv=setInterval(()=>{
+    if(i>0)document.getElementById(steps[i-1]).className='lstep done';
+    if(i<steps.length){document.getElementById(steps[i]).className='lstep active';i++;}else clearInterval(iv);
+  },2600);
+  return iv;
+}
+
+function buildPrompt(){
+  const sel=products.filter(p=>selectedIds.has(p.id));
+  const countryList=COUNTRIES.filter(c=>selectedCountries.has(c.code));
+  const trustList=TRUST_CRITERIA.filter(t=>selectedTrust.has(t.id));
+  const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  const prodLines=sel.map(p=>`- ${p.name}${p.format?' ('+p.format+')':''} | prix actuel: €${p.price.toFixed(3)}${p.supplier?' chez '+p.supplier:''}${p.value>0?' | CA: €'+p.value.toFixed(0):''}`).join('\n');
+
+  return `You are a senior FMCG sourcing expert working FOR the buyer (INCA IMPORT), purchasing center in La Réunion supplying 3 gas stations (OLA/TOTAL/VITO). Today is ${today}.
+
+═══ BUYER CONTEXT ═══
+Main shipping: EUROPE → Fos-sur-Mer → Le Port, 22 days CMA CGM, 40' HC. Asia direct sea route (NOT via Hormuz) acceptable. USA avoided.
+The buyer already has these suppliers: Dabex (PL), Big Brands Group (PL), MPT Stanro (PL), Aleo Drinks (LT), Mega Baltic (LT), Famobra (DE), Rauch (AT), Candy Market (FR), Delidrinks (FR). He needs ALTERNATIVES with better prices AND verifiable trust.
+
+═══ MISSION ═══
+For EACH country selected, find the BEST WHOLESALERS / TRADERS / DISTRIBUTORS who can supply the buyer's TOP PRODUCTS below at the most competitive prices, with VERIFIABLE trust signals.
+DO NOT suggest the buyer's existing suppliers listed above as new options — find NEW alternatives.
+
+═══ TOP PRODUCTS TO SOURCE (${sel.length}) ═══
+${prodLines}
+
+═══ COUNTRIES TO SCAN ═══
+${countryList.map(c=>`- ${c.flag} ${c.name} (${c.code}) — ${c.note}`).join('\n')}
+
+For each country, find 2-3 wholesalers. Aim for 4-12 wholesalers total.
+
+═══ TRUST SCORE — CRITICAL ═══
+Compute trustScore (0-100) based on these VERIFIABLE criteria the buyer wants checked:
+${trustList.map(t=>`- ${t.lbl}`).join('\n')}
+
+For each wholesaler:
+- salons[]: list of trade fairs they attended (SIAL Paris, Anuga Cologne, ISM Cologne, Gulfood Dubai, ANUFOOD, ProSweets, FI Europe, World Food Moscow, PLMA, IFE London…). Be specific with year if known. EMPTY ARRAY if you can't verify.
+- certifications[]: real certs found (IFS, BRC, ISO 22000, FSSC 22000, Halal, Kosher, Organic EU). EMPTY if not verifiable.
+- foundedYear: founding year of the company if you can find it
+- vatVerifiable: true/false — can you find a VAT number on their official site or in EU VIES?
+- knownClients: short text mentioning notable references or markets served
+- trustDetails: 3-4 short bullet points explaining the trust score concretely
+
+Set trustConfidence: "verified" (multiple solid sources), "likely" (1-2 sources), "guess" (inferred). Do NOT invent. If you cannot verify, lower the score and confidence.
+
+═══ PRICE COMPETITIVENESS ═══
+For each wholesaler, list the TOP PRODUCTS from the buyer's list they can supply, with estimated price (EUR, FCA/EXW), and compare to the buyer's current price. Mark priceVs as "better" / "similar" / "higher" / "unknown".
+Be honest: if you can't find their prices online, say priceConfidence="guess" and provide a realistic range.
+
+═══ CONTACT ═══
+Direct export contact: named person + role + email + phone + website. Mark contactConfidence verified/likely/guess. Never invent.
+
+Use web search NOW. Search trade fair attendee lists, company registries, the wholesalers' own websites, certifications databases. Spend tokens on the most promising candidates.
+
+Respond ONLY with valid JSON (no markdown, no backticks):
+{
+"searchDate":"${today}",
+"sources":["site1.com","site2.com","site3.com"],
+"analysis":"4-5 sentences summarizing: which countries offer the best opportunities for these specific products, top 2-3 most-trusted wholesalers found, expected savings vs current buying, and any red flags.",
+"wholesalers":[{
+  "nom":"Real company name",
+  "pays":"Country","ville":"City","codePays":"PL/FR/IN/TH/VN/LT/DE/AT/etc",
+  "site":"site.com",
+  "founded":2008,
+  "summary":"2-3 sentences: what this wholesaler does, specialty, why relevant for INCA IMPORT.",
+  "trustScore":85,
+  "trustConfidence":"verified|likely|guess",
+  "trustDetails":["IFS certified since 2018","SIAL Paris exhibitor 2022, 2024","Active in 30+ countries incl. DOM-TOM"],
+  "salons":["SIAL Paris 2024","Anuga 2023"],
+  "certifications":["IFS","Halal"],
+  "vatVerifiable":true,
+  "knownClients":"Carrefour, Auchan, DOM-TOM distributors",
+  "products":[{"nom":"Monster Energy 0.5L","priceEst":"€0.72","priceVs":"better","priceConfidence":"likely","currentPriceBuyer":"€1.72"}],
+  "breadthScore":80,
+  "priceScore":75,
+  "contactPersonne":"Name + role or empty",
+  "contactEmail":"export@... or empty",
+  "contactTel":"+...",
+  "contactSite":"site.com",
+  "contactLinkedin":"linkedin url or empty",
+  "contactConfidence":"verified|likely|guess",
+  "redFlags":"Any concern: short history, no certs, etc. Empty if none.",
+  "accentColor":"#0891b2"
+}]
+}
+accentColors rotate by country: PL=#dc2626 FR=#3b5bdb DE=#0ca678 LT=#7048e8 AT=#e8590c TH=#d6336c VN=#0891b2 IN=#e67700 default=#64748b`;
+}
+
+async function launch(){
+  if(!selectedIds.size){alert('Sélectionne au moins 1 produit');return;}
+  if(!selectedCountries.size){alert('Sélectionne au moins 1 pays');return;}
+  if(!checkApiKey())return;
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;btn.classList.add('loading');document.getElementById('btnTxt').textContent='Scan en cours…';
+  ['step1Card','step2Card','step3Card','step4Card','step5Card'].forEach(s=>document.getElementById(s).style.display='none');
+  document.getElementById('results').style.display='none';
+  const ls=document.getElementById('loadingState');ls.style.display='flex';
+  ['lstep1','lstep2','lstep3','lstep4','lstep5'].forEach(s=>document.getElementById(s).className='lstep');
+  const iv=animateSteps();
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:8000,
+        tools:[{type:'web_search_20250305',name:'web_search',max_uses:6}],
+        messages:[{role:'user',content:buildPrompt()}]
+      })
+    });
+    clearInterval(iv);
+    ['lstep1','lstep2','lstep3','lstep4','lstep5'].forEach(s=>document.getElementById(s).className='lstep done');
+    const data=await res.json();
+    if(data.error)throw new Error(data.error.message||JSON.stringify(data.error));
+    let raw='';if(data.content)for(const b of data.content)if(b.type==='text')raw+=b.text;
+    raw=raw.replace(/```json|```/g,'').trim();
+    const js=raw.indexOf('{'),je=raw.lastIndexOf('}')+1;if(js>=0&&je>js)raw=raw.slice(js,je);
+    const parsed=JSON.parse(raw);
+    setTimeout(()=>{ls.style.display='none';render(parsed);},400);
+  }catch(e){
+    clearInterval(iv);ls.style.display='none';
+    ['step1Card','step2Card','step3Card','step4Card','step5Card'].forEach(s=>document.getElementById(s).style.display='');
+    const isRate=/rate limit/i.test(e.message);
+    alert('Erreur: '+e.message+(isRate?'\n\n💡 Limite de débit atteinte. Réduis le nombre de produits (max 6-8) ou de pays sélectionnés et réessaie dans ~1 min.':''));
+    console.error(e);
+  }
+  btn.disabled=false;btn.classList.remove('loading');document.getElementById('btnTxt').textContent='🚀 Scanner les grossistes';
+}
+
+// ═════════ RENDER ═════════
+function copyTxt(t,btn){navigator.clipboard.writeText(t).then(()=>{const o=btn.textContent;btn.textContent='✓';setTimeout(()=>btn.textContent=o,1200);});}
+
+function trustColor(s){return s>=80?'var(--green)':s>=60?'var(--amber)':s>=40?'var(--orange)':'var(--red)';}
+
+function whCard(w,i){
+  const col=w.accentColor||'var(--teal)';
+  const ts=w.trustScore||50;
+  const tsC=trustColor(ts);
+  const conf=w.trustConfidence||'guess';
+  const confLbl={verified:'✓ vérifié',likely:'~ probable',guess:'? à vérifier'}[conf];
+  const cconf=w.contactConfidence||'guess';
+  const cconfLbl={verified:'✓ vérifié',likely:'~ probable',guess:'? à vérifier'}[cconf];
+  const flag=(COUNTRIES.find(c=>c.code===w.codePays)||{}).flag||'🌍';
+
+  // tags : certs, salons, vrf
+  const tags=[];
+  if(w.vatVerifiable)tags.push('<span class="whtag vrf">✓ VAT vérifié</span>');
+  (w.certifications||[]).slice(0,4).forEach(c=>tags.push(`<span class="whtag cert">📜 ${c}</span>`));
+  (w.salons||[]).slice(0,3).forEach(s=>tags.push(`<span class="whtag salon">🏛 ${s}</span>`));
+
+  // produits
+  const prods=(w.products||[]).slice(0,6).map(p=>{
+    const vsC = p.priceVs==='better'?'var(--green)':p.priceVs==='similar'?'var(--amber)':p.priceVs==='higher'?'var(--red)':'var(--text3)';
+    const vsIc = p.priceVs==='better'?'⬇':p.priceVs==='similar'?'=':p.priceVs==='higher'?'⬆':'?';
+    return `<div class="wh-prod-row"><span class="nm">${p.nom}</span><span class="pr" style="color:${vsC}">${vsIc} ${p.priceEst||'—'}${p.currentPriceBuyer?` (vs ${p.currentPriceBuyer})`:''}</span></div>`;
+  }).join('');
+
+  // contact
+  let contacts='';
+  if(w.contactPersonne)contacts+=`<div class="wc-person">👤 ${w.contactPersonne}</div>`;
+  if(w.contactEmail)contacts+=`<div class="wc-row"><span class="ci">📧</span><a href="mailto:${w.contactEmail}">${w.contactEmail}</a><button class="copy-btn" onclick="copyTxt('${w.contactEmail}',this)">copier</button></div>`;
+  if(w.contactTel)contacts+=`<div class="wc-row"><span class="ci">📞</span><a href="tel:${w.contactTel.replace(/\s/g,'')}">${w.contactTel}</a></div>`;
+  if(w.contactSite||w.site)contacts+=`<div class="wc-row"><span class="ci">🌐</span><a href="https://${(w.contactSite||w.site).replace(/^https?:\/\//,'')}" target="_blank" rel="noopener">${(w.contactSite||w.site).replace(/^https?:\/\//,'')}</a></div>`;
+  if(w.contactLinkedin)contacts+=`<div class="wc-row"><span class="ci">in</span><a href="${w.contactLinkedin.startsWith('http')?w.contactLinkedin:'https://'+w.contactLinkedin}" target="_blank" rel="noopener">LinkedIn</a></div>`;
+  if(!contacts)contacts='<div class="wc-row" style="color:var(--text4)"><span class="ci">📧</span>Contact à rechercher</div>';
+
+  const trustDetails=(w.trustDetails||[]).map(d=>`<div class="wtd-row"><span class="ic">•</span><span>${d}</span></div>`).join('');
+
+  const sinceParts=[];
+  if(w.founded)sinceParts.push(`📅 fondée ${w.founded}`);
+  if(w.knownClients)sinceParts.push(`🤝 ${w.knownClients}`);
+
+  return `<div class="wh-card" style="animation-delay:${i*.05}s">
+    <div class="bar" style="background:linear-gradient(90deg,${col},${col}70)"></div>
+    <div class="wh-head">
+      <div><div class="wh-name">${w.nom}</div><div class="wh-loc">${flag} ${[w.ville,w.pays].filter(Boolean).join(', ')}</div></div>
+      <div class="wh-trust" style="border-color:${tsC};color:${tsC}"><span class="wht-val">${ts}</span><span class="wht-lbl">Trust</span></div>
+    </div>
+    ${sinceParts.length?`<div class="wh-since">${sinceParts.map(s=>`<span>${s}</span>`).join('')}</div>`:''}
+    <div class="wh-tags">${tags.join('')}</div>
+    <div class="wh-summary">${w.summary||''}</div>
+    ${trustDetails?`<div class="wh-trust-detail"><div class="wtd-lbl">🛡 Score confiance ${ts}/100 <span class="confidence ${conf}" style="margin-left:auto">${confLbl}</span></div>${trustDetails}${w.redFlags?`<div class="wtd-row" style="color:var(--red);margin-top:5px"><span class="ic">⚠</span><span><strong>Red flag :</strong> ${w.redFlags}</span></div>`:''}</div>`:''}
+    ${prods?`<div class="wh-prods"><div class="wh-prods-lbl">💰 Tes produits chez ce grossiste</div>${prods}</div>`:''}
+    <div class="wh-contact">
+      <div class="wc-lbl">📧 Contact export<span class="confidence ${cconf}">${cconfLbl}</span></div>
+      ${contacts}
+      <button class="email-btn" onclick='openEmail(${JSON.stringify(JSON.stringify(w))})'>✉️ Générer email RFQ avec tes produits</button>
+    </div>
+  </div>`;
+}
+
+function render(d){
+  lastData=d;
+  document.getElementById('results').style.display='block';
+  document.getElementById('resTitle').textContent='Grossistes vérifiés';
+  const n=(d.wholesalers||[]).length;
+  document.getElementById('resMeta').textContent=`${n} grossistes · ${selectedIds.size} produits scannés · ${selectedCountries.size} pays · ${d.searchDate||''}`;
+  if(d.sources?.length){
+    document.getElementById('sourcesBar').style.display='flex';
+    document.getElementById('sourcesList').innerHTML=d.sources.map(s=>`<span class="src-tag">🌐 ${s}</span>`).join('');
+  }
+  if(d.analysis){document.getElementById('analysisBox').style.display='block';document.getElementById('analysisContent').textContent=d.analysis;}
+  document.getElementById('sortBar').style.display=n?'flex':'none';
+  document.querySelectorAll('.sort-btn').forEach((b,i)=>b.classList.toggle('active',i===0));
+  drawSorted(d.wholesalers||[],'trust');
+}
+function drawSorted(arr,key){
+  let sorted=[...arr];
+  if(key==='trust')sorted.sort((a,b)=>(b.trustScore||0)-(a.trustScore||0));
+  else if(key==='price')sorted.sort((a,b)=>(b.priceScore||0)-(a.priceScore||0));
+  else if(key==='breadth')sorted.sort((a,b)=>((b.products||[]).length+(b.breadthScore||0)/10)-((a.products||[]).length+(a.breadthScore||0)/10));
+  else if(key==='country'){
+    // grouper par pays
+    const byC={};
+    sorted.forEach(w=>{const k=w.codePays||w.pays||'XX';(byC[k]=byC[k]||[]).push(w);});
+    let h='';
+    Object.entries(byC).forEach(([code,list])=>{
+      const c=COUNTRIES.find(x=>x.code===code)||{flag:'🌍',name:code};
+      h+=`<div class="country-section"><div class="country-section-hdr"><span class="css-flag">${c.flag}</span><span class="css-name">${c.name}</span><span class="css-count">${list.length} grossiste${list.length>1?'s':''}</span></div><div class="wh-grid">${list.sort((a,b)=>(b.trustScore||0)-(a.trustScore||0)).map((w,i)=>whCard(w,i)).join('')}</div></div>`;
+    });
+    document.getElementById('resBody').innerHTML=h;
+    return;
+  }
+  document.getElementById('resBody').innerHTML=`<div class="wh-grid">${sorted.map((w,i)=>whCard(w,i)).join('')}</div>`;
+}
+function sortWh(btn,key){
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
+  drawSorted(lastData?.wholesalers||[],key);
+}
+
+// ═════════ EMAIL RFQ ═════════
+function openEmail(wStr){
+  const w=JSON.parse(JSON.parse(wStr));
+  const person=w.contactPersonne?w.contactPersonne.split('(')[0].split('-')[0].trim():'Sir or Madam';
+  const prods=(w.products||[]).map(p=>`- ${p.nom}`).join('\n')||'(see attached list)';
+  const body=`Subject: RFQ — Wholesale supply request from INCA IMPORT (La Réunion, France)
+
+Dear ${person},
+
+We are INCA IMPORT, a purchasing center based in La Réunion (French overseas territory, Indian Ocean), supplying a network of retail outlets and gas stations.
+
+We came across your company (${w.nom}) and would be interested in establishing a commercial relationship. We are looking for competitive pricing on the following products:
+
+${prods}
+
+For each item we would appreciate:
+1. Current FCA / EXW price in EUR, with valid until date
+2. MOQ per SKU and case/pallet specs (pcs/case, pcs/pallet)
+3. Available formats and shelf life (DLUO) at shipment
+4. Certifications available (IFS, BRC, ISO, Halal if applicable)
+5. Lead time
+6. Payment terms (we typically work with 30% deposit / 70% against copy B/L)
+
+Shipping: we ship in 40' HC containers, port of arrival Le Port (Réunion), preferred incoterm CFR Le Port.
+
+Could you also confirm:
+- Are you exhibiting at SIAL Paris 2026 / Anuga / any upcoming food fair where we could meet?
+- Your VAT number for our compliance check
+- A product sample shipment policy
+
+We look forward to your reply.
+
+Best regards,
+Nicolas INCANA
+SAS INCA IMPORT — La Réunion
+VAT: FR44945112753 · EORI: FR94511275300013
+29 Route des Premiers Français, 97460 Saint-Paul, Réunion, France`;
+  document.getElementById('emailTitle').textContent=`RFQ → ${w.nom}`;
+  document.getElementById('emailBody').value=body;
+  document.getElementById('emailBody').dataset.email=w.contactEmail||'';
+  document.getElementById('emailModal').classList.add('show');
+}
+function closeEmail(){document.getElementById('emailModal').classList.remove('show');}
+function copyEmail(){const t=document.getElementById('emailBody').value;navigator.clipboard.writeText(t).then(()=>alert('Email copié ✓'));}
+function openMailto(){
+  const ta=document.getElementById('emailBody');const full=ta.value;
+  const subj=(full.match(/^Subject:\s*(.+)$/m)||[])[1]||'RFQ';
+  const body=full.replace(/^Subject:.*\n\n?/m,'');
+  const to=ta.dataset.email||'';
+  window.location.href=`mailto:${to}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
+}
+document.getElementById('emailModal').addEventListener('click',e=>{if(e.target.id==='emailModal')closeEmail();});
+
+function resetScan(){
+  document.getElementById('results').style.display='none';
+  ['step1Card','step2Card','step3Card','step4Card','step5Card'].forEach(s=>document.getElementById(s).style.display='');
+  ['lstep1','lstep2','lstep3','lstep4','lstep5'].forEach(s=>document.getElementById(s).className='lstep');
+}
+
+// ═════════ INIT ═════════
+renderCountries();
+renderTrust();
+
+</script>
+</body>
+</html>
