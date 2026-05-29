@@ -213,6 +213,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <option value="yes">Oui seulement</option>
         </select>
       </div>
+      <div class="filter-row" style="background:linear-gradient(135deg,#f3f0ff,#faf5ff);border-color:rgba(112,72,232,.2)">
+        <span class="filter-label" style="color:var(--purple);font-weight:700">🔍 Notoriété</span>
+        <select class="filter-select" id="fNoto" style="color:var(--purple)">
+          <option value="discovery" selected>Découverte (inconnus)</option>
+          <option value="niche">Niche établie</option>
+          <option value="all">Tous niveaux</option>
+        </select>
+      </div>
       <div class="filter-row">
         <span class="filter-label">Type de source</span>
         <select class="filter-select" id="fSource">
@@ -261,16 +269,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   <div class="welcome" id="welcomeState">
     <div class="welcome-icon">📡</div>
     <h2>Veille en temps réel — fabricants & contacts</h2>
-    <p>Recherche sur le web <strong>maintenant</strong> les produits tendance, en remontant au <strong>fabricant réel</strong> et son <strong>contact export</strong>. Priorité aux zones où <strong>ta logistique est simple</strong> (Europe).</p>
+    <p>Recherche les <strong>marques inconnues</strong> que tes concurrents n'ont pas. Filtre auto des blockbusters (Red Bull, Monster, Coca, Haribo…). Remonte au <strong>fabricant réel</strong> + <strong>contact export</strong>.</p>
     <div class="tips">
-      <div class="tip" onclick="quickSearch('new energy drink launch Poland Europe 2026')">⚡ Energy drinks Europe</div>
-      <div class="tip" onclick="quickSearch('viral snack TikTok Europe manufacturer 2026')">📱 Snacks viraux EU</div>
-      <div class="tip" onclick="quickSearch('Korean drink RTD manufacturer export Europe')">🇰🇷 K-drinks dispo EU</div>
-      <div class="tip" onclick="quickSearch('aloe vera drink manufacturer Poland Lithuania')">🌿 Aloe vera fabricants</div>
-      <div class="tip" onclick="quickSearch('new chips flavor European manufacturer 2026')">🍟 Chips fabricants EU</div>
-      <div class="tip" onclick="quickSearch('bubble tea RTD canned manufacturer Europe Asia')">🧋 Bubble Tea RTD</div>
-      <div class="tip" onclick="quickSearch('halal candy manufacturer Turkey Poland export')">✅ Confiseries halal</div>
-      <div class="tip" onclick="quickSearch('functional drink no sugar manufacturer Europe 2026')">💚 Boissons fonctionnelles</div>
+      <div class="tip" onclick="quickSearch('new indie energy drink brand launch 2025 Europe Asia not Red Bull')">⚡ Energy drinks indie</div>
+      <div class="tip" onclick="quickSearch('emerging snack startup brand 2025 Poland Lithuania Germany')">📱 Snacks startup EU</div>
+      <div class="tip" onclick="quickSearch('small Korean drink brand RTD startup 2025 not Samyang')">🇰🇷 K-drinks indé</div>
+      <div class="tip" onclick="quickSearch('niche aloe vera or coconut water brand manufacturer Eastern Europe Turkey')">🌿 Aloe / coco niche</div>
+      <div class="tip" onclick="quickSearch('craft chips startup European manufacturer 2025 regional')">🍟 Chips craft</div>
+      <div class="tip" onclick="quickSearch('bubble tea RTD canned startup brand Europe Taiwan Vietnam 2025')">🧋 Bubble Tea startups</div>
+      <div class="tip" onclick="quickSearch('halal candy emerging brand Turkey Poland Malaysia 2025')">✅ Confiseries halal niche</div>
+      <div class="tip" onclick="quickSearch('functional prebiotic mushroom adaptogenic drink startup 2025 Europe')">💚 Boissons fonctionnelles</div>
+      <div class="tip" onclick="quickSearch('kefir kombucha probiotic RTD small brand Eastern Europe 2025')">🦠 Probiotiques RTD</div>
+      <div class="tip" onclick="quickSearch('Polish Lithuanian Czech regional FMCG brand export catalog')">🇵🇱 Marques régionales EU</div>
     </div>
   </div>
   <div class="loading-state" id="loadingState">
@@ -307,7 +317,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
     <div class="sort-bar" id="sortBar" style="display:none">
       <span style="font-size:11px;font-weight:700;color:var(--text3);align-self:center">Trier :</span>
-      <button class="sort-btn active" onclick="sortProducts(this,'score')">🎯 Score global</button>
+      <button class="sort-btn active" onclick="sortProducts(this,'novelty')">🔍 Nouveauté</button>
+      <button class="sort-btn" onclick="sortProducts(this,'score')">🎯 Score global</button>
       <button class="sort-btn" onclick="sortProducts(this,'logistique')">🚢 Facilité logistique</button>
       <button class="sort-btn" onclick="sortProducts(this,'tendance')">📈 Tendance</button>
       <button class="sort-btn" onclick="sortProducts(this,'marge')">💰 Marge</button>
@@ -345,12 +356,35 @@ function animateSteps(){
   return iv;
 }
 
+// Marques à exclure par catégorie — les blockbusters que tout le monde connaît
+const MAINSTREAM_EXCLUDE = {
+  energy: ['Red Bull','Monster','Rockstar','Burn','Bang','Reign','NOS','Hell','Tiger','XL Energy','Bum Bum','Predator','Mr Big','3 Horses','Hype','Carabao','RedBull','M-150','Lucozade'],
+  boissons: ['Coca-Cola','Coca Cola','Pepsi','Sprite','Fanta','Orangina','7Up','Schweppes','Dr Pepper','Lipton','Nestea','Mountain Dew','Mirinda','Capri-Sun','Capri Sun','Oasis','Tropico','Ice Tea','Snapple','Arizona','Pokka','Yeo\'s','Vimto','Innocent','Tropicana','Minute Maid','Joker','Andros','Granini'],
+  chips: ['Lays','Lay\'s','Pringles','Doritos','Cheetos','Ruffles','Tostitos','Fritos','Bret\'s','Walkers','Vico','Belin','Tuc','Bénénuts'],
+  snacks: ['Pringles','Lays','Doritos','Cheetos','Bret\'s'],
+  confiseries: ['Haribo','M&M\'s','M&Ms','Skittles','Mars','Snickers','Twix','Bounty','Kit Kat','KitKat','Kinder','Maltesers','Smarties','Toblerone','Lion','Crunch','Milka','Nutella','Ferrero','Hershey','Cadbury','Mentos','Tic Tac','Werther\'s','Chupa Chups','Fini','Trolli','Vidal','Lutti','Carambar','Hollywood','Mentos','Airwaves','Freedent'],
+  biscuits: ['Oreo','LU','Bahlsen','McVitie\'s','Mikado','Belvita','BN','Granola','Pepito','Petit Écolier','Prince','Tuc','Loacker','Bahlsen'],
+  kfood: ['Samyang','Nongshim','Lotte','Orion','Binggrae','CJ','Haitai','Pulmuone','Paldo'],
+  healthy: ['Innocent','Tropicana','Vitamin Water','Alpro','Oatly','Yeo Valley','Activia','Actimel'],
+  all: []
+};
+function getBlacklist(cat){
+  const set=new Set();
+  const add=arr=>arr.forEach(x=>set.add(x));
+  if(cat==='all'||!MAINSTREAM_EXCLUDE[cat]){Object.values(MAINSTREAM_EXCLUDE).forEach(add);}
+  else{add(MAINSTREAM_EXCLUDE[cat]);}
+  // Cross-category mega-brands à exclure partout
+  ['Coca-Cola','Pepsi','Red Bull','Monster','Haribo','Kinder','Lays','Pringles','Oreo','Mars','Snickers'].forEach(b=>set.add(b));
+  return[...set];
+}
+
 function buildPrompt(){
   const q=document.getElementById('searchInput').value.trim();
   const tendance=document.getElementById('fTendance').value;
   const zone=document.getElementById('fZone').value;
   const halal=document.getElementById('fHalal').value;
   const source=document.getElementById('fSource').value;
+  const noto=document.getElementById('fNoto')?.value||'discovery';
   const catMap={all:'all FMCG categories',boissons:'fresh beverages soft drinks',energy:'energy drinks functional beverages',chips:'chips crisps salty snacks',snacks:'asian snacks noodle snacks',confiseries:'candy confectionery sweets',kfood:'Korean food K-snacks',healthy:'healthy functional better-for-you'};
   const today=new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
 
@@ -361,38 +395,72 @@ function buildPrompt(){
     all:'All origins acceptable but rank by logistics ease toward Réunion.'
   };
 
-  return `You are a senior FMCG sourcing & product-intelligence expert working FOR the buyer (INCA IMPORT). Today is ${today}.
+  const notoRules={
+    discovery:`DISCOVERY MODE — Find UNKNOWN / EMERGING brands that the buyer doesn't already sell. STRICT RULES:
+- Products must be FROM BRANDS LAUNCHED IN THE LAST 4 YEARS (2022 or later), OR established niche/regional brands not sold globally.
+- Brands must NOT be present in MOST European supermarkets or gas stations already.
+- Annual revenue/sales: prefer brands under ~€50M annual revenue, indie / craft / regional players.
+- Look on: ProductHunt FMCG, Indie food press (FoodNavigator new launches section, BeverageDaily startups), TikTok small-creator product reviews, regional FMCG news (Poland/Lithuania trade press), Polish/Czech/Turkish wholesale catalogs (Dabex, Lider, Stanro, Aleo Drinks, Big Brands Group).
+- Do NOT suggest any product whose brand is mentioned in the BLACKLIST below.`,
+    niche:`NICHE BRANDS — Established but not mainstream. Mid-size regional or specialty brands. Skip any blacklisted mega-brand.`,
+    all:`Any notoriety level allowed BUT still exclude blacklisted mega-brands.`
+  };
 
-═══ CLIENT & LOGISTICS REALITY (critical) ═══
-INCA IMPORT is a purchasing center in La Réunion (French Indian Ocean island) supplying 3 gas stations (OLA/TOTAL/VITO). Main shipping route: EUROPE → Fos-sur-Mer (France) → Le Port (Réunion), ~22 days via CMA CGM, 40' HC containers. Existing trusted suppliers are in POLAND, LITHUANIA, GERMANY, AUSTRIA, FRANCE. Asia (Korea/Malaysia/Singapore) is reachable by direct sea route (does NOT pass Strait of Hormuz). USA logistics are COMPLEX and EXPENSIVE for them — avoid.
-Clientele: 15-40yo, very TikTok-driven, large Muslim community (halal matters), on-the-go single-serve formats, retail price €1.20–€3.50.
+  const blacklist=getBlacklist(activeCat);
+
+  return `You are a senior FMCG sourcing & product-DISCOVERY expert working FOR the buyer (INCA IMPORT). Today is ${today}.
+
+═══ CLIENT & LOGISTICS REALITY ═══
+INCA IMPORT is a purchasing center in La Réunion (French Indian Ocean island) supplying 3 gas stations (OLA/TOTAL/VITO). Main shipping: EUROPE → Fos-sur-Mer → Le Port, ~22 days, 40' HC, via CMA CGM. Trusted suppliers: Poland, Lithuania, Germany, Austria, France. Asia (Korea/Malaysia/Singapore) reachable by direct sea route (NOT via Hormuz). USA logistics avoided.
+Clientele: 15-40yo, TikTok-driven, large Muslim community (halal matters), single-serve format, retail €1.20–€3.50.
+The buyer ALREADY SELLS mainstream brands. He needs to DISCOVER products his competitors don't have.
 
 ═══ SOURCING ZONE RULE ═══
 ${zoneRules[zone]}
 
-═══ MISSION ═══
-Use web search NOW to find ${tendance==='viral'?'products going viral RIGHT NOW':tendance==='emerging'?'emerging/early-trend products':'trending products'} in category: ${catMap[activeCat]||'all'}.
-SEARCH QUERY: "${q||'trending FMCG new products manufacturers Europe'}"
-HALAL: ${halal==='yes'?'Halal certification REQUIRED for all products':'Halal is a plus but not required'}
-SOURCE TYPE: ${source==='maker'?'Find the ACTUAL MANUFACTURER (the company that produces it), NOT a reseller/wholesaler':'Manufacturer preferred, established wholesaler acceptable'}
+═══ DISCOVERY / NOTORIETY RULE ═══
+${notoRules[noto]}
 
-═══ THE MOST IMPORTANT RULE — MANUFACTURER & CONTACT ═══
-For EACH product you MUST identify:
-1. The REAL MANUFACTURER (producer/brand owner) — e.g. for "Bum Bum" the maker is "XL Energy Marketing Poland", NOT a Polish wholesaler reselling it. Dig until you find who actually produces it.
-2. The manufacturer's country, city, and departure port if known.
-3. A DIRECT EXPORT CONTACT: export department email, phone, website contact page, or a named person (sales/export manager) with their email or LinkedIn. Search the manufacturer's official website "contact" / "export" / "distributors" pages.
-4. Mark contactConfidence: "verified" (found real contact on official source), "likely" (generic export@ email or contact form found), or "guess" (inferred, needs checking).
-If you genuinely cannot find a manufacturer contact, give the manufacturer's official website and set contactConfidence="guess".
-Do NOT invent fake emails or phone numbers. If unknown, write "À rechercher" and lower confidence.
+═══ ⛔ BLACKLIST — DO NOT PROPOSE ANY OF THESE BRANDS OR ANY OF THEIR PRODUCTS ⛔ ═══
+${blacklist.join(', ')}
+If you are about to mention any of these, STOP and find a different brand. The buyer already sells these or knows them all — they have ZERO value as a recommendation.
+
+═══ HOW TO ACTUALLY FIND UNKNOWN PRODUCTS ═══
+Use web search to dig into:
+- "new energy drink brand launch 2024" / "2025" / "2026" (filter by recency)
+- "indie FMCG brand Poland" / "Lithuania" / "Turkey" / "Germany" / "South Korea startup"
+- "FoodNavigator new launches", "BeverageDaily startups", "Innova new products"
+- Wholesale catalogs that carry parallel-import / regional brands: Dabex.pl, Lider, MPT Stanro, Aleo Drinks, Big Brands Group Poland, Candy Market FR, Delidrinks, Famobra
+- TikTok product trends from SMALL creators (not viral content already mainstream)
+- Halal-certified beverage / snack producers from Turkey, Malaysia, UAE-export-to-EU
+- K-food brands not yet imported widely (smaller Korean labels beyond Samyang/Nongshim)
+- Bubble tea RTD startups, functional water startups, prebiotic soda startups, mushroom drinks, kefir RTD, kombucha small brands
+
+═══ MISSION ═══
+SEARCH QUERY: "${q||'new emerging FMCG brand discovery 2025 2026 Europe Asia'}"
+CATEGORY: ${catMap[activeCat]||'all'}
+TREND: ${tendance==='viral'?'Going viral RIGHT NOW (but small/emerging brands, not mainstream)':tendance==='emerging'?'Early-stage emerging products':'Any niche/discovery products'}
+HALAL: ${halal==='yes'?'Halal certification REQUIRED':'Halal a plus, not required'}
+SOURCE TYPE: ${source==='maker'?'Manufacturer direct preferred':'Manufacturer or established niche wholesaler'}
+
+═══ FABRICANT & CONTACT (mandatory) ═══
+For EACH product identify:
+1. The REAL MANUFACTURER (the producing company) — not a reseller.
+2. Country, city, departure port.
+3. Direct export contact: email / phone / website / LinkedIn / named person. Mark contactConfidence: verified | likely | guess.
+4. Do NOT invent contacts. If unknown say "À rechercher" and lower confidence.
 
 ═══ SCORING ═══
-- score (0-100): overall fit for Réunion gas stations
-- tendanceScore (0-100): how viral/trending right now
-- logistiqueScore (0-100): how EASY to import to Réunion (100=European manufacturer with EU warehouse, ship via Fos; 70=Asia direct route; 20=USA only). This drives ranking.
+- score (0-100): overall fit Réunion gas stations
+- tendanceScore (0-100): momentum (small but accelerating > viral mainstream)
+- logistiqueScore (0-100): import ease to Réunion
+- noveltyScore (0-100): how UNKNOWN/fresh — 100 = nobody knows it, 0 = global mainstream. AIM HIGH.
 
-Find 6 concrete REAL products. Respond ONLY with valid JSON (no markdown, no backticks, nothing before/after):
-{"searchDate":"${today}","sources":["site1.com","site2.com","site3.com","site4.com"],"analysis":"3-4 sentences: what's trending online TODAY, and which products are realistically sourceable for Réunion given the Europe-first logistics. Mention specific countries/manufacturers found.","products":[{"nom":"Exact product name","marque":"Brand","categorie":"Short category","origine":"Manufacturing country","villeFabricant":"City if known","portDepart":"Likely departure port e.g. Gdansk / Hamburg / Fos","annee_lancement":"2025 or 2026","score":82,"scoreLevel":"high","logistiqueScore":90,"tendanceScore":88,"pourquoi":"Why relevant for Réunion gas stations specifically — cite concrete current evidence (TikTok trend, EU availability, halal, format).","tags":["Viral TikTok","Halal"],"prixAchatEst":"€0.40 – €0.55","pvSuggere":"€2.00 – €2.50","margeEst":"45%","fabricant":"REAL manufacturer company name","fabricantPays":"Country","fabricantSite":"manufacturer-official-site.com","contactPersonne":"Named person + role if found, else empty","contactEmail":"export@manufacturer.com or empty","contactTel":"+.. or empty","contactLinkedin":"linkedin url or empty","contactConfidence":"verified|likely|guess","noteDistribution":"How to actually buy it: direct from maker / via which EU distributor / MOQ hints if found","accentColor":"#3b5bdb"}]}
-scoreLevel: "high">=75, "med" 50-74, "low"<50. accentColors to rotate: #3b5bdb,#0ca678,#e8590c,#7048e8,#d6336c,#0891b2`;
+Find 6 concrete REAL discovery products. REJECT any that fail the blacklist check.
+
+Respond ONLY with valid JSON (no markdown, no backticks):
+{"searchDate":"${today}","sources":["site1.com","site2.com","site3.com","site4.com"],"analysis":"3-4 sentences focused on the DISCOVERY angle: what under-the-radar brands you found, why they fit Réunion, and what makes them differentiated from the mainstream products the buyer already sells.","products":[{"nom":"Exact product name","marque":"Brand (NOT in blacklist)","categorie":"Short category","origine":"Manufacturing country","villeFabricant":"City","portDepart":"Departure port","annee_lancement":"2024/2025/2026","score":82,"scoreLevel":"high","logistiqueScore":90,"tendanceScore":75,"noveltyScore":92,"pourquoi":"Why this NEW/NICHE product is relevant for Réunion gas stations — cite concrete recent evidence and why it differentiates from mainstream offer.","tags":["Nouveauté 2025","Halal","Niche"],"prixAchatEst":"€0.40 – €0.55","pvSuggere":"€2.00 – €2.50","margeEst":"45%","fabricant":"REAL manufacturer name","fabricantPays":"Country","fabricantSite":"site.com","contactPersonne":"Name + role","contactEmail":"export@... or empty","contactTel":"+..","contactLinkedin":"linkedin or empty","contactConfidence":"verified|likely|guess","noteDistribution":"How to buy: direct maker / which niche EU distributor / MOQ hint","accentColor":"#3b5bdb"}]}
+scoreLevel: "high">=75,"med" 50-74,"low"<50. accentColors rotate: #3b5bdb,#0ca678,#e8590c,#7048e8,#d6336c,#0891b2`;
 }
 
 async function launch(){if(!checkApiKey())return;
@@ -441,7 +509,7 @@ function copyTxt(t,btn){navigator.clipboard.writeText(t).then(()=>{const o=btn.t
 
 function cardHTML(p,idx){
   const sl=p.scoreLevel||'med';const sc=SC[sl];const col=p.accentColor||'#3b5bdb';
-  const ts=p.tendanceScore||p.score||70;const lg=p.logistiqueScore||50;
+  const ts=p.tendanceScore||p.score||70;const lg=p.logistiqueScore||50;const nv=p.noveltyScore||60;
   const lgCol=lg>=75?'var(--green)':lg>=45?'var(--amber)':'var(--red)';
   const tags=(p.tags||[]).map(t=>{let c='ptag';if(/tiktok|viral/i.test(t))c+=' tiktok';else if(/halal/i.test(t))c+=' halal';else if(/nouveau|2025|2026|launch/i.test(t))c+=' new';else if(/épicé|spicy|hot|piment/i.test(t))c+=' hot';else if(/europe|logist|fos/i.test(t))c+=' logi';else if(/live|tendance/i.test(t))c+=' live';return`<span class="${c}">${t}</span>`;}).join('');
   const conf=p.contactConfidence||'guess';
@@ -467,6 +535,7 @@ function cardHTML(p,idx){
     <div class="meters">
       <div class="trend-meter"><span class="tm-label">📈 Tendance</span><div class="tm-bar"><div class="tm-fill" style="width:${ts}%;background:${col}"></div></div><span class="tm-val" style="color:${col}">${ts}</span></div>
       <div class="trend-meter"><span class="tm-label">🚢 Logistique</span><div class="tm-bar"><div class="tm-fill" style="width:${lg}%;background:${lgCol}"></div></div><span class="tm-val" style="color:${lgCol}">${lg}</span></div>
+      <div class="trend-meter"><span class="tm-label">🔍 Nouveauté</span><div class="tm-bar"><div class="tm-fill" style="width:${nv}%;background:var(--purple)"></div></div><span class="tm-val" style="color:var(--purple)">${nv}</span></div>
     </div>
     <div class="prod-metrics">
       <div class="pm"><div class="pm-v" style="color:${col}">${p.prixAchatEst||'—'}</div><div class="pm-l">Achat est.</div></div>
@@ -484,12 +553,25 @@ function cardHTML(p,idx){
 }
 
 function renderResults(data,query){
-  lastProducts=data.products||[];
+  const noto=document.getElementById('fNoto')?.value||'discovery';
+  let all=data.products||[];
+  let filtered=all, removed=[];
+  if(noto!=='all'){
+    const bl=getBlacklist(activeCat).map(b=>b.toLowerCase());
+    filtered=all.filter(p=>{
+      const hay=((p.marque||'')+' '+(p.nom||'')+' '+(p.fabricant||'')).toLowerCase();
+      const hit=bl.find(b=>hay.includes(b.toLowerCase()));
+      if(hit){removed.push({p,hit});return false;}
+      return true;
+    });
+  }
+  lastProducts=filtered;
   document.getElementById('resultsWrap').style.display='block';
   document.getElementById('resultsTitle').textContent=query?`Veille : "${query}"`:'Tendances FMCG Live';
-  document.getElementById('resultsMeta').textContent=`${lastProducts.length} produits · fabricants & contacts · priorité Europe`;
+  const metaExtra = removed.length ? ` · ⛔ ${removed.length} marque(s) mainstream filtrée(s)` : '';
+  document.getElementById('resultsMeta').textContent=`${lastProducts.length} produits${metaExtra} · fabricants & contacts`;
   const now=new Date();
-  document.getElementById('timestamp').innerHTML=`🔴 LIVE — ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+  document.getElementById('timestamp').innerHTML=`🔴 LIVE — ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}${removed.length?` <span style="margin-left:6px;background:rgba(112,72,232,.15);color:var(--purple);padding:2px 8px;border-radius:10px;font-size:9px">⛔ filtrés: ${removed.map(r=>r.hit).join(', ')}</span>`:''}`;
   if(data.sources?.length){
     document.getElementById('sourcesBar').style.display='flex';
     document.getElementById('sourcesList').innerHTML=data.sources.map(s=>`<span class="src-tag">🌐 ${s}</span>`).join('');
@@ -502,7 +584,7 @@ function renderResults(data,query){
 function drawGrid(arr){document.getElementById('productsGrid').innerHTML=arr.map((p,i)=>cardHTML(p,i)).join('');}
 function sortProducts(btn,key){
   document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
-  const keyMap={score:'score',logistique:'logistiqueScore',tendance:'tendanceScore',marge:p=>parseFloat((p.margeEst||'0').replace(/[^0-9.]/g,''))||0};
+  const keyMap={score:'score',logistique:'logistiqueScore',tendance:'tendanceScore',novelty:'noveltyScore',marge:p=>parseFloat((p.margeEst||'0').replace(/[^0-9.]/g,''))||0};
   const arr=[...lastProducts].sort((a,b)=>{
     const ka=typeof keyMap[key]==='function'?keyMap[key](a):(a[keyMap[key]]||0);
     const kb=typeof keyMap[key]==='function'?keyMap[key](b):(b[keyMap[key]]||0);
