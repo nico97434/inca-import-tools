@@ -241,6 +241,7 @@ tbody tr:hover{background:var(--card2)}
     <button data-v="catalogue">🧠 Catalogue IA</button>
     <button data-v="conteneur">🚢 Conteneur <span class="dot" id="dotCont"></span></button>
     <button data-v="veille">🌍 Veille</button>
+    <button data-v="compare">⚖️ Comparateur</button>
     <button data-v="marketing">📣 Promo</button>
     <button data-v="reglages">⚙️</button>
   </nav>
@@ -298,9 +299,38 @@ tbody tr:hover{background:var(--card2)}
       <div id="prodSearchRes"></div>
     </div>
   </div>
+  <div class="card" id="oppCard" style="margin-top:16px">
+    <div class="card-t g">🎯 Top opportunités d'import (basé sur vos ventes)</div>
+    <p style="font-size:12px;color:var(--ink2);margin:4px 0 10px">Classement par enjeu annuel (volume × prix d'achat local). Le <b>FOB max</b> est le prix fournisseur à ne pas dépasser pour garder ≥ 5% de gain après CRR complet (fret, OM, TVA, taxe soda, stickering). Fournisseurs suggérés selon ta filière.</p>
+    <button class="btn" onclick="renderOpps()">🎯 Générer les opportunités</button>
+    <div class="tbl-wrap" style="max-height:520px;overflow:auto;margin-top:12px"><table class="tbl" id="oppTable"><thead></thead><tbody></tbody></table></div>
+  </div>
 </section>
 
 <!-- ============ VUE CATALOGUE IA ============ -->
+<section class="view" id="v-compare">
+<div class="wrap2">
+  <div class="card">
+    <div class="card-t g">⚖️ Comparateur de catalogues fournisseurs</div>
+    <p style="font-size:12px;color:var(--ink2);margin:4px 0 14px">Charge 2 ou 3 catalogues (Excel ou PDF). Les produits identiques sont rapprochés automatiquement, même sous des appellations légèrement différentes, et comparés au référentiel local.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="cmpZones">
+      <div class="drop" id="cmpDrop0" style="min-height:110px"><b>Catalogue A</b><div class="mini" id="cmpName0">PDF / Excel</div><input type="file" id="cmpFile0" accept=".xlsx,.xls,.csv,.pdf" hidden></div>
+      <div class="drop" id="cmpDrop1" style="min-height:110px"><b>Catalogue B</b><div class="mini" id="cmpName1">PDF / Excel</div><input type="file" id="cmpFile1" accept=".xlsx,.xls,.csv,.pdf" hidden></div>
+      <div class="drop" id="cmpDrop2" style="min-height:110px"><b>Catalogue C <span style="font-weight:400">(optionnel)</span></b><div class="mini" id="cmpName2">PDF / Excel</div><input type="file" id="cmpFile2" accept=".xlsx,.xls,.csv,.pdf" hidden></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" onclick="runCompare()">⚖️ Comparer les catalogues</button>
+      <button class="btn gh" onclick="exportCompare()">⬇ Export Excel</button>
+    </div>
+    <div id="cmpSts" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="cmpResCard" style="display:none">
+    <div class="card-t">Résultat du rapprochement</div>
+    <div id="cmpKpis" style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div class="tbl-wrap" style="max-height:560px;overflow:auto"><table class="tbl" id="cmpTable"><thead></thead><tbody></tbody></table></div>
+  </div>
+</div>
+</section>
 <section class="view" id="v-catalogue">
   <div class="grid2" style="grid-template-columns:1.3fr 1fr;align-items:start">
     <div>
@@ -904,25 +934,29 @@ const VERDICTS={IMPORT:{cls:'imp',ic:'✅',lbl:'IMPORTER'},NEGOCIER:{cls:'neg',i
 function catThink(t1,t2){$('catThinkT1').textContent=t1;$('catThinkT2').textContent=t2;$('catThink').classList.add('show');}
 function catThinkOff(){$('catThink').classList.remove('show');}
 
+async function fileToRows(file,onThink){
+  const ext=file.name.split('.').pop().toLowerCase();
+  let rows=null;
+  if(['xlsx','xls','csv'].includes(ext)){
+    if(onThink)onThink('Lecture du fichier Excel…');
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array'});
+    rows=extractFromWorkbook(wb);
+    if(!rows||rows.length<2){
+      const txt=wb.SheetNames.map(sn=>XLSX.utils.sheet_to_csv(wb.Sheets[sn])).join('\n').slice(0,60000);
+      rows=await aiExtract(txt,null);
+    }
+  }else if(ext==='pdf'){
+    if(onThink)onThink('Lecture du PDF…');
+    rows=await extractFromPDF(file);
+  }else{throw new Error('Format non supporté : '+ext);}
+  if(!rows||!rows.length)throw new Error('Aucun produit détecté dans '+file.name);
+  return rows;
+}
 async function handleCatFile(file){
   hideSts('catSts');$('catResults').style.display='none';
-  const ext=file.name.split('.').pop().toLowerCase();
   try{
-    let rows=null;
-    if(['xlsx','xls','csv'].includes(ext)){
-      catThink('Lecture du fichier Excel…','Détection automatique des colonnes');
-      const buf=await file.arrayBuffer();
-      const wb=XLSX.read(buf,{type:'array'});
-      rows=extractFromWorkbook(wb);
-      if(!rows||rows.length<2){
-        // fallback IA sur le texte brut
-        const txt=wb.SheetNames.map(sn=>XLSX.utils.sheet_to_csv(wb.Sheets[sn])).join('\n').slice(0,60000);
-        rows=await aiExtract(txt,null);
-      }
-    }else if(ext==='pdf'){
-      rows=await extractFromPDF(file);
-    }else{throw new Error('Format non supporté : '+ext);}
-    if(!rows||!rows.length)throw new Error('Aucun produit détecté dans le document.');
+    const rows=await fileToRows(file,m=>catThink(m,'Détection automatique des colonnes'));
     buildCatProducts(rows,file.name);
   }catch(e){catThinkOff();sts('catSts','❌ '+esc(e.message),'err');console.error(e);}
 }
@@ -1611,6 +1645,163 @@ Réponds UNIQUEMENT avec le code HTML, sans backticks ni explication.`}]});
   }catch(e){sts('mkSts','❌ '+e.message+(apiKey()?'':' — ajoute ta clé API dans ⚙️'),'err');}
 }
 function mkBackManual(){mkAIHtml=null;mkRender();}
+
+/* ================== OPPORTUNITÉS D'IMPORT ================== */
+const SUPPLIERS=[
+ {n:'BBG Poland',c:'mohamed.yahya@bb-g.pl',tags:['monster','coca','red bull','fanta','sprite','schweppes','lipton','pepsi','7up','canada','energy','soda','oasis','tropico'],cats:['Boissons']},
+ {n:'Dabex Poland',c:'export@dabex.pl',tags:['kinder','nutella','haribo','mars','snickers','twix','kitkat','milka','oreo','mentos','pringles','lays','chips'],cats:['Confiseries','Biscuiterie','Chips','Boissons']},
+ {n:'MPT Stanro Poland',c:'export@stanro.eu',tags:['coca','fanta','monster','red bull','chips','biscuit'],cats:['Boissons','Chips','Confiseries']},
+ {n:'Aleo Drinks Lituanie',c:'indre@aleodrinks.eu',tags:['energy','aloe','okf','ice tea','vitamine','water'],cats:['Boissons']},
+ {n:'Candy Market France',c:'contact@candymarket.fr',tags:['bonbon','haribo','fini','candy','sucette','chewing','gum'],cats:['Confiseries']},
+ {n:'Delidrinks France',c:'contact@delidrinks.com',tags:['premium','jus','bio','limonade','ginger'],cats:['Boissons']},
+ {n:'FMCG Viet',c:'inquiry@fmcg-viet.com',tags:['aloe','coco','coconut','asian','okf','sting','pocari','jus'],cats:['Boissons','Autre']},
+ {n:'G&G FMCG',c:'info@ggfmcg.com',tags:['asian','noodle','snack','coco'],cats:['Boissons','Chips','Autre']},
+];
+function suggestSuppliers(name,cat){
+  const n=norm(name);
+  return SUPPLIERS.filter(s=>s.cats.includes(cat)&&(s.tags.some(t=>n.includes(t))||s.cats[0]===cat))
+    .sort((a,b)=>b.tags.filter(t=>n.includes(t)).length-a.tags.filter(t=>n.includes(t)).length)
+    .slice(0,2);
+}
+// FOB max pour conserver minGain de marge vs PA local : CRR = (FOB+f)·K + soda + stick
+function fobMax(paLocal,p,minGain=0.05){
+  const dd=ddRate(p.cat),om=gP('p_om')/100,omr=gP('p_omr')/100,tva=gP('p_tva')/100;
+  const K=1+dd+om+omr+tva*(1+dd);
+  const sodaU=(p.cat==='Boissons')?sodaPerUnit(p.soda||'mid',p.ml||330):0;
+  const f=freightPerUnit(p);
+  return Math.max(0,(paLocal*(1-minGain)-sodaU-gP('p_stick'))/K-f);
+}
+function renderOpps(){
+  if(!salesIndex.length){alert('Chargez d\'abord vos fichiers de ventes.');return;}
+  // Agrégat par marque+format (dédup variantes) via matchSales sur soi-même
+  const seen={},opps=[];
+  salesIndex.slice().sort((a,b)=>b.qtyYear-a.qtyYear).slice(0,300).forEach(e=>{
+    if(e.qtyYear<=0)return;
+    const m=matchSales(e.article);if(!m)return;
+    if(seen[m.key])return;seen[m.key]=1;
+    const pm=matchPrix(e.article);
+    if(!pm)return; // besoin du PA pour évaluer
+    const pa=+pm.puaht_recent;
+    const cat=guessCat(e.article);
+    const p={cat,ml:m.ml||toML(e.article)||330,soda:cat==='Boissons'?'mid':'none',pcsCase:24};
+    const fmax=fobMax(pa,p);
+    const enjeu=m.qtyYear*pa; // budget achat annuel
+    opps.push({name:e.article,cat,qtyYear:m.qtyYear,pa,fournLocal:pm.fournisseur_recent||'',fmax,enjeu,sup:suggestSuppliers(e.article,cat)});
+  });
+  opps.sort((a,b)=>b.enjeu-a.enjeu);
+  const top=opps.slice(0,40);
+  const T=$('oppTable');
+  T.querySelector('thead').innerHTML='<tr><th>#</th><th>Produit (libellé caisse)</th><th class="num">Ventes/an</th><th class="num">PA local</th><th class="num">Budget/an</th><th class="num">FOB max (gain ≥5%)</th><th>Fournisseurs suggérés</th></tr>';
+  T.querySelector('tbody').innerHTML=top.map((o,i)=>`<tr>
+    <td>${i+1}</td>
+    <td><div class="pname">${esc(o.name)}</div><div class="psub">${o.cat} · ${esc(o.fournLocal)}</div></td>
+    <td class="num"><b>${f0(o.qtyYear)}</b></td>
+    <td class="num">${f2(o.pa)} €</td>
+    <td class="num"><b>${fK(o.enjeu)}</b></td>
+    <td class="num" style="color:var(--green-d)"><b>≤ ${f2(o.fmax)} €</b></td>
+    <td>${o.sup.map(s=>`<div style="font-size:11px"><b>${s.n}</b> <span class="mini">${s.c}</span></div>`).join('')||'<span class="mini">—</span>'}</td>
+  </tr>`).join('');
+}
+
+/* ================== COMPARATEUR DE CATALOGUES ================== */
+let cmpCats=[null,null,null];
+function bindCmp(){
+  for(let i=0;i<3;i++){
+    const z=$('cmpDrop'+i),f=$('cmpFile'+i);
+    z.addEventListener('click',()=>f.click());
+    bindDrop(z,f,async file=>{
+      sts('cmpSts','📥 Lecture de '+file.name+'…','load');
+      try{
+        const rows=await fileToRows(file);
+        cmpCats[i]={name:file.name.replace(/\.[^.]+$/,''),rows};
+        $('cmpName'+i).textContent=file.name+' · '+rows.length+' produits ✓';
+        sts('cmpSts','✅ '+file.name+' chargé ('+rows.length+' produits).','ok');
+      }catch(e){sts('cmpSts','❌ '+e.message,'err');}
+    });
+  }
+}
+function cmpMatchScore(a,b){
+  const ta=tokens(a.name),tb=tokens(b.name);
+  if(ta[0]!==tb[0])return 0; // marque obligatoire
+  let common=0;for(const t of ta)if(tb.includes(t))common++;
+  let s=common/Math.max(ta.length,tb.length);
+  const ma=toML(a.name),mb=toML(b.name);
+  if(ma&&mb){if(Math.abs(ma-mb)<=Math.max(30,ma*0.08))s+=0.35;else return 0;}
+  return s;
+}
+let cmpResult=[];
+function runCompare(){
+  const cats=cmpCats.filter(Boolean);
+  if(cats.length<2){sts('cmpSts','Charge au moins 2 catalogues.','err');return;}
+  const used=cats.map(()=>new Set());
+  const rowsOf=ci=>cats[ci].rows;
+  cmpResult=[];
+  // base = catalogue avec le plus de produits
+  const order=cats.map((c,i)=>i).sort((a,b)=>rowsOf(b).length-rowsOf(a).length);
+  const base=order[0];
+  rowsOf(base).forEach((r,ri)=>{
+    const entry={name:r.name,ml:toML(r.name),prices:Array(cats.length).fill(null)};
+    entry.prices[base]={p:r.price,n:r.name};used[base].add(ri);
+    order.slice(1).forEach(ci=>{
+      let best=-1,bs=0.55;
+      rowsOf(ci).forEach((r2,j)=>{if(used[ci].has(j))return;const s=cmpMatchScore(r,r2);if(s>bs){bs=s;best=j;}});
+      if(best>=0){entry.prices[ci]={p:rowsOf(ci)[best].price,n:rowsOf(ci)[best].name,s:bs};used[ci].add(best);}
+    });
+    cmpResult.push(entry);
+  });
+  // produits présents uniquement dans les autres catalogues
+  order.slice(1).forEach(ci=>{
+    rowsOf(ci).forEach((r,j)=>{
+      if(used[ci].has(j))return;
+      const e={name:r.name,ml:toML(r.name),prices:Array(cats.length).fill(null)};
+      e.prices[ci]={p:r.price,n:r.name};cmpResult.push(e);
+    });
+  });
+  // enrichissement PA local + tri par écart décroissant
+  cmpResult.forEach(e=>{
+    const pm=matchPrix(e.name);e.pa=pm?+pm.puaht_recent:null;
+    const ps=e.prices.filter(Boolean).map(x=>x.p);
+    e.min=Math.min(...ps);e.max=Math.max(...ps);
+    e.nb=ps.length;e.ecart=e.nb>1?(e.max-e.min)/e.max:0;
+  });
+  cmpResult.sort((a,b)=>(b.nb-a.nb)||(b.ecart-a.ecart));
+  renderCompare(cats);
+}
+function renderCompare(cats){
+  $('cmpResCard').style.display='block';
+  const both=cmpResult.filter(e=>e.nb>1).length;
+  $('cmpKpis').innerHTML=`
+    <div><div class="kpi-v">${cmpResult.length}</div><div class="kpi-l">produits au total</div></div>
+    <div><div class="kpi-v" style="color:var(--blue)">${both}</div><div class="kpi-l">rapprochés (≥2 catalogues)</div></div>
+    <div><div class="kpi-v" style="color:var(--green-d)">${cmpResult.filter(e=>e.nb>1&&e.ecart>0.05).length}</div><div class="kpi-l">écarts > 5%</div></div>`;
+  const T=$('cmpTable');
+  T.querySelector('thead').innerHTML='<tr><th>Produit</th>'+cats.map(c=>`<th class="num">${esc(c.name.slice(0,18))}</th>`).join('')+'<th class="num">Meilleur</th><th class="num">Écart</th><th class="num">PA local</th></tr>';
+  T.querySelector('tbody').innerHTML=cmpResult.slice(0,400).map(e=>{
+    const cells=e.prices.map(x=>{
+      if(!x)return'<td class="num" style="color:var(--ink3)">—</td>';
+      const best=x.p===e.min&&e.nb>1;
+      return`<td class="num" style="${best?'color:var(--green-d);font-weight:800':''}">${f2(x.p)} €${x.n&&norm(x.n)!==norm(e.name)?`<div class="mini">${esc(x.n.slice(0,28))}</div>`:''}</td>`;
+    }).join('');
+    return`<tr><td><div class="pname">${esc(e.name)}</div></td>${cells}
+      <td class="num"><b>${f2(e.min)} €</b></td>
+      <td class="num" style="color:${e.ecart>0.05?'var(--orange-d,#e8590c)':'var(--ink3)'}">${e.nb>1?f0(e.ecart*100)+'%':'—'}</td>
+      <td class="num">${e.pa?f2(e.pa)+' €':'—'}</td></tr>`;
+  }).join('');
+}
+function exportCompare(){
+  if(!cmpResult.length){sts('cmpSts','Lance d\'abord une comparaison.','err');return;}
+  const cats=cmpCats.filter(Boolean);
+  const data=cmpResult.map(e=>{
+    const o={Produit:e.name};
+    cats.forEach((c,i)=>o[c.name.slice(0,25)]=e.prices[i]?e.prices[i].p:'');
+    o['Meilleur prix']=e.min;o['Écart %']=e.nb>1?Math.round(e.ecart*100):'';o['PA local']=e.pa||'';
+    return o;
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Comparatif');
+  XLSX.writeFile(wb,'INCA_Comparatif_Catalogues.xlsx');
+}
+
 /* ================== STUDIO PROMO ================== */
 const MK_THEMES=[
  {id:'flash',n:'FLASH',bg:'linear-gradient(160deg,#e8112d 0%,#b00020 60%,#7a0015 100%)',txt:'#fff',acc:'#ffd400',badge:'#fff',badgeTxt:'#e8112d',deco:['#ffd400','#ff5a36']},
@@ -1721,7 +1912,7 @@ async function mkExport(){
   const ys=Object.keys(YEARS).sort();
   if(ys.length){AY=ys[ys.length-1];enterDash();}
   recalcContainer();
-  mkInit();mkRender();
+  mkInit();mkRender();bindCmp();
 })();
 </script>
 </body>
