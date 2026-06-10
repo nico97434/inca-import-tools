@@ -375,6 +375,7 @@ tbody tr:hover{background:var(--card2)}
           <div class="field"><label>DD Boissons</label><div class="iwrap"><input class="inp mono" type="number" id="p_dd_b" value="9.6" step="0.1" oninput="recalcContainer()"><span class="sfx">%</span></div></div>
           <div class="field"><label>DD Confiserie/sec</label><div class="iwrap"><input class="inp mono" type="number" id="p_dd_c" value="5.6" step="0.1" oninput="recalcContainer()"><span class="sfx">%</span></div></div>
           <div class="field"><label>Capacité utile</label><div class="iwrap"><input class="inp mono" type="number" id="p_cap" value="67" oninput="recalcContainer()"><span class="sfx">m³</span></div></div>
+          <div class="field"><label>Palettes euro / 40'HC</label><div class="iwrap"><input class="inp mono" type="number" id="p_plt" value="25" oninput="recalcContainer()"><span class="sfx">plt</span></div></div>
         </div>
         <div class="hint" style="margin-top:10px">💧 <b>Taxe soda 2026</b> appliquée automatiquement aux boissons selon le niveau de sucre choisi par ligne : 4,07 / 21,38 / 35,07 €/hl · édulcorants 4,50 €/hl.</div>
       </div>
@@ -600,8 +601,8 @@ const STATION_DB = [
 
 /* ---------- Utils ---------- */
 const $=id=>document.getElementById(id);
-const P_DEF={p_om:25.5,p_omr:2.5,p_tva:2.1,p_dd_b:9.6,p_dd_c:5.6,p_fret:3850,p_dsg:1329,p_stick:0.05,p_cap:67,soda_low:4.07,soda_mid:21.38,soda_high:35.07,soda_sweet:4.50,ts_low:4.07,ts_mid:21.38,ts_high:35.07,ts_sweet:4.50,rot_Boissons:3.5,rot_Chips:4,rot_Confiseries:5,rot_Biscuiterie:5,rot_Autre:6};
-const gP=id=>{const v=parseFloat($(id)?.value);return isNaN(v)?(P_DEF[id]??0):v;};
+const P_DEF={p_om:25.5,p_omr:2.5,p_tva:2.1,p_dd_b:9.6,p_dd_c:5.6,p_fret:3850,p_dsg:1329,p_stick:0.05,p_cap:67,p_plt:25,soda_low:4.07,soda_mid:21.38,soda_high:35.07,soda_sweet:4.50,ts_low:4.07,ts_mid:21.38,ts_high:35.07,ts_sweet:4.50,rot_Boissons:3.5,rot_Chips:4,rot_Confiseries:5,rot_Biscuiterie:5,rot_Autre:6};
+const gP=id=>{const el=$(id);if(!el||el.value===undefined)return P_DEF[id]??0;const v=parseFloat(el.value);return isNaN(v)?(el.value===''?0:(P_DEF[id]??0)):v;};
 const f2=n=>(n==null||isNaN(n))?'—':new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 const f0=n=>(n==null||isNaN(n))?'—':new Intl.NumberFormat('fr-FR').format(Math.round(n));
 const fK=n=>n>=1e6?f2(n/1e6)+' M€':n>=1000?f0(n/1000)+' k€':f0(n)+' €';
@@ -716,7 +717,19 @@ function matchSales(name,brand){
     if(ml&&e.ml){if(Math.abs(ml-e.ml)<=Math.max(30,ml*0.08))score+=0.45;else if(Math.abs(ml-e.ml)>ml*0.5)score-=0.3;}
     if(score>bestScore){bestScore=score;best=e;}
   }
-  return bestScore>=0.5?{...best,conf:Math.min(bestScore,1)}:null;
+  if(bestScore<0.5)return null;
+  // Agrégation de la demande : somme des libellés caisse partageant marque + format
+  // (même produit physique enregistré sous plusieurs libellés POS)
+  let aggQty=0;const labels=[];
+  for(const e of salesIndex){
+    if(e.qtyYear<=0)continue;
+    if(brandTk&&!e.tokens.includes(brandTk))continue;
+    if(ml&&e.ml&&Math.abs(ml-e.ml)>Math.max(30,ml*0.08))continue;
+    if(!ml&&e.ml&&best.ml&&Math.abs(best.ml-e.ml)>Math.max(30,best.ml*0.08))continue;
+    aggQty+=e.qtyYear;labels.push(e.article);
+  }
+  const mlB=ml||best.ml||0;
+  return{...best,key:(brandTk||best.key)+'|'+Math.round(mlB/10)*10,qtyYear:Math.max(aggQty,best.qtyYear),aggLabels:labels.length,conf:Math.min(bestScore,1)};
 }
 // Matching → prix d'achat local
 function matchPrix(name,brand){
@@ -915,26 +928,40 @@ async function handleCatFile(file){
 }
 
 /* --- Extraction Excel heuristique --- */
-const HKEY={
-  name:['product','produit','article','description','designation','item','nom','name','goods'],
+const HKEY={ // clés en espace NORMALISÉ (minuscules, sans accents ni ponctuation)
+  name:['product description','product','produit','article','description','designation','item','goods'],
   brand:['brand','marque','producer','fabricant','manufacturer'],
-  price:['price','prix','unit price','prix unitaire','pu','fob','exw','price eur','unit cost','price/pc','price per unit'],
-  pcsCase:['pcs/case','pcs case','pcs/ctn','units/case','unites/carton','qte/carton','pc/ctn','pack','case pack','pcs per carton','qty/ctn','colisage'],
-  casePallet:['case/pallet','cases/pallet','ctn/pallet','cartons/palette','ctns/plt'],
-  pcsPallet:['pcs/pallet','pcs pallet','qte/palette','units/pallet'],
-  cbm:['cbm','m3','volume','cbm/ctn','cbm/case'],
-  weight:['gw','weight','poids','kg','gross weight','g.w'],
-  ean:['ean','barcode','code barre','gtin','upc','code'],
+  pcsCase:['packing pcs ct','pcs ct','pcs case','pcs ctn','units case','unites carton','qte carton','pc ctn','case pack','pcs per carton','qty ctn','colisage','packing'],
+  qtyPlt:['qte plt','qty plt','plt','palettes','pallets','palette'],
+  qtyCt:['qte ct','qty ct','quantity ct','cartons'],
+  qty:['qte pcs','qty pcs','quantity pcs','quantity','quantite','pieces','pcs total','qty','qte'],
+  priceCase:['net price ct','price ct eur','price ct','prix carton','prix ct'],
+  price:['net price pcs','price pcs eur','price pcs','unit price','prix unitaire','net price','price eur','unit cost','price per unit','price','prix','pu','fob','exw'],
+  casePallet:['case pallet','cases pallet','ctn pallet','cartons palette','ctns plt','ct plt'],
+  pcsPallet:['pcs pallet','qte palette','units pallet'],
+  cbm:['cbm ctn','cbm case','cbm','m3','volume m3'],
+  weight:['gross weight','g w','gw','weight','poids','kg'],
+  ean:['gtin','ean','barcode','code barre','upc'],
   moq:['moq','min order','minimum'],
-  format:['size','format','volume','capacity','contenance','ml','gr'],
+  format:['size','format','capacity','contenance'],
   bbd:['bbd','dlc','expiry','best before','shelf life','ddm'],
 };
 function headerScore(vals){
   let hits=0,map={};
+  // Passe 1 : correspondances exactes (prioritaires)
   vals.forEach((v,j)=>{
     const t=norm(v);if(!t)return;
     for(const[k,keys]of Object.entries(HKEY)){
-      if(keys.some(kw=>t===kw||t.includes(kw))){if(map[k]===undefined){map[k]=j;hits++;}break;}
+      if(keys.some(kw=>t===kw)&&map[k]===undefined){map[k]=j;hits++;return;}
+    }
+  });
+  // Passe 2 : inclusion
+  vals.forEach((v,j)=>{
+    if(Object.values(map).includes(j))return;
+    const t=norm(v);if(!t)return;
+    for(const[k,keys]of Object.entries(HKEY)){
+      if(map[k]!==undefined)continue;
+      if(keys.some(kw=>t.includes(kw))){map[k]=j;hits++;return;}
     }
   });
   return{hits,map};
@@ -965,11 +992,16 @@ function extractFromWorkbook(wb){
     const name=String(row[map.name]||'').trim();
     if(!name||name.length<2)continue;
     const price=parseFloat(String(row[map.price]??'').replace(/[^\d.,-]/g,'').replace(',','.'));
-    if(isNaN(price)||price<=0||price>5000)continue;
+    if(/paleta|palette euro|sticker|naklejk|transport cost|frais/i.test(name))continue;
+    if(isNaN(price)||price<0||price>5000)continue;
     out.push({
       name, brand:map.brand!==undefined?String(row[map.brand]||'').trim():'',
       price,
       pcsCase:map.pcsCase!==undefined?parseInt(row[map.pcsCase])||0:0,
+      qty:map.qty!==undefined?parseInt(String(row[map.qty]).replace(/\s/g,''))||0:0,
+      qtyCt:map.qtyCt!==undefined?parseInt(String(row[map.qtyCt]).replace(/\s/g,''))||0:0,
+      qtyPlt:map.qtyPlt!==undefined?parseFloat(String(row[map.qtyPlt]).replace(',','.'))||0:0,
+      priceCase:map.priceCase!==undefined?parseFloat(String(row[map.priceCase]).replace(/[^\d.,-]/g,'').replace(',','.'))||0:0,
       casePallet:map.casePallet!==undefined?parseInt(row[map.casePallet])||0:0,
       pcsPallet:map.pcsPallet!==undefined?parseInt(row[map.pcsPallet])||0:0,
       cbmCase:map.cbm!==undefined?parseFloat(String(row[map.cbm]).replace(',','.'))||0:0,
@@ -980,6 +1012,15 @@ function extractFromWorkbook(wb){
       bbd:map.bbd!==undefined?String(row[map.bbd]||''):'',
     });
   }
+  // Dérivations logistiques par ligne (cohérence proforma)
+  out.forEach(r=>{
+    if(!r.pcsCase&&r.qty&&r.qtyCt)r.pcsCase=Math.round(r.qty/r.qtyCt);
+    if(!r.casePallet&&r.qtyCt&&r.qtyPlt)r.casePallet=Math.round(r.qtyCt/r.qtyPlt);
+    if(!r.pcsPallet&&r.pcsCase&&r.casePallet)r.pcsPallet=r.pcsCase*r.casePallet;
+    if((!r.price||r.price<=0)&&r.priceCase&&r.pcsCase)r.price=+(r.priceCase/r.pcsCase).toFixed(4);
+    // garde-fou : prix unitaire incohérent vs prix carton
+    if(r.priceCase&&r.pcsCase&&r.price>r.priceCase*0.8)r.price=+(r.priceCase/r.pcsCase).toFixed(4);
+  });
   return out.length?out:null;
 }
 // Profilage : devine les colonnes par le contenu
@@ -1093,10 +1134,10 @@ function buildCatProducts(rows,fname){
       else soda='mid';
     }
     const p={id:i,name:r.name,brand:r.brand||'',price:r.price,
-      pcsCase:r.pcsCase||0,pcsPallet:r.pcsPallet||(r.casePallet&&r.pcsCase?r.casePallet*r.pcsCase:0),
+      pcsCase:r.pcsCase||0,casePallet:r.casePallet||0,pcsPallet:r.pcsPallet||(r.casePallet&&r.pcsCase?r.casePallet*r.pcsCase:0),
       cbmCase:r.cbmCase||0,kgCase:r.kgCase||0,ean:r.ean||'',moq:r.moq||'',bbd:r.bbd||'',
       cat,ml,soda,_ai:!!r._ai,
-      sales:sm,prixLocal:pm,qty:0};
+      sales:sm,prixLocal:pm,qty:r.qty||0};
     computeVerdict(p);
     return p;
   });
@@ -1240,8 +1281,16 @@ function defCbmCase(p){
 }
 function defKgCase(p){
   if(p.kgCase>0)return p.kgCase;
-  if(p.cat==='Boissons'){const u=p.pcsCase||24;return(p.ml||330)/1000*u*1.08;}
-  return 5;
+  const u=p.pcsCase||24;
+  if(p.cat==='Boissons')return Math.min((p.ml||330)/1000*u*1.12,30);
+  return Math.min(u*0.25,18); // snack/confiserie ≈250g/u max 18kg/ctn
+}
+// Palettes occupées par un produit (modèle 40'HC = p_plt palettes euro)
+function slotM3(){return (gP('p_cap')||67)/(gP('p_plt')||25);}
+function palettesOf(p,cases){
+  if(p.casePallet>0)return cases/p.casePallet;
+  if(p.pcsPallet>0&&p.pcsCase>0)return cases*p.pcsCase/p.pcsPallet;
+  return cases*defCbmCase(p)/slotM3(); // estimation volumique
 }
 function containerUnits(){return contItems.reduce((s,p)=>s+(p.qty||0),0);}
 function sendToContainer(){
@@ -1260,11 +1309,11 @@ function rmContItem(i){contItems.splice(i,1);recalcContainer();}
 function updContQty(i,v){contItems[i].qty=Math.max(0,parseInt(v)||0);recalcContainer();}
 function recalcContainer(){
   const cap=gP('p_cap')||67,capKg=26000;
-  let cbm=0,kg=0,fob=0;
+  let cbm=0,kg=0,fob=0,plt=0;
   contItems.forEach(p=>{
     const u=p.pcsCase||1;const cases=Math.ceil((p.qty||0)/u);
-    p._cases=cases;p._cbm=cases*defCbmCase(p);p._kg=cases*defKgCase(p);
-    cbm+=p._cbm;kg+=p._kg;fob+=(p.qty||0)*p.price;
+    p._cases=cases;p._plt=palettesOf(p,cases);p._cbm=p._plt*slotM3();p._kg=cases*defKgCase(p);
+    cbm+=p._cbm;kg+=p._kg;fob+=(p.qty||0)*p.price;plt+=p._plt;
   });
   // fret au taux €/m³ (cohérent Catalogue IA) — coût marginal réel par CBM occupé
   const fretTot=gP('p_fret')+gP('p_dsg');
@@ -1289,20 +1338,21 @@ function recalcContainer(){
   $('cgKg').textContent=f0(kg)+' / 26 000 kg';
   const bk=$('barKg');bk.style.width=pk+'%';bk.className=pk>97?'full':pk>85?'warn':'';
   $('cgVal').textContent=fK(fob);$('cgCrr').textContent=fK(crrTot);$('cgMarge').textContent=fK(margeTot);$('cgGain').textContent=(gainTot>=0?'+':'')+fK(gainTot);
-  $('contInfo').innerHTML=contItems.length?`<b>${contItems.length} références</b> · ${f0(containerUnits())} unités · ${f0(contItems.reduce((s,p)=>s+p._cases,0))} cartons · remplissage <b>${f2(pct)}%</b>${pct>100?' ⚠️ dépassement':pct<80&&contItems.length?' — il reste de la place, pensez au groupage':''}`:'Ajoutez des produits depuis l\'onglet <b>Catalogue IA</b>.';
+  $('contInfo').innerHTML=contItems.length?`<b>${contItems.length} références</b> · ${f0(containerUnits())} unités · ${f0(contItems.reduce((s,p)=>s+p._cases,0))} cartons · <b>${f2(plt)} / ${gP('p_plt')||25} palettes</b> · remplissage <b>${f2(pct)}%</b>${pct>100?' ⚠️ dépassement':pct<80&&contItems.length?' — il reste de la place, pensez au groupage':''}`:'Ajoutez des produits depuis l\'onglet <b>Catalogue IA</b>.';
   renderContTable();
 }
 function renderContTable(){
   $('contEmpty').style.display=contItems.length?'none':'block';
   const T=$('contTable');
-  T.querySelector('thead').innerHTML=contItems.length?'<tr><th>Produit</th><th class="num">Prix FOB</th><th class="num">Qté</th><th class="num">Cartons</th><th class="num">m³</th><th class="num">CRR/u</th><th class="num">Coût total</th><th class="num">Gain vs local</th><th></th></tr>':'';
+  T.querySelector('thead').innerHTML=contItems.length?'<tr><th>Produit</th><th class="num">Prix FOB</th><th class="num">Qté</th><th class="num">Cartons</th><th class="num">Palettes</th><th class="num">m³</th><th class="num">CRR/u</th><th class="num">Coût total</th><th class="num">Gain vs local</th><th></th></tr>':'';
   T.querySelector('tbody').innerHTML=contItems.map((p,i)=>{
     const gain=p.prixLocal?(p.prixLocal.puaht_recent-p._crr)*(p.qty||0):null;
     return`<tr>
       <td><div class="pname">${esc(p.name)}</div><div class="psub">${esc(p.brand)} · ${p.cat}${p.monthly?` · ${f0(p.monthly)} u/mois → rotation ${p.monthly>0?f2((p.qty||0)/p.monthly):'—'} mois`:''}</div></td>
       <td class="num">${f2(p.price)} €</td>
       <td class="num"><input class="qty-inp" type="number" min="0" value="${p.qty||0}" onchange="updContQty(${i},this.value)"></td>
-      <td class="num">${f0(p._cases)}</td>
+      <td class="num">${f0(p._cases)}${p.pcsCase?`<div class="mini">×${p.pcsCase}/ctn</div>`:''}</td>
+      <td class="num">${f2(p._plt)}${p.casePallet?`<div class="mini">${p.casePallet} ctn/plt</div>`:'<div class="mini">est.</div>'}</td>
       <td class="num">${f2(p._cbm)}</td>
       <td class="num"><b>${f2(p._crr)} €</b></td>
       <td class="num">${fK(p._crrTot)}</td>
@@ -1316,12 +1366,13 @@ function autoFill(){
   let pool=contItems.length?contItems:catProducts.filter(p=>['IMPORT','NOUVEAU'].includes(p.verdict)&&p.recoQty>0).map(p=>({...p,qty:0}));
   if(!pool.length){alert('Analysez d\'abord un catalogue (onglet Catalogue IA).');return;}
   pool.sort((a,b)=>b.score-a.score);
-  const cap=gP('p_cap')||67;
+  const cap=gP('p_plt')||25; // capacité en palettes
+  const vol=p=>palettesOf(p,Math.ceil((p.qty||0)/(p.pcsCase||1)));
   // Pass 1 : quantités reco (rotation cible)
   let cbm=0;
   pool.forEach(p=>{
     const u=p.pcsCase||1;const cases=Math.ceil((p.recoQty||u)/u);
-    p.qty=cases*u;cbm+=cases*defCbmCase(p);
+    p.qty=cases*u;cbm+=palettesOf(p,cases);
   });
   // Pass 2 : si conteneur sous-rempli, on scale les quantités proportionnellement
   // à la demande, plafonné à 2.5× la rotation cible (évite le surstock)
@@ -1334,7 +1385,7 @@ function autoFill(){
         const maxQty=p.monthly>0?Math.ceil(p.monthly*rotTarget(p.cat)*MAXR/u)*u:p.qty;
         let q=Math.ceil(p.qty*scale/u)*u;
         if(q>maxQty)q=maxQty;
-        p.qty=q;newCbm+=Math.ceil(q/u)*defCbmCase(p);
+        p.qty=q;newCbm+=palettesOf(p,Math.ceil(q/u));
       });
       if(Math.abs(newCbm-cbm)<0.5){cbm=newCbm;break;}
       cbm=newCbm;
@@ -1344,7 +1395,7 @@ function autoFill(){
   if(cbm>cap){
     pool.slice().sort((a,b)=>a.score-b.score).forEach(p=>{
       if(cbm<=cap)return;const u=p.pcsCase||1;
-      while(p.qty>0&&cbm>cap){p.qty-=u;cbm-=defCbmCase(p);}
+      while(p.qty>0&&cbm>cap){p.qty-=u;cbm-=palettesOf(p,1);}
     });
   }
   contItems=pool.filter(p=>p.qty>0);
