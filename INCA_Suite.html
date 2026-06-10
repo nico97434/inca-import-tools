@@ -629,8 +629,11 @@ function guessCat(name){
 // Matching produit catalogue → ventes
 function matchSales(name,brand){
   const tk=tokens(name+' '+(brand||''));const ml=toML(name);
+  const brandTk=tk[0]; // 1er token significatif = marque
   let best=null,bestScore=0;
   for(const e of salesIndex){
+    if(e.qtyYear<=0)continue;
+    if(brandTk&&!e.tokens.includes(brandTk))continue; // marque obligatoire
     let common=0;for(const t of tk)if(e.tokens.includes(t))common++;
     if(!common)continue;
     let score=common/Math.max(tk.length,1);
@@ -642,9 +645,11 @@ function matchSales(name,brand){
 // Matching → prix d'achat local
 function matchPrix(name,brand){
   const tk=tokens(name+' '+(brand||''));const ml=toML(name);
+  const brandTk=tk[0];
   let best=null,bestScore=0;
   for(const r of PRIX_ACHATS_DB){
     const rt=tokens(r.article+' '+(r.format||''));
+    if(brandTk&&!rt.includes(brandTk))continue; // marque obligatoire
     let common=0;for(const t of tk)if(rt.includes(t))common++;
     if(!common)continue;
     let score=common/Math.max(tk.length,1);
@@ -1018,6 +1023,18 @@ function buildCatProducts(rows,fname){
       sales:sm,prixLocal:pm,qty:0};
     computeVerdict(p);
     return p;
+  });
+  // Répartition de la demande : N variantes matchées sur la même entrée ventes → reco/N
+  const byKey={};
+  catProducts.forEach(p=>{if(p.sales){(byKey[p.sales.key]=byKey[p.sales.key]||[]).push(p);}});
+  Object.values(byKey).forEach(grp=>{
+    if(grp.length>1)grp.forEach(p=>{
+      p.monthly=p.monthly/grp.length;
+      let reco=p.monthly*rotTarget(p.cat);
+      if(p.pcsCase>1)reco=Math.ceil(reco/p.pcsCase)*p.pcsCase;
+      p.recoQty=Math.round(reco);
+      p._shared=grp.length;
+    });
   });
   catThinkOff();
   const matched=catProducts.filter(p=>p.sales).length, mpx=catProducts.filter(p=>p.prixLocal).length;
