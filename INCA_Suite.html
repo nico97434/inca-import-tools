@@ -324,6 +324,20 @@ tbody tr:hover{background:var(--card2)}
     </div>
     <div id="cmpSts" style="margin-top:8px"></div>
   </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-t g">🚛 Comparateur de devis transitaires</div>
+    <p style="font-size:12px;color:var(--ink2);margin:4px 0 14px">Charge 2 ou 3 cotations PDF (DSG, autres transitaires). L'IA extrait fret, frais fixes, transit time — la comparaison porte sur les <b>frais transitaire hors droits & taxes</b> (OM/TVA identiques quel que soit le prestataire). Clé API requise.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div class="drop" id="trDrop0" style="min-height:100px"><b>Devis A</b><div class="mini" id="trName0">PDF</div><input type="file" id="trFile0" accept=".pdf" hidden></div>
+      <div class="drop" id="trDrop1" style="min-height:100px"><b>Devis B</b><div class="mini" id="trName1">PDF</div><input type="file" id="trFile1" accept=".pdf" hidden></div>
+      <div class="drop" id="trDrop2" style="min-height:100px"><b>Devis C <span style="font-weight:400">(optionnel)</span></b><div class="mini" id="trName2">PDF</div><input type="file" id="trFile2" accept=".pdf" hidden></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn" onclick="runTransitCompare()">🚛 Comparer les devis</button>
+    </div>
+    <div id="trSts" style="margin-top:8px"></div>
+    <div class="tbl-wrap" id="trResWrap" style="display:none;max-height:560px;overflow:auto;margin-top:12px"><table class="tbl" id="trTable"><thead></thead><tbody></tbody></table></div>
+  </div>
   <div class="card" id="cmpResCard" style="display:none">
     <div class="card-t">Résultat du rapprochement</div>
     <div id="cmpKpis" style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px"></div>
@@ -1080,21 +1094,24 @@ function profileColumns(raw){
 }
 
 /* --- Extraction PDF (texte → IA / scanné → vision IA) --- */
-async function extractFromPDF(file){
-  catThink('Ouverture du PDF…','Analyse de la structure du document');
+async function pdfToText(file,maxPages=30){
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   let fullText='';
-  const nP=Math.min(pdf.numPages,30);
+  const nP=Math.min(pdf.numPages,maxPages);
   for(let p=1;p<=nP;p++){
     const page=await pdf.getPage(p);
     const tc=await page.getTextContent();
-    // reconstruire les lignes par position Y
     const lines={};
     tc.items.forEach(it=>{const y=Math.round(it.transform[5]);(lines[y]=lines[y]||[]).push({x:it.transform[4],s:it.str});});
     const pageTxt=Object.keys(lines).sort((a,b)=>b-a).map(y=>lines[y].sort((a,b)=>a.x-b.x).map(o=>o.s).join(' | ')).join('\n');
     fullText+='\n=== PAGE '+p+' ===\n'+pageTxt;
   }
+  return{fullText,pdf,nP};
+}
+async function extractFromPDF(file){
+  catThink('Ouverture du PDF…','Analyse de la structure du document');
+  const{fullText,pdf,nP}=await pdfToText(file);
   const meaningful=fullText.replace(/[\s|=]/g,'').length;
   if(meaningful>300){
     catThink('Structuration IA du catalogue…','L\'IA identifie produits, prix unitaires et colisage ('+nP+' pages)');
@@ -1709,7 +1726,8 @@ function bindCmp(){
   for(let i=0;i<3;i++){
     const z=$('cmpDrop'+i),f=$('cmpFile'+i);
     z.addEventListener('click',()=>f.click());
-    bindDrop(z,f,async file=>{
+    bindDrop(z,f,async files=>{
+      const file=files&&files[0];if(!file)return;
       sts('cmpSts','📥 Lecture de '+file.name+'…','load');
       try{
         const rows=await fileToRows(file);
@@ -1719,6 +1737,70 @@ function bindCmp(){
       }catch(e){sts('cmpSts','❌ '+e.message,'err');}
     });
   }
+  // Devis transitaires
+  for(let i=0;i<3;i++){
+    const z=$('trDrop'+i),f=$('trFile'+i);
+    z.addEventListener('click',()=>f.click());
+    bindDrop(z,f,files=>{
+      const file=files&&files[0];if(!file)return;
+      trQuotes[i]={file,name:file.name,data:null};
+      $('trName'+i).textContent=file.name+' ✓';
+      sts('trSts','📄 '+file.name+' prêt. Clique "Comparer les devis".','ok');
+    });
+  }
+}
+
+/* ===== Comparateur devis transitaires ===== */
+let trQuotes=[null,null,null];
+async function trParse(q){
+  const{fullText}=await pdfToText(q.file,8);
+  const data=await claudeCall({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:
+`Voici le texte d'une cotation de transitaire maritime (import conteneur vers La Réunion). Extrais les données en JSON strict.
+
+TEXTE:
+${fullText.slice(0,30000)}
+
+Réponds UNIQUEMENT ce JSON (null si absent):
+{"transitaire":"nom du transitaire","compagnie":"compagnie maritime","conteneur":"type ex 40HC","incoterm":"","origine":"port/lieu de départ","transit_jours":0,"validite":"date",
+"fret_forfait":0,
+"frais_fixes":[{"label":"Débarquement","montant":0}],
+"total_frais_transitaire":0,
+"om_estime":0,"omr_estime":0,"tva_estimee":0,
+"assurance":0,"commentaire":"particularités importantes en 1 phrase"}
+Règles: fret_forfait = le forfait fret maritime principal. frais_fixes = TOUTES les autres lignes de prestation (débarquement, BL, douane, CIP, dossier, livraison, TSM, crédit d'enlèvement…) HORS octroi de mer, TVA et assurance. total_frais_transitaire = fret_forfait + somme frais_fixes. Montants en euros (nombres).`}]});
+  return extractJSON(data);
+}
+async function runTransitCompare(){
+  const qs=trQuotes.filter(Boolean);
+  if(qs.length<2){sts('trSts','Charge au moins 2 devis PDF.','err');return;}
+  if(!apiKey()){sts('trSts','Clé API requise (⚙️ Réglages) pour lire les devis.','err');return;}
+  sts('trSts','🤖 Extraction des devis ('+qs.length+')…','load');
+  try{
+    for(const q of qs){if(!q.data){sts('trSts','🤖 Lecture de '+q.name+'…','load');q.data=await trParse(q);}}
+  }catch(e){sts('trSts','❌ '+e.message,'err');return;}
+  // Rendu comparatif
+  const ds=qs.map(q=>q.data);
+  const best=Math.min(...ds.map(d=>+d.total_frais_transitaire||1e9));
+  const allLabels=[...new Set(ds.flatMap(d=>(d.frais_fixes||[]).map(f=>f.label)))];
+  const rows=[
+    ['Compagnie / Conteneur',...ds.map(d=>esc((d.compagnie||'—')+' · '+(d.conteneur||'')))],
+    ['Origine · Incoterm',...ds.map(d=>esc((d.origine||'—')+' · '+(d.incoterm||'')))],
+    ['Transit',...ds.map(d=>d.transit_jours?d.transit_jours+' jours':'—')],
+    ['Validité',...ds.map(d=>esc(d.validite||'—'))],
+    ['<b>Forfait fret maritime</b>',...ds.map(d=>f0(d.fret_forfait||0)+' €')],
+    ...allLabels.map(l=>[esc(l),...ds.map(d=>{const f=(d.frais_fixes||[]).find(x=>x.label===l);return f?f0(f.montant)+' €':'—';})]),
+    ['<b>TOTAL FRAIS TRANSITAIRE</b>',...ds.map(d=>{const t=+d.total_frais_transitaire||0;return`<b style="color:${t===best?'var(--green-d)':'var(--ink)'}">${f0(t)} €${t===best?' 🏆':''}</b>`;})],
+    ['€ / m³ (67 m³)',...ds.map(d=>f2((+d.total_frais_transitaire||0)/(gP('p_cap')||67))+' €')],
+    ['Assurance (option)',...ds.map(d=>d.assurance?f0(d.assurance)+' €':'—')],
+    ['OM estimé (info)',...ds.map(d=>d.om_estime?f0(d.om_estime)+' €':'—')],
+    ['Remarques',...ds.map(d=>`<span class="mini">${esc(d.commentaire||'')}</span>`)],
+  ];
+  const T=$('trTable');
+  T.querySelector('thead').innerHTML='<tr><th></th>'+ds.map(d=>`<th class="num">${esc(d.transitaire||'Devis')}</th>`).join('')+'</tr>';
+  T.querySelector('tbody').innerHTML=rows.map(r=>'<tr><td>'+r[0]+'</td>'+r.slice(1).map(c=>`<td class="num">${c}</td>`).join('')+'</tr>').join('');
+  $('trResWrap').style.display='block';
+  const ecart=Math.max(...ds.map(d=>+d.total_frais_transitaire||0))-best;
+  sts('trSts','✅ Comparaison terminée — écart max '+f0(ecart)+' € sur les frais transitaire.','ok');
 }
 function cmpMatchScore(a,b){
   const ta=tokens(a.name),tb=tokens(b.name);
