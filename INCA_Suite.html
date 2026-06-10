@@ -478,7 +478,12 @@ tbody tr:hover{background:var(--card2)}
         <button data-f="post" class="act" onclick="mkFmt('post')">⬛ Post<br>1080×1080</button>
         <button data-f="tv" onclick="mkFmt('tv')">🖥 Écran TV<br>1920×1080</button>
       </div>
-      <button class="btn" style="width:100%;margin-top:14px" onclick="mkExport()">⬇ Télécharger PNG</button>
+      <button class="btn" style="width:100%;margin-top:14px;background:linear-gradient(135deg,#7048e8,#3b5bdb)" onclick="mkGenAI()">🎨 Générer la pub avec l'IA</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn gh" style="flex:1" onclick="mkGenAI()">↻ Variante</button>
+        <button class="btn gh" style="flex:1" onclick="mkBackManual()">Modèle simple</button>
+      </div>
+      <button class="btn" style="width:100%;margin-top:8px" onclick="mkExport()">⬇ Télécharger PNG</button>
       <div id="mkSts" style="margin-top:8px"></div>
     </div>
     <div>
@@ -1311,13 +1316,37 @@ function autoFill(){
   let pool=contItems.length?contItems:catProducts.filter(p=>['IMPORT','NOUVEAU'].includes(p.verdict)&&p.recoQty>0).map(p=>({...p,qty:0}));
   if(!pool.length){alert('Analysez d\'abord un catalogue (onglet Catalogue IA).');return;}
   pool.sort((a,b)=>b.score-a.score);
-  const cap=gP('p_cap')||67;let cbm=0;
+  const cap=gP('p_cap')||67;
+  // Pass 1 : quantités reco (rotation cible)
+  let cbm=0;
   pool.forEach(p=>{
-    const target=p.qty||p.recoQty||0;const u=p.pcsCase||1;
-    const cases=Math.ceil(target/u);const vol=cases*defCbmCase(p);
-    if(cbm+vol<=cap){p.qty=cases*u;cbm+=vol;}
-    else{const fit=Math.floor((cap-cbm)/defCbmCase(p));if(fit>0){p.qty=fit*u;cbm+=fit*defCbmCase(p);}else p.qty=p.qty||0;}
+    const u=p.pcsCase||1;const cases=Math.ceil((p.recoQty||u)/u);
+    p.qty=cases*u;cbm+=cases*defCbmCase(p);
   });
+  // Pass 2 : si conteneur sous-rempli, on scale les quantités proportionnellement
+  // à la demande, plafonné à 2.5× la rotation cible (évite le surstock)
+  if(cbm>0&&cbm<cap){
+    const MAXR=2.5;
+    for(let iter=0;iter<6&&cbm<cap*0.98;iter++){
+      const scale=cap/cbm;let newCbm=0;
+      pool.forEach(p=>{
+        const u=p.pcsCase||1;
+        const maxQty=p.monthly>0?Math.ceil(p.monthly*rotTarget(p.cat)*MAXR/u)*u:p.qty;
+        let q=Math.ceil(p.qty*scale/u)*u;
+        if(q>maxQty)q=maxQty;
+        p.qty=q;newCbm+=Math.ceil(q/u)*defCbmCase(p);
+      });
+      if(Math.abs(newCbm-cbm)<0.5){cbm=newCbm;break;}
+      cbm=newCbm;
+    }
+  }
+  // Pass 3 : si dépassement, on réduit par score croissant
+  if(cbm>cap){
+    pool.slice().sort((a,b)=>a.score-b.score).forEach(p=>{
+      if(cbm<=cap)return;const u=p.pcsCase||1;
+      while(p.qty>0&&cbm>cap){p.qty-=u;cbm-=defCbmCase(p);}
+    });
+  }
   contItems=pool.filter(p=>p.qty>0);
   $('dotCont').classList.add('on');
   recalcContainer();
@@ -1439,6 +1468,49 @@ async function wipeAll(){
   location.reload();
 }
 
+let mkAIHtml=null; // poster généré par l'IA (HTML brut)
+async function mkGenAI(){
+  const v=mkVals();const[W,H]=MK_FMT[mkFormat];const t=MK_THEMES.find(x=>x.id===mkTheme);
+  if(!v.neu&&!v.old){sts('mkSts','Renseigne au moins un prix.','err');return;}
+  sts('mkSts','🎨 L\'IA dessine ta pub… (10-20s)','load');
+  try{
+    const data=await claudeCall({model:'claude-sonnet-4-20250514',max_tokens:4000,messages:[{role:'user',content:
+`Tu es un directeur artistique senior spécialisé retail/FMCG. Crée une PUBLICITÉ PROMO ultra vendeuse, moderne et premium (niveau agence, pas "généré par IA") en HTML+CSS inline UNIQUEMENT.
+
+BRIEF:
+- Annonceur: INCA IMPORT (distributeur, La Réunion) — stations ${v.stations}
+- Produit: ${v.prod}
+- ${v.old&&v.neu?`Prix barré ${v.old.toFixed(2)}€ → PRIX PROMO ${v.neu.toFixed(2)}€ (-${v.pct}%)`:`Prix: ${(v.neu||v.old).toFixed(2)}€`}
+- Accroche souhaitée: "${v.hook}" (tu peux l'améliorer)
+- Mention légale bas: "${v.period}"
+- Ambiance couleur: ${t.n} (dominante ${t.id==='flash'?'rouge énergique':t.id==='inca'?'navy/or premium':t.id==='trop'?'tropicale verte/soleil':'nuit néon'})
+- Cible: 15-40 ans, Réunion, codes réseaux sociaux
+
+DIRECTION ARTISTIQUE EXIGÉE:
+- Typographie XXL ultra-bold pour le prix (le héros visuel, min 25% de la hauteur), chiffres avec € intégré stylé
+- Composition dynamique: diagonales, formes géométriques découpées (clip-path), cercles de glow, dégradés riches multi-stops
+- Badge promo percutant (étoile/cercle/étiquette rotée) si réduction
+- Profondeur: ombres portées colorées, layering, léger grain via repeating-linear-gradient subtil
+- Nom produit traité graphiquement (lettres serrées, uppercase, éventuel contour)
+- Footer pro discret: INCA IMPORT + stations + mention
+- AUCUNE image externe, AUCUN <script>, AUCUNE police externe (utilise 'Plus Jakarta Sans',sans-serif déjà chargée)
+
+CONTRAINTES TECHNIQUES STRICTES:
+- UN SEUL <div> racine avec style="width:${W}px;height:${H}px;position:relative;overflow:hidden;..."
+- Tout en styles inline ou via éléments imbriqués stylés inline
+- Texte 100% en français
+Réponds UNIQUEMENT avec le code HTML, sans backticks ni explication.`}]});
+    let raw='';(data.content||[]).forEach(b=>{if(b.type==='text')raw+=b.text;});
+    raw=raw.replace(/```html|```/g,'').trim();
+    const i=raw.indexOf('<div');if(i<0)throw new Error('HTML non reçu');
+    raw=raw.slice(i,raw.lastIndexOf('</div>')+6);
+    if(/<script/i.test(raw))throw new Error('script refusé');
+    mkAIHtml=raw;
+    mkRender();
+    sts('mkSts','✅ Pub générée. ↻ pour une variante, ou modifie les champs puis régénère.','ok');
+  }catch(e){sts('mkSts','❌ '+e.message+(apiKey()?'':' — ajoute ta clé API dans ⚙️'),'err');}
+}
+function mkBackManual(){mkAIHtml=null;mkRender();}
 /* ================== STUDIO PROMO ================== */
 const MK_THEMES=[
  {id:'flash',n:'FLASH',bg:'linear-gradient(160deg,#e8112d 0%,#b00020 60%,#7a0015 100%)',txt:'#fff',acc:'#ffd400',badge:'#fff',badgeTxt:'#e8112d',deco:['#ffd400','#ff5a36']},
@@ -1462,7 +1534,7 @@ function mkAutoFill(){
   const s=matchSales(n);const pv=s?.pv;
   if(pv&&!$('mkOld').value)$('mkOld').value=(+pv).toFixed(2);
 }
-function mkFmt(f){mkFormat=f;document.querySelectorAll('#mkFmts button').forEach(b=>b.classList.toggle('act',b.dataset.f===f));mkRender();}
+function mkFmt(f){mkFormat=f;mkAIHtml=null;document.querySelectorAll('#mkFmts button').forEach(b=>b.classList.toggle('act',b.dataset.f===f));mkRender();}
 function mkVals(){
   const old=parseFloat($('mkOld').value)||0,neu=parseFloat($('mkNew').value)||0;
   const pct=(old>0&&neu>0&&neu<old)?Math.round((1-neu/old)*100):0;
@@ -1482,13 +1554,13 @@ function mkPosterHTML(scale){
     <div class="po-deco" style="width:${u*44}px;height:${u*44}px;background:${t.deco[1]};bottom:-${u*14}px;right:-${u*10}px;opacity:.22"></div>
     ${v.pct?`<div class="po-badge" style="width:${u*22}px;height:${u*22}px;background:${t.badge};color:${t.badgeTxt}"><span style="font-size:${u*7.5}px">-${v.pct}%</span><span style="font-size:${u*2.6}px;letter-spacing:1px">PROMO</span></div>`:''}
     <div class="po-head">
-      <div class="po-brand" style="font-size:${u*3}px;color:${t.acc}">⛽ STATIONS INCANA</div>
+      <div class="po-brand" style="font-size:${u*3}px;color:${t.acc}">INCA IMPORT</div>
       <div class="po-hook" style="font-size:${u*10.5}px;margin-top:${u*2}px">${esc(v.hook)}</div>
       <div class="po-prod" style="font-size:${u*5}px;margin-top:${u*2.5}px">${esc(v.prod)}</div>
     </div>
     <div class="po-prices">
-      ${v.old?`<div class="po-old" style="font-size:${u*7}px">${mkPrice(v.old)}</div>`:''}
-      <div class="po-new" style="font-size:${u*20}px;color:${t.acc};text-shadow:0 ${u}px ${u*3}px rgba(0,0,0,.35)">${mkPrice(v.neu)||'?'}</div>
+      ${(v.old&&v.neu)?`<div class="po-old" style="font-size:${u*7}px">${mkPrice(v.old)}</div>`:''}
+      <div class="po-new" style="font-size:${u*20}px;color:${t.acc};text-shadow:0 ${u}px ${u*3}px rgba(0,0,0,.35)">${mkPrice(v.neu||v.old)||''}</div>
     </div>
     <div class="po-foot" style="font-size:${u*2.9}px">
       <div class="po-stations" style="color:${t.acc}">${esc(v.stations)}</div>
@@ -1501,7 +1573,11 @@ function mkRender(){
   const stage=$('mkStage');
   const avail=Math.min(stage.clientWidth-44||620,640);
   const scale=Math.min(avail/W,520/H);
-  $('mkPoster').innerHTML=mkPosterHTML(scale);
+  if(mkAIHtml){
+    $('mkPoster').innerHTML=`<div style="transform:scale(${scale});transform-origin:top left">${mkAIHtml}</div>`;
+  }else{
+    $('mkPoster').innerHTML=mkPosterHTML(scale);
+  }
   $('mkPoster').style.width=(W*scale)+'px';$('mkPoster').style.height=(H*scale)+'px';
 }
 async function mkSlogans(){
@@ -1521,7 +1597,7 @@ async function mkExport(){
   const[W,H]=MK_FMT[mkFormat];
   const tmp=document.createElement('div');
   tmp.style.cssText='position:fixed;left:-99999px;top:0';
-  tmp.innerHTML=mkPosterHTML(null);
+  tmp.innerHTML=mkAIHtml||mkPosterHTML(null);
   document.body.appendChild(tmp);
   try{
     const canvas=await html2canvas(tmp.firstElementChild,{width:W,height:H,scale:1,backgroundColor:null});
