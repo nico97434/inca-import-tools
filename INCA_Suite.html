@@ -1341,14 +1341,26 @@ function recalcContainer(){
   $('contInfo').innerHTML=contItems.length?`<b>${contItems.length} références</b> · ${f0(containerUnits())} unités · ${f0(contItems.reduce((s,p)=>s+p._cases,0))} cartons · <b>${f2(plt)} / ${gP('p_plt')||25} palettes</b> · remplissage <b>${f2(pct)}%</b>${pct>100?' ⚠️ dépassement':pct<80&&contItems.length?' — il reste de la place, pensez au groupage':''}`:'Ajoutez des produits depuis l\'onglet <b>Catalogue IA</b>.';
   renderContTable();
 }
+function contGroupKey(p){
+  if(p.sales&&p.sales.key&&p.sales.key.includes('|'))return p.sales.key;
+  const tk=tokens(p.name);return (tk[0]||p.name)+'|'+Math.round((p.ml||0)/10)*10;
+}
+let contOpen={}; // groupes dépliés
 function renderContTable(){
   $('contEmpty').style.display=contItems.length?'none':'block';
   const T=$('contTable');
   T.querySelector('thead').innerHTML=contItems.length?'<tr><th>Produit</th><th class="num">Prix FOB</th><th class="num">Qté</th><th class="num">Cartons</th><th class="num">Palettes</th><th class="num">m³</th><th class="num">CRR/u</th><th class="num">Coût total</th><th class="num">Gain vs local</th><th></th></tr>':'';
-  T.querySelector('tbody').innerHTML=contItems.map((p,i)=>{
+  // Groupes marque+format
+  const groups={};const order=[];
+  contItems.forEach((p,i)=>{
+    const k=contGroupKey(p);
+    if(!groups[k]){groups[k]={items:[],label:null};order.push(k);}
+    groups[k].items.push({p,i});
+  });
+  const rowHTML=({p,i},child)=>{
     const gain=p.prixLocal?(p.prixLocal.puaht_recent-p._crr)*(p.qty||0):null;
-    return`<tr>
-      <td><div class="pname">${esc(p.name)}</div><div class="psub">${esc(p.brand)} · ${p.cat}${p.monthly?` · ${f0(p.monthly)} u/mois → rotation ${p.monthly>0?f2((p.qty||0)/p.monthly):'—'} mois`:''}</div></td>
+    return`<tr${child?' style="background:#fafbff"':''}>
+      <td style="${child?'padding-left:34px':''}"><div class="pname"${child?' style="font-weight:600;font-size:12px"':''}>${esc(p.name)}</div><div class="psub">${esc(p.brand)} · ${p.cat}${p.monthly?` · ${f0(p.monthly)} u/mois → rotation ${p.monthly>0?f2((p.qty||0)/p.monthly):'—'} mois`:''}</div></td>
       <td class="num">${f2(p.price)} €</td>
       <td class="num"><input class="qty-inp" type="number" min="0" value="${p.qty||0}" onchange="updContQty(${i},this.value)"></td>
       <td class="num">${f0(p._cases)}${p.pcsCase?`<div class="mini">×${p.pcsCase}/ctn</div>`:''}</td>
@@ -1359,7 +1371,44 @@ function renderContTable(){
       <td class="num" style="color:${gain>0?'var(--green-d)':gain<0?'var(--red-d)':'var(--ink3)'}">${gain!=null?(gain>0?'+':'')+f0(gain)+' €':'—'}</td>
       <td><button class="btn dng" style="padding:5px 10px;font-size:11px" onclick="rmContItem(${i})">✕</button></td>
     </tr>`;
-  }).join('');
+  };
+  let html='';
+  let T_qty=0,T_cases=0,T_plt=0,T_cbm=0,T_cost=0,T_gain=0;
+  order.forEach(k=>{
+    const g=groups[k].items;
+    // Totaux groupe
+    const s={qty:0,cases:0,plt:0,cbm:0,cost:0,gain:0,monthly:0};
+    g.forEach(({p})=>{s.qty+=p.qty||0;s.cases+=p._cases;s.plt+=p._plt;s.cbm+=p._cbm;s.cost+=p._crrTot;s.monthly+=p.monthly||0;
+      if(p.prixLocal)s.gain+=(p.prixLocal.puaht_recent-p._crr)*(p.qty||0);});
+    T_qty+=s.qty;T_cases+=s.cases;T_plt+=s.plt;T_cbm+=s.cbm;T_cost+=s.cost;T_gain+=s.gain;
+    if(g.length===1){html+=rowHTML(g[0],false);return;}
+    // En-tête de groupe dépliable
+    const open=!!contOpen[k];
+    const brand=g[0].p.name.split(/\s+/).slice(0,2).join(' ');
+    const ml=g[0].p.ml?g[0].p.ml+' ml':'';
+    html+=`<tr style="background:var(--gold-bg);cursor:pointer" onclick="contOpen['${k}']=!contOpen['${k}'];renderContTable()">
+      <td><div class="pname">${open?'▾':'▸'} ${esc(brand)} ${ml} <span style="font-weight:600;color:var(--ink2)">· ${g.length} variantes</span></div><div class="psub">${s.monthly?f0(s.monthly)+' u/mois groupe → rotation '+f2(s.qty/s.monthly)+' mois':''}</div></td>
+      <td class="num">—</td>
+      <td class="num"><b>${f0(s.qty)}</b></td>
+      <td class="num"><b>${f0(s.cases)}</b></td>
+      <td class="num"><b>${f2(s.plt)}</b></td>
+      <td class="num"><b>${f2(s.cbm)}</b></td>
+      <td class="num">—</td>
+      <td class="num"><b>${fK(s.cost)}</b></td>
+      <td class="num" style="color:${s.gain>0?'var(--green-d)':s.gain<0?'var(--red-d)':'var(--ink3)'}"><b>${s.gain?(s.gain>0?'+':'')+f0(s.gain)+' €':'—'}</b></td>
+      <td></td>
+    </tr>`;
+    if(open)g.forEach(it=>html+=rowHTML(it,true));
+  });
+  // Ligne TOTAL générale
+  if(contItems.length)html+=`<tr style="background:var(--navy);color:#fff;font-weight:800">
+    <td>TOTAL CONTENEUR</td><td class="num">—</td>
+    <td class="num">${f0(T_qty)}</td><td class="num">${f0(T_cases)}</td>
+    <td class="num">${f2(T_plt)}</td><td class="num">${f2(T_cbm)}</td><td class="num">—</td>
+    <td class="num">${fK(T_cost)}</td>
+    <td class="num" style="color:#7CE3A8">${T_gain?(T_gain>0?'+':'')+f0(T_gain)+' €':'—'}</td><td></td>
+  </tr>`;
+  T.querySelector('tbody').innerHTML=html;
 }
 // Remplissage auto : trie par score, remplit jusqu'à la capacité
 function autoFill(){
