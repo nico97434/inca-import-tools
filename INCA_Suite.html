@@ -578,13 +578,16 @@ function calcCRR(prix,{cat='Autre',ml=0,soda='none',freightU=null}={}){
   const tvaU=(caf+dd)*tva; // base TVA hors OM
   return prix+fu+dd+omU+omrU+tvaU+sodaU+stick;
 }
-// Estimation fret/unité par défaut : conteneur "type" 34 560 unités
-let _estFU=null;
-function estFreightU(){
-  const tot=(typeof containerUnits==='function')?containerUnits():0;
-  const q=tot>500?tot:34560;
-  return (gP('p_fret')+gP('p_dsg'))/q;
+// Fret/unité au CBM : (fret+DSG)/capacité m³ × CBM unitaire réel ou estimé
+function freightPerUnit(p){
+  const ratePerM3=(gP('p_fret')+gP('p_dsg'))/(gP('p_cap')||67); // ≈77€/m³
+  let cbmU=0;
+  if(p&&p.cbmCase>0&&p.pcsCase>0)cbmU=p.cbmCase/p.pcsCase;           // CBM carton fourni
+  else if(p&&p.ml>0)cbmU=p.ml*1e-6*1.45;                              // volume liquide ×1.45 emballage
+  else cbmU=0.0009;                                                   // défaut snack/confiserie ~0.9L/u
+  return ratePerM3*cbmU;
 }
+function estFreightU(){return freightPerUnit(null);}
 
 /* ---------- Index ventes (référentiel + fichiers chargés) ---------- */
 let YEARS={};           // {2025:{OLA:{familles,articles,famArticles},...}}
@@ -617,7 +620,7 @@ function rebuildSalesIndex(){
 }
 function guessCat(name){
   const n=norm(name);
-  if(/energy|drink|cola|juice|jus|eau|water|tea|the |milk|lait|soda|biere|beer|limonade|smoothie|nectar|sirop|boisson|shot|red ?bull|monster|burn|tiger|fanta|sprite|pepsi|oasis|tropico|capri|powerade|gatorade|aloe|ice ?t/.test(n))return'Boissons';
+  if(/energy|drink|cola|juice|jus|eau|water|tea|the |milk|lait|soda|biere|beer|limonade|smoothie|nectar|sirop|boisson|shot|red ?bull|monster|burn|tiger|fanta|sprite|pepsi|oasis|tropico|capri|powerade|gatorade|aloe|ice ?t|schweppes|canada ?dry|ginger ?ale|tonic|orangina|7 ?up|dr ?pepper|lipton|fuze|arizona|mojito|sleek|canette|33 ?cl|25 ?cl|50 ?cl|330 ?ml|250 ?ml|500 ?ml/.test(n))return'Boissons';
   if(/chip|crisp|snack|pop ?corn|pretzel|cracker|nuts|cacahuete|tortilla|bugles|pringle/.test(n))return'Chips';
   if(/kinder|nutella|choco|mars|snicker|twix|bounty|kitkat|mentos|tic tac|lion|m&m|maltese|smartie|haribo|gummy|candy|bonbon|caramel|fini|nerds|sucette|chewing/.test(n))return'Confiseries';
   if(/biscuit|cookie|wafer|oreo|mikado|milka|loacker|galette|madelein|brownie|granola|gaufre|barre/.test(n))return'Biscuiterie';
@@ -1025,7 +1028,7 @@ function buildCatProducts(rows,fname){
   $('catResults').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function computeVerdict(p){
-  const crr=calcCRR(p.price,{cat:p.cat,ml:p.ml,soda:p.soda});
+  const crr=calcCRR(p.price,{cat:p.cat,ml:p.ml,soda:p.soda,freightU:freightPerUnit(p)});
   p.crr=crr;
   p.gainEur=p.prixLocal?p.prixLocal.puaht_recent-crr:null;
   p.gainPct=p.prixLocal&&p.prixLocal.puaht_recent>0?(p.gainEur/p.prixLocal.puaht_recent*100):null;
@@ -1160,12 +1163,12 @@ function recalcContainer(){
     p._cases=cases;p._cbm=cases*defCbmCase(p);p._kg=cases*defKgCase(p);
     cbm+=p._cbm;kg+=p._kg;fob+=(p.qty||0)*p.price;
   });
-  // fret réel réparti au CBM
+  // fret au taux €/m³ (cohérent Catalogue IA) — coût marginal réel par CBM occupé
   const fretTot=gP('p_fret')+gP('p_dsg');
+  const rateM3=fretTot/(gP('p_cap')||67);
   let crrTot=0,margeTot=0,gainTot=0;
   contItems.forEach(p=>{
-    const share=cbm>0?(p._cbm/cbm):0;
-    const freightU=(p.qty>0)?(fretTot*share)/p.qty:0;
+    const freightU=(p.qty>0)?(rateM3*p._cbm)/p.qty:0;
     p._crr=calcCRR(p.price,{cat:p.cat,ml:p.ml,soda:p.soda,freightU});
     p._crrTot=p._crr*(p.qty||0);
     crrTot+=p._crrTot;
