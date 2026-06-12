@@ -160,11 +160,158 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-  /* RESPONSIVE */
+  /* ============================================================
+     RESPONSIVE MOBILE — iPhone optimisé
+     ============================================================ */
+
+  /* Bottom nav mobile */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    z-index: 500;
+    padding: 0 0 env(safe-area-inset-bottom) 0;
+    box-shadow: 0 -4px 20px rgba(59,91,219,0.08);
+  }
+  .mobile-nav-inner {
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+  }
+  .mobile-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 4px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    cursor: pointer;
+    gap: 4px;
+    min-height: 56px;
+    transition: color 0.15s;
+    border: none;
+    background: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-tab.active { color: var(--accent); }
+  .mobile-tab .tab-ico { font-size: 22px; line-height: 1; }
+  .mobile-tab .tab-lbl { font-size: 10px; font-weight: 700; }
+
+  /* FAB bouton action rapide */
+  .fab {
+    display: none;
+    position: fixed;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    right: 20px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-size: 26px;
+    border: none;
+    box-shadow: 0 4px 16px rgba(59,91,219,0.4);
+    cursor: pointer;
+    z-index: 400;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   @media (max-width: 768px) {
-    .main { padding: 12px; }
+    /* Cacher la nav desktop */
+    .tabs { display: none; }
+    .header-date { display: none; }
+
+    /* Afficher la nav mobile */
+    .mobile-nav { display: block; }
+    .fab { display: flex; }
+
+    /* Décaler le contenu pour la bottom nav */
+    .main {
+      padding: 12px 12px calc(70px + env(safe-area-inset-bottom) + 12px);
+      max-width: 100%;
+    }
+
+    /* Header compact */
+    .header {
+      padding: 12px 16px;
+      padding-top: max(12px, env(safe-area-inset-top));
+    }
+    .header-logo { font-size: 16px; }
+    .header-right { gap: 8px; }
+    .header-right .btn { font-size: 11px; padding: 6px 10px; }
+    #btnHT, #btnTTC { padding: 4px 8px; font-size: 11px; }
+
+    /* Stats 2 colonnes */
+    .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
+    .stat-card { padding: 14px; }
+    .stat-value { font-size: 22px; }
+
+    /* Formulaires plein écran */
+    .form-grid { grid-template-columns: 1fr; gap: 10px; padding: 14px; }
+    .form-actions { padding: 0 14px 14px; }
+    input, select, textarea { font-size: 16px; /* Empêche le zoom iOS */ padding: 12px; }
+    .btn { min-height: 44px; }
+    .btn-success, .btn-danger { width: 100%; justify-content: center; font-size: 15px; }
+
+    /* Tables scrollables */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 500px; }
+    td, thead th { padding: 10px 12px; font-size: 12px; }
+
+    /* Sections */
+    .section { border-radius: 10px; margin-bottom: 14px; }
+    .section-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+    .section-actions { width: 100%; justify-content: flex-end; }
+
+    /* Dashboard grille 1 col */
+    #tab-dashboard > div[style*="grid-template-columns:1fr 1fr"] {
+      display: flex !important;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    /* Alertes chips wrap */
+    .alerts-bar { gap: 8px; }
+    .alert-chip { font-size: 11px; padding: 5px 10px; }
+
+    /* Modals plein écran */
+    .modal-overlay { padding: 0; align-items: flex-end; }
+    .modal {
+      max-width: 100%;
+      border-radius: 20px 20px 0 0;
+      max-height: 92vh;
+    }
+
+    /* Search row */
+    .search-row { flex-direction: column; gap: 8px; padding: 10px 12px; }
+    .search-input { min-width: unset; width: 100%; }
+    .search-row select { width: 100%; }
+
+    /* Sortie info box */
+    #sortieInfoBox { font-size: 12px; }
+
+    /* Export CSV preview */
+    .csv-preview { font-size: 10px; }
+
+    /* Export banner */
+    .export-banner { flex-direction: column; gap: 8px; }
+
+    /* Cacher colonnes secondaires dans les tables sur mobile */
+    .hide-mobile { display: none !important; }
+  }
+
+  /* Très petit (iPhone SE) */
+  @media (max-width: 375px) {
     .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .form-grid { grid-template-columns: 1fr; }
+    .stat-value { font-size: 18px; }
+    .header-logo span { display: none; }
   }
 
   .tag { display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--accent-light); color: var(--accent); margin-right: 4px; }
@@ -232,13 +379,46 @@
 </div>
 
 <div class="tabs">
-  <div class="tab active" onclick="showTab('dashboard')">📊 Tableau de bord</div>
-  <div class="tab" onclick="showTab('stock')">📦 Stock en temps réel</div>
-  <div class="tab" onclick="showTab('entree')">➕ Entrée marchandise</div>
-  <div class="tab" onclick="showTab('sortie')">➖ Sortie / Livraison</div>
-  <div class="tab" onclick="showTab('mouvements')">🔄 Mouvements</div>
-  <div class="tab" onclick="showTab('export')">📤 Export Pennylane</div>
+  <div class="tab active" onclick="showTab('dashboard', this)">📊 Tableau de bord</div>
+  <div class="tab" onclick="showTab('stock', this)">📦 Stock en temps réel</div>
+  <div class="tab" onclick="showTab('entree', this)">➕ Entrée marchandise</div>
+  <div class="tab" onclick="showTab('sortie', this)">➖ Sortie / Livraison</div>
+  <div class="tab" onclick="showTab('mouvements', this)">🔄 Mouvements</div>
+  <div class="tab" onclick="showTab('export', this)">📤 Export Pennylane</div>
 </div>
+
+<!-- NAVIGATION MOBILE (bottom) -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-tab active" id="mnav-dashboard" onclick="showTab('dashboard', this)" data-tab="dashboard">
+      <span class="tab-ico">📊</span>
+      <span class="tab-lbl">Dashboard</span>
+    </button>
+    <button class="mobile-tab" id="mnav-stock" onclick="showTab('stock', this)" data-tab="stock">
+      <span class="tab-ico">📦</span>
+      <span class="tab-lbl">Stock</span>
+    </button>
+    <button class="mobile-tab" id="mnav-entree" onclick="showTab('entree', this)" data-tab="entree">
+      <span class="tab-ico">➕</span>
+      <span class="tab-lbl">Entrée</span>
+    </button>
+    <button class="mobile-tab" id="mnav-sortie" onclick="showTab('sortie', this)" data-tab="sortie">
+      <span class="tab-ico">➖</span>
+      <span class="tab-lbl">Sortie</span>
+    </button>
+    <button class="mobile-tab" id="mnav-mouvements" onclick="showTab('mouvements', this)" data-tab="mouvements">
+      <span class="tab-ico">🔄</span>
+      <span class="tab-lbl">Journal</span>
+    </button>
+    <button class="mobile-tab" id="mnav-export" onclick="showTab('export', this)" data-tab="export">
+      <span class="tab-ico">📤</span>
+      <span class="tab-lbl">Export</span>
+    </button>
+  </div>
+</nav>
+
+<!-- FAB action rapide (mobile) -->
+<button class="fab" id="fabBtn" onclick="fabAction()" title="Action rapide">＋</button>
 
 <!-- DASHBOARD -->
 <div class="main">
@@ -317,12 +497,12 @@
         <thead>
           <tr>
             <th>Produit</th>
-            <th>Fournisseur</th>
-            <th>Catégorie</th>
+            <th class="hide-mobile">Fournisseur</th>
+            <th class="hide-mobile">Catégorie</th>
             <th>Qté dispo</th>
             <th>Valeur CRR (${taxLabel()})</th>
-            <th>Prochain lot DLC</th>
-            <th>Rotation</th>
+            <th class="hide-mobile">Prochain lot DLC</th>
+            <th class="hide-mobile">Rotation</th>
             <th>Statut</th>
             <th></th>
           </tr>
@@ -654,8 +834,8 @@
 // ============================================================
 // SUPABASE CONFIG — remplace les 2 valeurs ci-dessous
 // ============================================================
-const SUPA_URL = 'REMPLACE_PAR_TON_PROJECT_URL';   // https://uixmsrrprgvoejsuuaat.supabase.co
-const SUPA_KEY = 'REMPLACE_PAR_TON_ANON_KEY';       // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY
+const SUPA_URL = 'https://uixmsrrprgvoejsuuaat.supabase.co';   // https://uixmsrrprgvoejsuuaat.supabase.co
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY';       // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY
 
 // ============================================================
 // STATE (cache local pour la réactivité UI)
@@ -852,16 +1032,47 @@ document.getElementById('exportTo').value = today;
 loadState().then(() => refreshAll());
 
 // ============================================================
-// TABS
+// TABS — synchronise desktop + mobile nav
 // ============================================================
-function showTab(name) {
+let _currentTab = 'dashboard';
+function showTab(name, el) {
+  _currentTab = name;
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
-  event.target.classList.add('active');
+
+  // Desktop tabs
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  // Mobile tabs
+  document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+
+  // Activer le bon tab dans chaque nav
+  const desktopTabs = document.querySelectorAll('.tabs .tab');
+  const tabOrder = ['dashboard','stock','entree','sortie','mouvements','export'];
+  const idx = tabOrder.indexOf(name);
+  if (idx >= 0 && desktopTabs[idx]) desktopTabs[idx].classList.add('active');
+  const mobileTab = document.getElementById('mnav-'+name);
+  if (mobileTab) mobileTab.classList.add('active');
+
+  // FAB : visible sur dashboard et stock, pointe vers entrée
+  const fab = document.getElementById('fabBtn');
+  if (fab) {
+    fab.style.display = ['dashboard','stock','mouvements'].includes(name) ? 'flex' : 'none';
+    fab.title = name === 'sortie' ? 'Valider la sortie' : 'Nouvelle entrée';
+  }
+
   if (name === 'stock') renderStockTable();
   if (name === 'mouvements') renderMouvements();
   if (name === 'export') renderExportVal();
+}
+
+function fabAction() {
+  // Le FAB bascule toujours vers l'onglet Entrée
+  showTab('entree');
+  // Scroll vers le formulaire
+  setTimeout(() => {
+    const el = document.getElementById('entreeProduct');
+    if (el) { el.focus(); el.scrollIntoView({behavior:'smooth', block:'center'}); }
+  }, 100);
 }
 
 // ============================================================
@@ -1024,8 +1235,8 @@ function renderStockTable() {
 
     return `<tr>
       <td><strong>${p.nom}</strong><br><span style="font-size:11px;color:var(--text3);">${p.ref||''}</span></td>
-      <td><span class="tag">${p.fournisseur||'—'}</span></td>
-      <td><span class="badge badge-blue">${p.categorie||'—'}</span></td>
+      <td class="hide-mobile"><span class="tag">${p.fournisseur||'—'}</span></td>
+      <td class="hide-mobile"><span class="badge badge-blue">${p.categorie||'—'}</span></td>
       <td>
         <div class="stock-level">
           <span class="stock-qty" style="color:${stock===0?'var(--red)':stock<=(p.seuil||0)?'var(--orange)':'var(--text)'}">${fmtQty(stock)}</span>
@@ -1033,8 +1244,8 @@ function renderStockTable() {
         </div>
       </td>
       <td><strong>${fmtEur(valeur)}</strong><br><span style="font-size:11px;color:var(--text3);">${fmtEur(crr)}/u</span></td>
-      <td class="${dlcCls}" style="font-size:12px;">${dlcTxt}</td>
-      <td><span class="badge badge-gray">${p.rotation||'3.5'} mois</span></td>
+      <td class="hide-mobile ${dlcCls}" style="font-size:12px;">${dlcTxt}</td>
+      <td class="hide-mobile"><span class="badge badge-gray">${p.rotation||'3.5'} mois</span></td>
       <td>${statusBadge}</td>
       <td>
         <button class="btn btn-ghost btn-sm btn-icon" title="Voir les lots" onclick="showLots('${p.id}')">📋</button>
