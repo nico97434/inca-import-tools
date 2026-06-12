@@ -183,6 +183,10 @@
   <div class="header-logo">INCA IMPORT <span>/ Gestion Stock</span></div>
   <div class="header-right">
     <div class="header-date" id="headerDate"></div>
+    <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:4px;">
+      <button id="btnHT" onclick="setTaxMode('HT')" style="padding:5px 12px;border-radius:5px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:white;color:var(--accent);transition:all .15s;">HT</button>
+      <button id="btnTTC" onclick="setTaxMode('TTC')" style="padding:5px 12px;border-radius:5px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);transition:all .15s;">TTC</button>
+    </div>
     <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.4);font-size:12px;" onclick="exportPennylane()">⬇ Export Pennylane</button>
   </div>
 </div>
@@ -238,7 +242,7 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit.</th><th>Valeur stock</th><th>Rotation cible</th></tr></thead>
+        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit. (${taxLabel()})</th><th>Valeur stock (${taxLabel()})</th><th>Rotation cible</th></tr></thead>
         <tbody id="topStockTable"></tbody>
       </table>
     </div>
@@ -276,7 +280,7 @@
             <th>Fournisseur</th>
             <th>Catégorie</th>
             <th>Qté dispo</th>
-            <th>Valeur CRR</th>
+            <th>Valeur CRR (${taxLabel()})</th>
             <th>Prochain lot DLC</th>
             <th>Rotation</th>
             <th>Statut</th>
@@ -380,7 +384,7 @@
         <input type="number" id="sortieQty" placeholder="ex: 48" min="1" oninput="updateSortieCout()">
       </div>
       <div class="form-group">
-        <label>Prix de vente unitaire HT (€)</label>
+        <label id="sortiePrixLabel">Prix de vente unitaire HT (€)</label>
         <input type="number" id="sortiePrix" step="0.01" placeholder="ex: 0.95" oninput="updateSortieCout()">
       </div>
       <div class="form-group">
@@ -509,13 +513,13 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen</th><th>Valeur totale</th><th>Compte Pennylane</th></tr></thead>
+        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen (${taxLabel()})</th><th>Valeur totale (${taxLabel()})</th><th>Compte Pennylane</th></tr></thead>
         <tbody id="exportValTable"></tbody>
       </table>
     </div>
     <div style="padding:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
       <div style="font-size:16px;font-weight:800;color:var(--accent);">
-        Total stock valorisé : <span id="exportTotal">0,00 €</span>
+        Total stock valorisé (${taxLabel()}) : <span id="exportTotal">0,00 € ${taxLabel()}</span>
       </div>
     </div>
   </div>
@@ -628,10 +632,37 @@ function saveState() {
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
 // ============================================================
-// INIT
+// TAX MODE HT / TTC
 // ============================================================
+let taxMode = localStorage.getItem('inca_tax_mode') || 'HT';
+const TVA_RATE = 0.021; // TVA Réunion 2.1%
+
+function setTaxMode(mode) {
+  taxMode = mode;
+  localStorage.setItem('inca_tax_mode', mode);
+  document.getElementById('btnHT').style.background = mode === 'HT' ? 'white' : 'transparent';
+  document.getElementById('btnHT').style.color = mode === 'HT' ? 'var(--accent)' : 'rgba(255,255,255,0.7)';
+  document.getElementById('btnTTC').style.background = mode === 'TTC' ? 'white' : 'transparent';
+  document.getElementById('btnTTC').style.color = mode === 'TTC' ? 'var(--accent)' : 'rgba(255,255,255,0.7)';
+  // Mettre à jour le label du champ PV
+  const lbl = document.getElementById('sortiePrixLabel');
+  if (lbl) lbl.textContent = `Prix de vente unitaire ${mode} (€)`;
+  refreshAll();
+}
+function applyTax(val) { return taxMode === 'TTC' ? val * (1 + TVA_RATE) : val; }
+function taxLabel() { return taxMode; }
+
+
 loadState();
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+// Appliquer mode fiscal sauvegardé
+(function(){
+  const m = taxMode;
+  document.getElementById('btnHT').style.background = m==='HT'?'white':'transparent';
+  document.getElementById('btnHT').style.color = m==='HT'?'var(--accent)':'rgba(255,255,255,0.7)';
+  document.getElementById('btnTTC').style.background = m==='TTC'?'white':'transparent';
+  document.getElementById('btnTTC').style.color = m==='TTC'?'var(--accent)':'rgba(255,255,255,0.7)';
+})();
 
 // Set default dates
 const today = new Date().toISOString().slice(0,10);
@@ -700,7 +731,7 @@ function daysUntil(dateStr) {
   return Math.floor((new Date(dateStr) - new Date()) / 86400000);
 }
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR'); }
-function fmtEur(n) { return (n||0).toFixed(2).replace('.',',')+' €'; }
+function fmtEur(n) { const v = applyTax(n||0); return v.toFixed(2).replace('.',',')+' € '+taxLabel(); }
 function fmtQty(n) { return (n||0).toLocaleString('fr-FR'); }
 
 // ============================================================
@@ -733,7 +764,7 @@ function renderDashboard() {
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card blue"><div class="stat-label">Références actives</div><div class="stat-value">${totalProduits}</div><div class="stat-sub">produits en catalogue</div></div>
     <div class="stat-card"><div class="stat-label">Unités en stock</div><div class="stat-value">${fmtQty(totalStock)}</div><div class="stat-sub">toutes références</div></div>
-    <div class="stat-card green"><div class="stat-label">Valeur stock (CRR)</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">coût atterri</div></div>
+    <div class="stat-card green"><div class="stat-label">Valeur stock (CRR ${taxLabel()})</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">coût atterri</div></div>
     <div class="stat-card ${alertsDlc>0?'orange':''}"><div class="stat-label">Lots DLC < 60j</div><div class="stat-value">${alertsDlc}</div><div class="stat-sub">lots à surveiller</div></div>
     <div class="stat-card ${alertsReappro>0?'red':''}"><div class="stat-label">Réappro nécessaire</div><div class="stat-value">${alertsReappro}</div><div class="stat-sub">sous le seuil</div></div>
   `;
@@ -1060,11 +1091,11 @@ function generateExport() {
   if (type === 'achats') rows = rows.filter(m => m.type==='entree');
   if (type === 'ventes') rows = rows.filter(m => m.type==='sortie');
 
-  const header = 'Date;Type;Produit;Lot;Qté;Station;CRR_unitaire;Valeur;Référence;Compte_Pennylane';
+  const header = `Date;Type;Produit;Lot;Qté;Station;CRR_unitaire_${taxLabel()};Valeur_${taxLabel()};Référence;Compte_Pennylane`;
   const lines = rows.map(m => {
     const pnom = pmap[m.productId]?.nom||'';
     const compte = m.type==='entree' ? '607 - Achats marchandises' : '707 - Ventes marchandises';
-    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', applyTax(m.crr).toFixed(3), applyTax(m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
   });
 
   const preview = [header, ...lines.slice(0,15)].join('\n') + (lines.length > 15 ? '\n...' : '');
@@ -1077,11 +1108,11 @@ function exportPennylane() {
   const to = document.getElementById('exportTo')?.value;
   const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
   const rows = state.mouvements.filter(m => (!from || m.date >= from) && (!to || m.date <= to));
-  const header = 'Date;Type;Produit;Lot;Quantite;Station;CRR_unitaire;Valeur_EUR;Reference;Compte_Pennylane\n';
+  const header = `Date;Type;Produit;Lot;Quantite;Station;CRR_unitaire_${taxLabel()};Valeur_${taxLabel()};Reference;Compte_Pennylane\n`;
   const lines = rows.map(m => {
     const pnom = pmap[m.productId]?.nom||'';
     const compte = m.type==='entree' ? '607' : '707';
-    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', applyTax(m.crr).toFixed(3), applyTax(m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
   }).join('\n');
   const blob = new Blob(['\uFEFF'+header+lines], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
