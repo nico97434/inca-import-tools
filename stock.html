@@ -183,7 +183,51 @@
   <div class="header-logo">INCA IMPORT <span>/ Gestion Stock</span></div>
   <div class="header-right">
     <div class="header-date" id="headerDate"></div>
+    <!-- TOGGLE HT / TTC -->
+    <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:4px;">
+      <button id="btnHT" onclick="setTaxMode('HT')" style="padding:5px 12px;border-radius:5px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;">HT</button>
+      <button id="btnTTC" onclick="setTaxMode('TTC')" style="padding:5px 12px;border-radius:5px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;">TTC</button>
+    </div>
+    <!-- BOUTON PARAMÈTRES TVA -->
+    <button onclick="openTvaModal()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;padding:7px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;" title="Paramètres TVA">⚙️ TVA</button>
     <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.4);font-size:12px;" onclick="exportPennylane()">⬇ Export Pennylane</button>
+  </div>
+</div>
+
+<!-- MODAL PARAMÈTRES TVA -->
+<div class="modal-overlay" id="modalTva">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ Paramètres TVA</div>
+      <button class="modal-close" onclick="closeModal('modalTva')">×</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+      <div style="background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:12px;font-size:12px;color:var(--accent);">
+        Ces taux s'appliquent sur le CRR (coût de revient rendu) pour le calcul HT→TTC.
+        Le CRR saisi est toujours en <strong>HT</strong>. Le mode TTC multiplie l'affichage par (1 + taux).
+      </div>
+      <div class="form-group">
+        <label>Taux TVA principal — Boissons / Alimentaire (%)</label>
+        <input type="number" id="tvaTaux1" step="0.1" min="0" max="100" placeholder="2.1">
+        <span style="font-size:11px;color:var(--text3);margin-top:3px;">Réunion : 2,1% sur produits alimentaires</span>
+      </div>
+      <div class="form-group">
+        <label>Taux TVA standard — Autres produits (%)</label>
+        <input type="number" id="tvaTaux2" step="0.1" min="0" max="100" placeholder="8.5">
+        <span style="font-size:11px;color:var(--text3);margin-top:3px;">Réunion : 8,5% taux normal</span>
+      </div>
+      <div class="form-group">
+        <label>Taux appliqué par défaut</label>
+        <select id="tvaDefault">
+          <option value="taux1">Taux principal (alimentaire)</option>
+          <option value="taux2">Taux standard</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-ghost" onclick="closeModal('modalTva')">Annuler</button>
+        <button class="btn btn-primary" onclick="saveTvaParams()">Enregistrer</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -238,7 +282,7 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit.</th><th>Valeur stock</th><th>Rotation cible</th></tr></thead>
+        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit. (${taxLabel()})</th><th>Valeur stock (${taxLabel()})</th><th>Rotation cible</th></tr></thead>
         <tbody id="topStockTable"></tbody>
       </table>
     </div>
@@ -276,7 +320,7 @@
             <th>Fournisseur</th>
             <th>Catégorie</th>
             <th>Qté dispo</th>
-            <th>Valeur CRR</th>
+            <th>Valeur CRR (${taxLabel()})</th>
             <th>Prochain lot DLC</th>
             <th>Rotation</th>
             <th>Statut</th>
@@ -380,7 +424,7 @@
         <input type="number" id="sortieQty" placeholder="ex: 48" min="1" oninput="updateSortieCout()">
       </div>
       <div class="form-group">
-        <label>Prix de vente unitaire HT (€)</label>
+        <label id="sortiePrixLabel">Prix de vente unitaire HT (€)</label>
         <input type="number" id="sortiePrix" step="0.01" placeholder="ex: 0.95" oninput="updateSortieCout()">
       </div>
       <div class="form-group">
@@ -509,13 +553,13 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen</th><th>Valeur totale</th><th>Compte Pennylane</th></tr></thead>
+        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen (${taxLabel()})</th><th>Valeur totale (${taxLabel()})</th><th>Compte Pennylane</th></tr></thead>
         <tbody id="exportValTable"></tbody>
       </table>
     </div>
     <div style="padding:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
       <div style="font-size:16px;font-weight:800;color:var(--accent);">
-        Total stock valorisé : <span id="exportTotal">0,00 €</span>
+        Total stock valorisé (${taxLabel()}) : <span id="exportTotal">—</span>
       </div>
     </div>
   </div>
@@ -610,8 +654,8 @@
 // ============================================================
 // SUPABASE CONFIG — remplace les 2 valeurs ci-dessous
 // ============================================================
-const SUPA_URL = 'https://uixmsrrprgvoejsuuaat.supabase.co'
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY'
+const SUPA_URL = 'REMPLACE_PAR_TON_PROJECT_URL';   // https://uixmsrrprgvoejsuuaat.supabase.co
+const SUPA_KEY = 'REMPLACE_PAR_TON_ANON_KEY';       // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY
 
 // ============================================================
 // STATE (cache local pour la réactivité UI)
@@ -718,9 +762,84 @@ function setLoading(on) {
 }
 
 // ============================================================
+// TVA — taux modifiables, persistés en localStorage
+// ============================================================
+let tvaParams = {
+  taux1: 2.1,   // alimentaire Réunion
+  taux2: 8.5,   // standard Réunion
+  defaut: 'taux1'
+};
+let taxMode = 'HT';
+
+function loadTvaParams() {
+  try {
+    const s = localStorage.getItem('inca_tva_params');
+    if (s) tvaParams = { ...tvaParams, ...JSON.parse(s) };
+    const m = localStorage.getItem('inca_tax_mode');
+    if (m) taxMode = m;
+  } catch(e) {}
+}
+
+function saveTvaParams() {
+  tvaParams.taux1 = parseFloat(document.getElementById('tvaTaux1').value) || 2.1;
+  tvaParams.taux2 = parseFloat(document.getElementById('tvaTaux2').value) || 8.5;
+  tvaParams.defaut = document.getElementById('tvaDefault').value;
+  localStorage.setItem('inca_tva_params', JSON.stringify(tvaParams));
+  closeModal('modalTva');
+  applyTaxButtons();
+  refreshAll();
+  showToast('✅ Taux TVA mis à jour');
+}
+
+function openTvaModal() {
+  document.getElementById('tvaTaux1').value = tvaParams.taux1;
+  document.getElementById('tvaTaux2').value = tvaParams.taux2;
+  document.getElementById('tvaDefault').value = tvaParams.defaut;
+  document.getElementById('modalTva').classList.add('show');
+}
+
+function getTvaRate() {
+  return (tvaParams.defaut === 'taux2' ? tvaParams.taux2 : tvaParams.taux1) / 100;
+}
+
+function applyTax(val) {
+  return taxMode === 'TTC' ? (val||0) * (1 + getTvaRate()) : (val||0);
+}
+function taxLabel() { return taxMode; }
+
+function setTaxMode(mode) {
+  taxMode = mode;
+  localStorage.setItem('inca_tax_mode', mode);
+  applyTaxButtons();
+  refreshAll();
+}
+
+function applyTaxButtons() {
+  const isHT = taxMode === 'HT';
+  const btnHT  = document.getElementById('btnHT');
+  const btnTTC = document.getElementById('btnTTC');
+  if (!btnHT) return;
+  btnHT.style.background  = isHT  ? 'white' : 'transparent';
+  btnHT.style.color        = isHT  ? 'var(--accent)' : 'rgba(255,255,255,0.7)';
+  btnTTC.style.background  = !isHT ? 'white' : 'transparent';
+  btnTTC.style.color        = !isHT ? 'var(--accent)' : 'rgba(255,255,255,0.7)';
+  // Mettre à jour le label du champ PV sortie
+  const lbl = document.getElementById('sortiePrixLabel');
+  if (lbl) lbl.textContent = `Prix de vente unitaire ${taxMode} (€)`;
+}
+
+// Surcharge fmtEur pour appliquer la taxe + afficher le label
+function fmtEur(n) {
+  const v = applyTax(n||0);
+  return v.toFixed(2).replace('.',',')+' € '+taxLabel();
+}
+
+// ============================================================
 // INIT
 // ============================================================
+loadTvaParams();
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+applyTaxButtons();
 
 const today = new Date().toISOString().slice(0,10);
 document.getElementById('entreeDate').value = today;
@@ -789,7 +908,6 @@ function daysUntil(dateStr) {
   return Math.floor((new Date(dateStr) - new Date()) / 86400000);
 }
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR'); }
-function fmtEur(n) { return (n||0).toFixed(2).replace('.',',')+' €'; }
 function fmtQty(n) { return (n||0).toLocaleString('fr-FR'); }
 
 // ============================================================
@@ -822,7 +940,7 @@ function renderDashboard() {
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card blue"><div class="stat-label">Références actives</div><div class="stat-value">${totalProduits}</div><div class="stat-sub">produits en catalogue</div></div>
     <div class="stat-card"><div class="stat-label">Unités en stock</div><div class="stat-value">${fmtQty(totalStock)}</div><div class="stat-sub">toutes références</div></div>
-    <div class="stat-card green"><div class="stat-label">Valeur stock (CRR)</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">coût atterri</div></div>
+    <div class="stat-card green"><div class="stat-label">Valeur stock — ${taxLabel()}</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">CRR ${tvaParams.defaut==='taux2'?tvaParams.taux2:tvaParams.taux1}% TVA</div></div>
     <div class="stat-card ${alertsDlc>0?'orange':''}"><div class="stat-label">Lots DLC < 60j</div><div class="stat-value">${alertsDlc}</div><div class="stat-sub">lots à surveiller</div></div>
     <div class="stat-card ${alertsReappro>0?'red':''}"><div class="stat-label">Réappro nécessaire</div><div class="stat-value">${alertsReappro}</div><div class="stat-sub">sous le seuil</div></div>
   `;
@@ -1168,11 +1286,11 @@ function generateExport() {
   if (type === 'achats') rows = rows.filter(m => m.type==='entree');
   if (type === 'ventes') rows = rows.filter(m => m.type==='sortie');
 
-  const header = 'Date;Type;Produit;Lot;Qté;Station;CRR_unitaire;Valeur;Référence;Compte_Pennylane';
+  const header = `Date;Type;Produit;Lot;Qté;Station;CRR_${taxLabel()};Valeur_${taxLabel()};Référence;Compte_Pennylane`;
   const lines = rows.map(m => {
     const pnom = pmap[m.productId]?.nom||'';
     const compte = m.type==='entree' ? '607 - Achats marchandises' : '707 - Ventes marchandises';
-    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', applyTax(m.crr).toFixed(3), applyTax(m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
   });
 
   const preview = [header, ...lines.slice(0,15)].join('\n') + (lines.length > 15 ? '\n...' : '');
@@ -1185,11 +1303,11 @@ function exportPennylane() {
   const to = document.getElementById('exportTo')?.value;
   const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
   const rows = state.mouvements.filter(m => (!from || m.date >= from) && (!to || m.date <= to));
-  const header = 'Date;Type;Produit;Lot;Quantite;Station;CRR_unitaire;Valeur_EUR;Reference;Compte_Pennylane\n';
+  const header = `Date;Type;Produit;Lot;Quantite;Station;CRR_${taxLabel()};Valeur_${taxLabel()};Reference;Compte_Pennylane\n`;
   const lines = rows.map(m => {
     const pnom = pmap[m.productId]?.nom||'';
     const compte = m.type==='entree' ? '607' : '707';
-    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', applyTax(m.crr).toFixed(3), applyTax(m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
   }).join('\n');
   const blob = new Blob(['\uFEFF'+header+lines], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
