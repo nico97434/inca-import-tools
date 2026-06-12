@@ -667,18 +667,7 @@ function toML(s){
 const STOP=new Set(['the','le','la','les','de','du','des','et','and','with','pack','tpf','can','bottle','bouteille','boite','bte','btl','plas','pet','brick','original','classic','new','x','ml','cl','l','gr','g','kg','pcs','pc','case','carton']);
 function tokens(s){return norm(s).split(' ').filter(w=>w.length>1&&!STOP.has(w)&&!/^\d+$/.test(w));}
 
-/* ---------- Paramètres persistants ---------- */
-const LS='inca_suite_';
-function loadParam(id,def){const v=localStorage.getItem(LS+id);if(v!==null&&$(id))$(id).value=v;}
-function bindParams(){
-  document.querySelectorAll('input.inp[type=number],input.inp[type=password]').forEach(el=>{
-    if(!el.id)return;
-    const v=localStorage.getItem(LS+el.id); if(v!==null)el.value=v;
-    el.addEventListener('change',()=>localStorage.setItem(LS+el.id,el.value));
-  });
-}
-function apiKey(){return localStorage.getItem(LS+'apikey')||'';}
-function saveApiKey(){const k=$('apiKeyInp').value.trim();if(k)localStorage.setItem(LS+'apikey',k);else localStorage.removeItem(LS+'apikey');sts('keySts',k?'✅ Clé enregistrée localement.':'Clé supprimée.','ok');}
+
 
 /* ---------- Moteur CRR (rendu Réunion) ---------- */
 const SODA={none:0,low:'ts_low',mid:'ts_mid',high:'ts_high',sweet:'ts_sweet'};
@@ -800,14 +789,107 @@ function catMedianMonthly(cat){
 }
 function rotTarget(cat){return gP('rot_'+(['Boissons','Chips','Confiseries','Biscuiterie'].includes(cat)?cat:'Autre'))||4;}
 
-/* ---------- IndexedDB ---------- */
+/* ============================================================
+   SUPABASE CONFIG — remplace les 2 valeurs ci-dessous
+   ============================================================
+   TABLE SQL À CRÉER dans Supabase → SQL Editor :
+
+   create table suite_kv (
+     id text primary key,
+     val jsonb,
+     updated_at timestamptz default now()
+   );
+
+   ============================================================ */
+const SUPA_URL = 'https://uixmsrrprgvoejsuuaat.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY';
+
+/* ============================================================
+   SUPABASE HELPERS
+   ============================================================ */
+async function sbGet(key){
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/suite_kv?id=eq.${encodeURIComponent(key)}&select=*`,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    if(!r.ok)return null;
+    const rows=await r.json();
+    return rows.length?rows[0].val:null;
+  }catch(e){return null;}
+}
+async function sbSet(key,val){
+  await fetch(`${SUPA_URL}/rest/v1/suite_kv`,{method:'POST',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({id:key,val})});
+}
+async function sbDel(key){
+  await fetch(`${SUPA_URL}/rest/v1/suite_kv?id=eq.${encodeURIComponent(key)}`,{method:'DELETE',headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+}
+async function sbList(prefix){
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/suite_kv?id=like.${encodeURIComponent(prefix+'%')}&select=id`,{headers:{'apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY}});
+    if(!r.ok)return[];
+    return(await r.json()).map(x=>x.id);
+  }catch(e){return[];}
+}
+
+/* ============================================================
+   COMPATIBILITÉ — remplace IndexedDB + localStorage
+   ============================================================ */
 let _db=null;
-function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('inca_suite',1);
-  r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('years'))d.createObjectStore('years',{keyPath:'year'});if(!d.objectStoreNames.contains('misc'))d.createObjectStore('misc',{keyPath:'id'});};
-  r.onsuccess=e=>{_db=e.target.result;res(_db)};r.onerror=rej;});}
-function dbPut(store,obj){return new Promise((res,rej)=>{const t=_db.transaction(store,'readwrite');t.objectStore(store).put(obj);t.oncomplete=res;t.onerror=rej;});}
-function dbAll(store){return new Promise((res,rej)=>{const r=_db.transaction(store).objectStore(store).getAll();r.onsuccess=()=>res(r.result);r.onerror=rej;});}
-function dbDel(store,key){return new Promise((res,rej)=>{const t=_db.transaction(store,'readwrite');t.objectStore(store).delete(key);t.oncomplete=res;t.onerror=rej;});}
+function openDB(){return Promise.resolve();}
+async function dbPut(store,obj){
+  if(store==='years')await sbSet('year:'+obj.year,obj.data);
+}
+async function dbAll(store){
+  if(store==='years'){
+    const keys=await sbList('year:');
+    const rows=await Promise.all(keys.map(async k=>{const d=await sbGet(k);return d?{year:k.replace('year:',''),data:d}:null;}));
+    return rows.filter(Boolean);
+  }
+  return[];
+}
+async function dbDel(store,key){
+  if(store==='years')await sbDel('year:'+key);
+}
+
+/* ---------- Paramètres persistants (Supabase + fallback localStorage) ---------- */
+const LS='inca_suite_';
+let _paramsCache={};
+async function loadAllParams(){
+  try{
+    const keys=await sbList('param:');
+    await Promise.all(keys.map(async k=>{const v=await sbGet(k);if(v!==null)_paramsCache[k.replace('param:','')]=v;}));
+  }catch(e){console.warn('Params load error',e);}
+}
+function loadParam(id,def){
+  const v=_paramsCache[id]!=null?_paramsCache[id]:localStorage.getItem(LS+id);
+  if(v!==null&&$(id))$(id).value=v;
+}
+function bindParams(){
+  document.querySelectorAll('input.inp[type=number],input.inp[type=password]').forEach(el=>{
+    if(!el.id)return;
+    const v=_paramsCache[el.id]!=null?_paramsCache[el.id]:localStorage.getItem(LS+el.id);
+    if(v!==null)el.value=v;
+    el.addEventListener('change',async()=>{
+      _paramsCache[el.id]=el.value;
+      localStorage.setItem(LS+el.id,el.value);
+      try{await sbSet('param:'+el.id,el.value);}catch(e){}
+    });
+  });
+}
+function apiKey(){return _paramsCache['apikey']||localStorage.getItem(LS+'apikey')||'';}
+async function saveApiKey(){
+  const k=$('apiKeyInp').value.trim();
+  if(k){
+    _paramsCache['apikey']=k;
+    localStorage.setItem(LS+'apikey',k);
+    try{await sbSet('param:apikey',k);}catch(e){}
+    sts('keySts','✅ Clé enregistrée.','ok');
+  }else{
+    delete _paramsCache['apikey'];
+    localStorage.removeItem(LS+'apikey');
+    try{await sbDel('param:apikey');}catch(e){}
+    sts('keySts','Clé supprimée.','ok');
+  }
+}
+
 
 /* ============================================================
    VENTES — parsing & dashboard
@@ -1613,9 +1695,17 @@ bindDrop($('dropVentes'),$('fiVentes'),files=>{[...files].forEach(f=>{const r=ne
 bindDrop($('dropCat'),$('fiCat'),files=>{if(files[0])handleCatFile(files[0]);});
 
 async function wipeAll(){
-  if(!confirm('Effacer toutes les données locales (ventes, paramètres, clé API) ?'))return;
-  const ys=Object.keys(YEARS);for(const y of ys)await dbDel('years',y);
-  YEARS={};Object.keys(localStorage).filter(k=>k.startsWith(LS)).forEach(k=>localStorage.removeItem(k));
+  if(!confirm('Effacer toutes les données (ventes, paramètres, clé API) ?'))return;
+  const ys=Object.keys(YEARS);
+  for(const y of ys)await dbDel('years',y);
+  YEARS={};
+  // Supprimer aussi les paramètres Supabase
+  try{
+    const keys=await sbList('param:');
+    await Promise.all(keys.map(k=>sbDel(k)));
+  }catch(e){}
+  Object.keys(localStorage).filter(k=>k.startsWith(LS)).forEach(k=>localStorage.removeItem(k));
+  _paramsCache={};
   location.reload();
 }
 
@@ -1983,18 +2073,28 @@ async function mkExport(){
 }
 
 (async function init(){
+  // Indicateur de chargement
+  const bar=document.createElement('div');
+  bar.style.cssText='position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#0071E3,#34C759);z-index:9999;';
+  document.body.prepend(bar);
+
+  // Charger les paramètres depuis Supabase (puis les données ventes)
+  await loadAllParams();
   await openDB();
   const saved=await dbAll('years');
   saved.forEach(r=>YEARS[r.year]=r.data);
   rebuildSalesIndex();
   bindParams();
   $('refChip').textContent=PRIX_ACHATS_DB.length+' prix réf. · '+salesIndex.length+' produits suivis';
-  if(localStorage.getItem(LS+'apikey'))$('apiKeyInp').value='••••••••••••';
+  if(apiKey())$('apiKeyInp').value='••••••••••••';
   updateDataChip();
   const ys=Object.keys(YEARS).sort();
   if(ys.length){AY=ys[ys.length-1];enterDash();}
   recalcContainer();
   mkInit();mkRender();bindCmp();
+
+  bar.style.opacity='0';
+  setTimeout(()=>bar.remove(),500);
 })();
 </script>
 </body>
