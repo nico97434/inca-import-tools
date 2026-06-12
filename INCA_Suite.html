@@ -1013,11 +1013,46 @@ function renderProdSearch(){
   const q=norm($('prodSearch').value);
   let arr=D.articles;
   if(q)arr=arr.filter(a=>norm(a.article).includes(q));
-  arr=[...arr].sort((a,b)=>b.qte-a.qte).slice(0,30);
+
+  // ── REGROUPEMENT PAR PRODUIT PHYSIQUE (marque + volume normalisé) ──
+  const groups={};
+  arr.forEach(a=>{
+    const ml=toML(a.article);
+    const tk=tokens(a.article);
+    const brand=tk.slice(0,2).join('_');
+    const volBucket=ml>0?Math.round(ml/10)*10:0;
+    const gk=brand+'|'+volBucket;
+    if(!groups[gk]){
+      groups[gk]={article:a.article,qte:0,ca:0,marge:0,fam:a.fam,labels:[],ml,volBucket};
+    }
+    groups[gk].qte+=a.qte;
+    groups[gk].ca+=a.ca;
+    groups[gk].marge+=a.marge;
+    groups[gk].labels.push(a.article);
+    if(a.article.length<groups[gk].article.length)groups[gk].article=a.article;
+  });
+
+  const merged=Object.values(groups).sort((a,b)=>b.qte-a.qte).slice(0,30);
   const rot=parseFloat($('rotSel').value)||3.5;
-  $('prodSearchRes').innerHTML=arr.length?arr.map(a=>{
-    const monthly=a.qte/12;const reco=Math.round(monthly*rot);
-    return`<div class="row"><div class="nm">${esc(a.article)}<div class="psub">${f0(monthly)} u/mois · marge ${f2(a.ca>0?a.marge/a.ca*100:0)}%</div></div><span class="vl">${f0(a.qte)} u/an</span><span class="vd imp" title="Quantité conseillée pour ${rot} mois de rotation">📦 cmd ${f0(reco)} u</span></div>`;
+
+  $('prodSearchRes').innerHTML=merged.length?merged.map(a=>{
+    const monthly=a.qte/12;
+    const reco=Math.round(monthly*rot);
+    const pa=matchPrix(a.article,'');
+    const multiLabel=a.labels.length>1
+      ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px">(${a.labels.length} libellés POS)</span>`
+      : '';
+    const volLabel=a.ml>0
+      ? `<span style="font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:8px;margin-left:4px">${a.ml>=1000?(a.ml/1000).toFixed(a.ml%1000===0?0:1)+'L':a.ml+'ml'}</span>`
+      : '';
+    return`<div class="row">
+      <div class="nm">
+        ${esc(a.article)}${volLabel}${multiLabel}
+        <div class="psub">${esc(a.fam||'')} · ${f0(monthly)} u/mois · marge ${f2(a.ca>0?a.marge/a.ca*100:0)}%${pa?` · <b>PA local ${f2(pa.puaht_recent)} € (${esc(pa.fournisseur_recent)})</b>`:''}</div>
+      </div>
+      <span class="vl">${f0(a.qte)} u/an</span>
+      <span class="vd imp" title="Quantité conseillée pour ${rot} mois de rotation">📦 cmd ${f0(reco)} u</span>
+    </div>`;
   }).join(''):'<div class="empty" style="padding:24px"><p>Aucun article trouvé.</p></div>';
 }
 
