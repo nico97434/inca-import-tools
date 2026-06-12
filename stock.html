@@ -183,10 +183,6 @@
   <div class="header-logo">INCA IMPORT <span>/ Gestion Stock</span></div>
   <div class="header-right">
     <div class="header-date" id="headerDate"></div>
-    <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:4px;">
-      <button id="btnHT" onclick="setTaxMode('HT')" style="padding:5px 12px;border-radius:5px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:white;color:var(--accent);transition:all .15s;">HT</button>
-      <button id="btnTTC" onclick="setTaxMode('TTC')" style="padding:5px 12px;border-radius:5px;border:none;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:rgba(255,255,255,0.7);transition:all .15s;">TTC</button>
-    </div>
     <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.4);font-size:12px;" onclick="exportPennylane()">⬇ Export Pennylane</button>
   </div>
 </div>
@@ -242,7 +238,7 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit. (${taxLabel()})</th><th>Valeur stock (${taxLabel()})</th><th>Rotation cible</th></tr></thead>
+        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit.</th><th>Valeur stock</th><th>Rotation cible</th></tr></thead>
         <tbody id="topStockTable"></tbody>
       </table>
     </div>
@@ -280,7 +276,7 @@
             <th>Fournisseur</th>
             <th>Catégorie</th>
             <th>Qté dispo</th>
-            <th>Valeur CRR (${taxLabel()})</th>
+            <th>Valeur CRR</th>
             <th>Prochain lot DLC</th>
             <th>Rotation</th>
             <th>Statut</th>
@@ -384,7 +380,7 @@
         <input type="number" id="sortieQty" placeholder="ex: 48" min="1" oninput="updateSortieCout()">
       </div>
       <div class="form-group">
-        <label id="sortiePrixLabel">Prix de vente unitaire HT (€)</label>
+        <label>Prix de vente unitaire HT (€)</label>
         <input type="number" id="sortiePrix" step="0.01" placeholder="ex: 0.95" oninput="updateSortieCout()">
       </div>
       <div class="form-group">
@@ -513,13 +509,13 @@
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen (${taxLabel()})</th><th>Valeur totale (${taxLabel()})</th><th>Compte Pennylane</th></tr></thead>
+        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen</th><th>Valeur totale</th><th>Compte Pennylane</th></tr></thead>
         <tbody id="exportValTable"></tbody>
       </table>
     </div>
     <div style="padding:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
       <div style="font-size:16px;font-weight:800;color:var(--accent);">
-        Total stock valorisé (${taxLabel()}) : <span id="exportTotal">0,00 € ${taxLabel()}</span>
+        Total stock valorisé : <span id="exportTotal">0,00 €</span>
       </div>
     </div>
   </div>
@@ -589,7 +585,7 @@
     </div>
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeModal('modalProduct')">Annuler</button>
-      <button class="btn btn-primary" onclick="saveProduct()">Créer le produit</button>
+      <button class="btn btn-primary" onclick="saveProduct_form()">Créer le produit</button>
     </div>
   </div>
 </div>
@@ -612,59 +608,120 @@
 
 <script>
 // ============================================================
-// STATE
+// SUPABASE CONFIG — remplace les 2 valeurs ci-dessous
+// ============================================================
+const SUPA_URL = 'REMPLACE_PAR_TON_PROJECT_URL';   // https://uixmsrrprgvoejsuuaat.supabase.co
+const SUPA_KEY = 'REMPLACE_PAR_TON_ANON_KEY';       // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpeG1zcnJwcmd2b2Vqc3V1YWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyNTI0MDgsImV4cCI6MjA5NjgyODQwOH0.mLnM767_JnF4KAcPIqLqkpaLbkJ17TiA2gE-PZQU9FY
+
+// ============================================================
+// STATE (cache local pour la réactivité UI)
 // ============================================================
 let state = {
   products: [],
-  lots: [],      // { id, productId, lot, dateEntree, dlc, qtyInitiale, qtyRestante, crr, facture, fournisseur }
-  mouvements: [] // { id, type, productId, lot, qty, station, crr, prix, bl, date, notes }
+  lots: [],
+  mouvements: []
 };
 
-function loadState() {
+// ============================================================
+// SUPABASE HELPERS
+// ============================================================
+async function sbSelect(table) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?select=*&order=created_at.asc`, {
+    headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+  });
+  if (!r.ok) throw new Error(`SELECT ${table} failed: ${r.status}`);
+  return r.json();
+}
+
+async function sbUpsert(table, row) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY,
+      'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(row)
+  });
+  if (!r.ok) { const t = await r.text(); throw new Error(`UPSERT ${table}: ${t}`); }
+}
+
+async function sbDelete(table, id) {
+  const r = await fetch(`${SUPA_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+  });
+  if (!r.ok) throw new Error(`DELETE ${table} failed`);
+}
+
+// ============================================================
+// LOAD / SAVE  (remplace localStorage)
+// ============================================================
+async function loadState() {
+  setLoading(true);
   try {
-    const s = localStorage.getItem('inca_stock_v2');
-    if (s) state = JSON.parse(s);
-  } catch(e) {}
+    const [products, lots, mouvements] = await Promise.all([
+      sbSelect('stock_products'),
+      sbSelect('stock_lots'),
+      sbSelect('stock_mouvements')
+    ]);
+    state.products  = products.map(r => r.data);
+    state.lots      = lots.map(r => r.data);
+    // mouvements triés du plus récent au plus ancien
+    state.mouvements = mouvements.map(r => r.data).sort((a,b) => new Date(b.date) - new Date(a.date));
+  } catch(e) {
+    showToast('❌ Erreur connexion Supabase — vérifie URL/clé', true);
+    console.error(e);
+  }
+  setLoading(false);
 }
-function saveState() {
-  localStorage.setItem('inca_stock_v2', JSON.stringify(state));
+
+async function saveProduct(obj) {
+  await sbUpsert('stock_products', { id: obj.id, data: obj });
+  const idx = state.products.findIndex(p => p.id === obj.id);
+  if (idx >= 0) state.products[idx] = obj; else state.products.push(obj);
 }
+
+async function saveLot(obj) {
+  await sbUpsert('stock_lots', { id: obj.id, data: obj });
+  const idx = state.lots.findIndex(l => l.id === obj.id);
+  if (idx >= 0) state.lots[idx] = obj; else state.lots.push(obj);
+}
+
+async function saveMouvement(obj) {
+  await sbUpsert('stock_mouvements', { id: obj.id, data: obj });
+  state.mouvements.unshift(obj);
+}
+
+// ── Mise à jour d'un lot existant (sortie FIFO) ──
+async function updateLot(lot) {
+  await sbUpsert('stock_lots', { id: lot.id, data: lot });
+  const idx = state.lots.findIndex(l => l.id === lot.id);
+  if (idx >= 0) state.lots[idx] = lot;
+}
+
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
 
 // ============================================================
-// TAX MODE HT / TTC
+// LOADING UI
 // ============================================================
-let taxMode = localStorage.getItem('inca_tax_mode') || 'HT';
-const TVA_RATE = 0.021; // TVA Réunion 2.1%
-
-function setTaxMode(mode) {
-  taxMode = mode;
-  localStorage.setItem('inca_tax_mode', mode);
-  document.getElementById('btnHT').style.background = mode === 'HT' ? 'white' : 'transparent';
-  document.getElementById('btnHT').style.color = mode === 'HT' ? 'var(--accent)' : 'rgba(255,255,255,0.7)';
-  document.getElementById('btnTTC').style.background = mode === 'TTC' ? 'white' : 'transparent';
-  document.getElementById('btnTTC').style.color = mode === 'TTC' ? 'var(--accent)' : 'rgba(255,255,255,0.7)';
-  // Mettre à jour le label du champ PV
-  const lbl = document.getElementById('sortiePrixLabel');
-  if (lbl) lbl.textContent = `Prix de vente unitaire ${mode} (€)`;
-  refreshAll();
+function setLoading(on) {
+  let el = document.getElementById('loadingBar');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loadingBar';
+    el.style.cssText = 'position:fixed;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#3b5bdb,#5c7cfa,#12b886);z-index:9999;transition:opacity .3s;';
+    document.body.prepend(el);
+  }
+  el.style.opacity = on ? '1' : '0';
 }
-function applyTax(val) { return taxMode === 'TTC' ? val * (1 + TVA_RATE) : val; }
-function taxLabel() { return taxMode; }
 
-
-loadState();
+// ============================================================
+// INIT
+// ============================================================
 document.getElementById('headerDate').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
-// Appliquer mode fiscal sauvegardé
-(function(){
-  const m = taxMode;
-  document.getElementById('btnHT').style.background = m==='HT'?'white':'transparent';
-  document.getElementById('btnHT').style.color = m==='HT'?'var(--accent)':'rgba(255,255,255,0.7)';
-  document.getElementById('btnTTC').style.background = m==='TTC'?'white':'transparent';
-  document.getElementById('btnTTC').style.color = m==='TTC'?'var(--accent)':'rgba(255,255,255,0.7)';
-})();
 
-// Set default dates
 const today = new Date().toISOString().slice(0,10);
 document.getElementById('entreeDate').value = today;
 document.getElementById('sortieDate').value = today;
@@ -672,7 +729,8 @@ const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).to
 document.getElementById('exportFrom').value = firstDay;
 document.getElementById('exportTo').value = today;
 
-refreshAll();
+// Chargement initial depuis Supabase
+loadState().then(() => refreshAll());
 
 // ============================================================
 // TABS
@@ -731,7 +789,7 @@ function daysUntil(dateStr) {
   return Math.floor((new Date(dateStr) - new Date()) / 86400000);
 }
 function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR'); }
-function fmtEur(n) { const v = applyTax(n||0); return v.toFixed(2).replace('.',',')+' € '+taxLabel(); }
+function fmtEur(n) { return (n||0).toFixed(2).replace('.',',')+' €'; }
 function fmtQty(n) { return (n||0).toLocaleString('fr-FR'); }
 
 // ============================================================
@@ -764,7 +822,7 @@ function renderDashboard() {
   document.getElementById('statsGrid').innerHTML = `
     <div class="stat-card blue"><div class="stat-label">Références actives</div><div class="stat-value">${totalProduits}</div><div class="stat-sub">produits en catalogue</div></div>
     <div class="stat-card"><div class="stat-label">Unités en stock</div><div class="stat-value">${fmtQty(totalStock)}</div><div class="stat-sub">toutes références</div></div>
-    <div class="stat-card green"><div class="stat-label">Valeur stock (CRR ${taxLabel()})</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">coût atterri</div></div>
+    <div class="stat-card green"><div class="stat-label">Valeur stock (CRR)</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">coût atterri</div></div>
     <div class="stat-card ${alertsDlc>0?'orange':''}"><div class="stat-label">Lots DLC < 60j</div><div class="stat-value">${alertsDlc}</div><div class="stat-sub">lots à surveiller</div></div>
     <div class="stat-card ${alertsReappro>0?'red':''}"><div class="stat-label">Réappro nécessaire</div><div class="stat-value">${alertsReappro}</div><div class="stat-sub">sous le seuil</div></div>
   `;
@@ -895,7 +953,7 @@ function showLots(productId) {
 // ============================================================
 function showAddProductModal() { document.getElementById('modalProduct').classList.add('show'); }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
-function saveProduct() {
+async function saveProduct_form() {
   const nom = document.getElementById('mpNom').value.trim();
   if (!nom) { alert('Nom obligatoire'); return; }
   const p = {
@@ -909,9 +967,14 @@ function saveProduct() {
     rotation: parseFloat(document.getElementById('mpRotation').value)||3.5,
     notes: document.getElementById('mpNotes').value.trim()
   };
-  state.products.push(p);
-  saveState(); refreshAll(); closeModal('modalProduct');
-  document.getElementById('mpNom').value=''; document.getElementById('mpRef').value=''; document.getElementById('mpFournisseur').value=''; document.getElementById('mpCrr').value=''; document.getElementById('mpPv').value=''; document.getElementById('mpSeuil').value=''; document.getElementById('mpNotes').value='';
+  setLoading(true);
+  try {
+    await saveProduct(p);
+    refreshAll(); closeModal('modalProduct');
+    ['mpNom','mpRef','mpFournisseur','mpCrr','mpPv','mpSeuil','mpNotes'].forEach(id => { document.getElementById(id).value=''; });
+    showToast('✅ Produit créé');
+  } catch(e) { showToast('❌ Erreur sauvegarde', true); }
+  setLoading(false);
 }
 
 // ============================================================
@@ -929,7 +992,7 @@ function clearEntreeForm() {
   ['entreeProduct','entreeQty','entreeLot','entreeDlc','entreeCrr','entreeFournisseur','entreeFacture','entreeNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   document.getElementById('entreeDate').value = new Date().toISOString().slice(0,10);
 }
-function saveEntree() {
+async function saveEntree() {
   const pid = document.getElementById('entreeProduct').value;
   const qty = parseInt(document.getElementById('entreeQty').value);
   const crr = parseFloat(document.getElementById('entreeCrr').value);
@@ -943,15 +1006,19 @@ function saveEntree() {
     fournisseur: document.getElementById('entreeFournisseur').value.trim(),
     facture: document.getElementById('entreeFacture').value.trim()
   };
-  state.lots.push(lot);
   const mouv = {
     id: genId(), type: 'entree', productId: pid,
     lot: lot.lot, qty, station: null, crr, prix: null, bl: lot.facture,
     date: lot.dateEntree, notes: document.getElementById('entreeNotes').value.trim()
   };
-  state.mouvements.unshift(mouv);
-  saveState(); refreshAll(); clearEntreeForm();
-  showToast('✅ Entrée enregistrée — '+qty+' unités en stock');
+  setLoading(true);
+  try {
+    await saveLot(lot);
+    await saveMouvement(mouv);
+    refreshAll(); clearEntreeForm();
+    showToast('✅ Entrée enregistrée — '+qty+' unités');
+  } catch(e) { showToast('❌ Erreur sauvegarde: '+e.message, true); }
+  setLoading(false);
 }
 function renderEntreeHist() {
   const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
@@ -994,24 +1061,27 @@ function clearSortieForm() {
   document.getElementById('sortieStation').value = 'OLA';
   document.getElementById('sortieInfoBox').style.display = 'none';
 }
-function saveSortie() {
+async function saveSortie() {
   const pid = document.getElementById('sortieProduct').value;
   let qtyToRemove = parseInt(document.getElementById('sortieQty').value);
   if (!pid || !qtyToRemove) { alert('Produit et quantité obligatoires'); return; }
   const stock = getProductStock(pid);
   if (qtyToRemove > stock) { alert('Stock insuffisant : '+fmtQty(stock)+' unités disponibles'); return; }
 
-  // FIFO deduction
-  const fifoLots = state.lots.filter(l => l.productId === pid && l.qtyRestante > 0).sort((a,b) => new Date(a.dateEntree) - new Date(b.dateEntree));
+  // FIFO — identifier les lots à déduire
+  const fifoLots = state.lots.filter(l => l.productId === pid && l.qtyRestante > 0)
+    .sort((a,b) => new Date(a.dateEntree) - new Date(b.dateEntree));
   let remaining = qtyToRemove;
-  const crrMoyen = getProductCRR(pid);
+  const lotsToUpdate = [];
   for (const lot of fifoLots) {
     if (remaining <= 0) break;
     const take = Math.min(lot.qtyRestante, remaining);
     lot.qtyRestante -= take;
     remaining -= take;
+    lotsToUpdate.push(lot);
   }
 
+  const crrMoyen = getProductCRR(pid);
   const mouv = {
     id: genId(), type: 'sortie', productId: pid,
     lot: 'FIFO', qty: qtyToRemove,
@@ -1022,9 +1092,16 @@ function saveSortie() {
     date: document.getElementById('sortieDate').value || today,
     notes: document.getElementById('sortieNotes').value.trim()
   };
-  state.mouvements.unshift(mouv);
-  saveState(); refreshAll(); clearSortieForm();
-  showToast('📤 Sortie FIFO enregistrée — '+fmtQty(qtyToRemove)+' unités');
+
+  setLoading(true);
+  try {
+    // Sauvegarder tous les lots modifiés en parallèle
+    await Promise.all(lotsToUpdate.map(l => updateLot(l)));
+    await saveMouvement(mouv);
+    refreshAll(); clearSortieForm();
+    showToast('📤 Sortie FIFO — '+fmtQty(qtyToRemove)+' unités');
+  } catch(e) { showToast('❌ Erreur sauvegarde: '+e.message, true); }
+  setLoading(false);
 }
 function renderSortieHist() {
   const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
@@ -1091,11 +1168,11 @@ function generateExport() {
   if (type === 'achats') rows = rows.filter(m => m.type==='entree');
   if (type === 'ventes') rows = rows.filter(m => m.type==='sortie');
 
-  const header = `Date;Type;Produit;Lot;Qté;Station;CRR_unitaire_${taxLabel()};Valeur_${taxLabel()};Référence;Compte_Pennylane`;
+  const header = 'Date;Type;Produit;Lot;Qté;Station;CRR_unitaire;Valeur;Référence;Compte_Pennylane';
   const lines = rows.map(m => {
     const pnom = pmap[m.productId]?.nom||'';
     const compte = m.type==='entree' ? '607 - Achats marchandises' : '707 - Ventes marchandises';
-    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', applyTax(m.crr).toFixed(3), applyTax(m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
   });
 
   const preview = [header, ...lines.slice(0,15)].join('\n') + (lines.length > 15 ? '\n...' : '');
@@ -1108,11 +1185,11 @@ function exportPennylane() {
   const to = document.getElementById('exportTo')?.value;
   const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
   const rows = state.mouvements.filter(m => (!from || m.date >= from) && (!to || m.date <= to));
-  const header = `Date;Type;Produit;Lot;Quantite;Station;CRR_unitaire_${taxLabel()};Valeur_${taxLabel()};Reference;Compte_Pennylane\n`;
+  const header = 'Date;Type;Produit;Lot;Quantite;Station;CRR_unitaire;Valeur_EUR;Reference;Compte_Pennylane\n';
   const lines = rows.map(m => {
     const pnom = pmap[m.productId]?.nom||'';
     const compte = m.type==='entree' ? '607' : '707';
-    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', applyTax(m.crr).toFixed(3), applyTax(m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
   }).join('\n');
   const blob = new Blob(['\uFEFF'+header+lines], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -1140,12 +1217,12 @@ function exportMouvCSV() {
 // ============================================================
 // TOAST
 // ============================================================
-function showToast(msg) {
+function showToast(msg, isError=false) {
   const t = document.createElement('div');
-  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1f36;color:white;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);animation:slideIn 0.3s ease;';
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;background:${isError?'#e03131':'#1a1f36'};color:white;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-width:320px;`;
   t.textContent = msg;
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(() => t.remove(), isError ? 5000 : 3000);
 }
 
 // Close modals on overlay click
