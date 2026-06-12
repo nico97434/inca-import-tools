@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INCA IMPORT — Stock</title>
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --surface2: #f8faff;
+    --border: #e2e8f8;
+    --accent: #3b5bdb;
+    --accent2: #5c7cfa;
+    --accent-light: #eef2ff;
+    --green: #12b886;
+    --green-light: #e6fcf5;
+    --red: #fa5252;
+    --red-light: #fff5f5;
+    --orange: #fd7e14;
+    --orange-light: #fff4e6;
+    --yellow: #fab005;
+    --yellow-light: #fff9db;
+    --text: #1a1f36;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --shadow: 0 2px 12px rgba(59,91,219,0.08);
+    --shadow-lg: 0 8px 32px rgba(59,91,219,0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #3b5bdb 0%, #5c7cfa 100%); color: white; padding: 16px 24px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 20px rgba(59,91,219,0.3); }
+  .header-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .header-logo span { opacity: 0.7; font-weight: 400; font-size: 14px; margin-left: 8px; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .header-date { font-size: 12px; opacity: 0.8; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; overflow-x: auto; }
+  .tab { padding: 14px 20px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.15s; }
+  .tab:hover { color: var(--accent); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* MAIN */
+  .main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  /* STATS CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .stat-label { font-size: 12px; color: var(--text2); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; }
+  .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .stat-card.green .stat-value { color: var(--green); }
+  .stat-card.red .stat-value { color: var(--red); }
+  .stat-card.orange .stat-value { color: var(--orange); }
+  .stat-card.blue .stat-value { color: var(--accent); }
+
+  /* ALERTS */
+  .alerts-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .alert-chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .alert-chip.red { background: var(--red-light); color: var(--red); }
+  .alert-chip.orange { background: var(--orange-light); color: var(--orange); }
+  .alert-chip.yellow { background: var(--yellow-light); color: var(--yellow); }
+
+  /* SECTION */
+  .section { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden; }
+  .section-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .section-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* BUTTONS */
+  .btn { padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #2f4ac4; }
+  .btn-success { background: var(--green); color: white; }
+  .btn-success:hover { background: #0ca678; }
+  .btn-danger { background: var(--red); color: white; }
+  .btn-danger:hover { background: #e03131; }
+  .btn-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
+  .btn-outline:hover { background: var(--accent-light); }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--border); }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 6px 8px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); background: var(--surface2); text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-orange { background: var(--orange-light); color: var(--orange); }
+  .badge-yellow { background: var(--yellow-light); color: var(--yellow); }
+  .badge-blue { background: var(--accent-light); color: var(--accent); }
+  .badge-gray { background: #f1f3f5; color: var(--text2); }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; padding: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 600; color: var(--text2); }
+  input, select, textarea { width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; color: var(--text); background: var(--surface); transition: border 0.15s; outline: none; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); background: white; }
+  .form-actions { padding: 0 20px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: white; border-radius: var(--radius); box-shadow: var(--shadow-lg); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text2); line-height: 1; }
+
+  /* SEARCH */
+  .search-row { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; flex-wrap: wrap; }
+  .search-input { flex: 1; min-width: 200px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; outline: none; }
+  .search-input:focus { border-color: var(--accent); }
+
+  /* PROGRESS BAR */
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+  /* TABS PANEL */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; font-weight: 500; color: var(--text2); }
+  .empty-sub { font-size: 12px; margin-top: 4px; }
+
+  /* EXPORT BANNER */
+  .export-banner { background: linear-gradient(135deg, #e8f4fd, #f0f8ff); border: 1px solid #bee3f8; border-radius: var(--radius-sm); padding: 12px 16px; margin: 16px; display: flex; align-items: center; gap: 12px; font-size: 13px; color: #2b6cb0; }
+  .export-banner strong { font-weight: 700; }
+
+  /* DLC INDICATOR */
+  .dlc-ok { color: var(--green); font-weight: 600; }
+  .dlc-warn { color: var(--orange); font-weight: 600; }
+  .dlc-critical { color: var(--red); font-weight: 600; }
+  .dlc-expired { color: var(--red); font-weight: 700; text-decoration: line-through; }
+
+  /* STOCK LEVEL */
+  .stock-level { display: flex; flex-direction: column; gap: 2px; min-width: 100px; }
+  .stock-qty { font-weight: 700; font-size: 14px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    .main { padding: 12px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  .tag { display: inline-block; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; background: var(--accent-light); color: var(--accent); margin-right: 4px; }
+
+  .fifo-badge { font-size: 10px; background: #e8f4fd; color: #2b6cb0; padding: 2px 6px; border-radius: 4px; font-weight: 700; }
+
+  .lot-row { font-size: 12px; color: var(--text2); }
+  .lot-row td { padding: 6px 16px; background: var(--surface2); }
+
+  .csv-preview { font-family: monospace; font-size: 11px; background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: var(--radius-sm); overflow-x: auto; white-space: pre; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">INCA IMPORT <span>/ Gestion Stock</span></div>
+  <div class="header-right">
+    <div class="header-date" id="headerDate"></div>
+    <button class="btn btn-outline" style="color:white;border-color:rgba(255,255,255,0.4);font-size:12px;" onclick="exportPennylane()">⬇ Export Pennylane</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('dashboard')">📊 Tableau de bord</div>
+  <div class="tab" onclick="showTab('stock')">📦 Stock en temps réel</div>
+  <div class="tab" onclick="showTab('entree')">➕ Entrée marchandise</div>
+  <div class="tab" onclick="showTab('sortie')">➖ Sortie / Livraison</div>
+  <div class="tab" onclick="showTab('mouvements')">🔄 Mouvements</div>
+  <div class="tab" onclick="showTab('export')">📤 Export Pennylane</div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="main">
+<div id="tab-dashboard" class="panel active">
+
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="alerts-bar" id="alertsBar"></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🚨 Alertes DLC — 60 jours</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Produit</th><th>Lot</th><th>Qté</th><th>DLC</th><th>Jours</th></tr></thead>
+          <tbody id="dlcAlertTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">⚡ Réapprovisionnement</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Produit</th><th>Stock</th><th>Seuil</th><th>Statut</th></tr></thead>
+          <tbody id="reapproTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section" style="margin-top:16px;">
+    <div class="section-header">
+      <div class="section-title">📈 Top 10 produits — valeur stock</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Produit</th><th>Fournisseur</th><th>Qté totale</th><th>CRR unit.</th><th>Valeur stock</th><th>Rotation cible</th></tr></thead>
+        <tbody id="topStockTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- STOCK TEMPS RÉEL -->
+<div id="tab-stock" class="panel">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">📦 Stock en temps réel — méthode FIFO</div>
+      <div class="section-actions">
+        <button class="btn btn-ghost btn-sm" onclick="showAddProductModal()">+ Nouveau produit</button>
+        <button class="btn btn-primary btn-sm" onclick="exportStockCSV()">CSV Stock</button>
+      </div>
+    </div>
+    <div class="search-row">
+      <input class="search-input" placeholder="🔍 Rechercher un produit..." id="stockSearch" oninput="renderStockTable()">
+      <select style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;" id="stockFilter" onchange="renderStockTable()">
+        <option value="all">Tous les produits</option>
+        <option value="alert">⚠️ Seuil atteint</option>
+        <option value="dlc">🕐 DLC < 60j</option>
+        <option value="zero">❌ Stock zéro</option>
+      </select>
+      <select style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;" id="stockFournisseur" onchange="renderStockTable()">
+        <option value="all">Tous fournisseurs</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produit</th>
+            <th>Fournisseur</th>
+            <th>Catégorie</th>
+            <th>Qté dispo</th>
+            <th>Valeur CRR</th>
+            <th>Prochain lot DLC</th>
+            <th>Rotation</th>
+            <th>Statut</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stockTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ENTRÉE -->
+<div id="tab-entree" class="panel">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">➕ Saisir une entrée de marchandise</div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Produit *</label>
+        <select id="entreeProduct" onchange="fillEntreeProduct()">
+          <option value="">— Sélectionner —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantité (unités) *</label>
+        <input type="number" id="entreeQty" placeholder="ex: 240" min="1">
+      </div>
+      <div class="form-group">
+        <label>N° de lot / Référence container</label>
+        <input type="text" id="entreeLot" placeholder="ex: LOT-BBG-001 / CTR-2406">
+      </div>
+      <div class="form-group">
+        <label>DLC (date limite consommation)</label>
+        <input type="date" id="entreeDlc">
+      </div>
+      <div class="form-group">
+        <label>Prix CRR unitaire (€) *</label>
+        <input type="number" id="entreeCrr" step="0.001" placeholder="ex: 0.847">
+      </div>
+      <div class="form-group">
+        <label>Fournisseur</label>
+        <input type="text" id="entreeFournisseur" placeholder="ex: BBG Poland">
+      </div>
+      <div class="form-group">
+        <label>N° facture fournisseur</label>
+        <input type="text" id="entreeFacture" placeholder="ex: ZS-00000820">
+      </div>
+      <div class="form-group">
+        <label>Date de réception</label>
+        <input type="date" id="entreeDate">
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="entreeNotes" rows="2" placeholder="Observations, anomalies à la réception..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="clearEntreeForm()">Effacer</button>
+      <button class="btn btn-success" onclick="saveEntree()">✅ Valider l'entrée</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">📋 Dernières entrées</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Produit</th><th>Lot</th><th>Qté</th><th>CRR unit.</th><th>Valeur</th><th>Facture</th><th>DLC</th></tr></thead>
+        <tbody id="entreeHistTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SORTIE -->
+<div id="tab-sortie" class="panel">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">➖ Saisir une sortie / livraison station</div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Produit *</label>
+        <select id="sortieProduct" onchange="fillSortieInfo()">
+          <option value="">— Sélectionner —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Station destinataire *</label>
+        <select id="sortieStation">
+          <option value="OLA">OLA</option>
+          <option value="TOTAL">TOTAL</option>
+          <option value="VITO">VITO</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Quantité (unités) *</label>
+        <input type="number" id="sortieQty" placeholder="ex: 48" min="1" oninput="updateSortieCout()">
+      </div>
+      <div class="form-group">
+        <label>Prix de vente unitaire HT (€)</label>
+        <input type="number" id="sortiePrix" step="0.01" placeholder="ex: 0.95" oninput="updateSortieCout()">
+      </div>
+      <div class="form-group">
+        <label>Marge intragroupe appliquée</label>
+        <input type="text" id="sortieMargeInfo" readonly style="background:#f8faff;color:var(--text2);">
+      </div>
+      <div class="form-group">
+        <label>Date de livraison</label>
+        <input type="date" id="sortieDate">
+      </div>
+      <div class="form-group">
+        <label>N° bon de livraison</label>
+        <input type="text" id="sortieBL" placeholder="ex: BL-2406-001">
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="sortieNotes" rows="2" placeholder="Observations..."></textarea>
+      </div>
+    </div>
+    <div style="padding:0 20px 12px;">
+      <div id="sortieInfoBox" style="display:none;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:12px;font-size:13px;color:var(--accent);">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="clearSortieForm()">Effacer</button>
+      <button class="btn btn-danger" onclick="saveSortie()">📤 Valider la sortie (FIFO)</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">📋 Dernières sorties</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Produit</th><th>Station</th><th>Qté</th><th>CRR unit.</th><th>PV unit.</th><th>Marge</th><th>BL</th></tr></thead>
+        <tbody id="sortieHistTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MOUVEMENTS -->
+<div id="tab-mouvements" class="panel">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">🔄 Journal des mouvements</div>
+      <div class="section-actions">
+        <button class="btn btn-ghost btn-sm" onclick="exportMouvCSV()">CSV Export</button>
+      </div>
+    </div>
+    <div class="search-row">
+      <input class="search-input" placeholder="🔍 Rechercher..." id="mouvSearch" oninput="renderMouvements()">
+      <select style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;" id="mouvType" onchange="renderMouvements()">
+        <option value="all">Tous types</option>
+        <option value="entree">Entrées</option>
+        <option value="sortie">Sorties</option>
+      </select>
+      <select style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;" id="mouvStation" onchange="renderMouvements()">
+        <option value="all">Toutes stations</option>
+        <option value="OLA">OLA</option>
+        <option value="TOTAL">TOTAL</option>
+        <option value="VITO">VITO</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Date</th><th>Type</th><th>Produit</th><th>Lot</th><th>Qté</th><th>Station</th><th>CRR</th><th>Valeur</th><th>Réf.</th></tr></thead>
+        <tbody id="mouvTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT PENNYLANE -->
+<div id="tab-export" class="panel">
+  <div class="export-banner">
+    <span style="font-size:20px;">💡</span>
+    <div>
+      <strong>Export mensuel Pennylane</strong> — Génère un CSV des mouvements du mois pour import dans Pennylane (compte 607 / 337).
+      Copie ce fichier dans Pennylane → Achats → Import de factures.
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">⚙️ Paramètres export</div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Période — Du</label>
+        <input type="date" id="exportFrom">
+      </div>
+      <div class="form-group">
+        <label>Au</label>
+        <input type="date" id="exportTo">
+      </div>
+      <div class="form-group">
+        <label>Type d'export</label>
+        <select id="exportType">
+          <option value="achats">Achats (entrées → compte 607)</option>
+          <option value="ventes">Ventes intragroupe (sorties)</option>
+          <option value="stock">Inventaire valorisé (compte 337)</option>
+          <option value="all">Tout</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="generateExport()">📊 Générer l'aperçu</button>
+      <button class="btn btn-success" onclick="exportPennylane()">⬇ Télécharger CSV</button>
+    </div>
+  </div>
+
+  <div class="section" id="exportPreviewSection" style="display:none;">
+    <div class="section-header">
+      <div class="section-title">👁 Aperçu CSV</div>
+    </div>
+    <div style="padding:16px;">
+      <div class="csv-preview" id="exportPreview"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">📊 Résumé de valorisation</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Produit</th><th>Qté stock</th><th>CRR moyen</th><th>Valeur totale</th><th>Compte Pennylane</th></tr></thead>
+        <tbody id="exportValTable"></tbody>
+      </table>
+    </div>
+    <div style="padding:16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;">
+      <div style="font-size:16px;font-weight:800;color:var(--accent);">
+        Total stock valorisé : <span id="exportTotal">0,00 €</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- MODAL NOUVEAU PRODUIT -->
+<div class="modal-overlay" id="modalProduct">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nouveau produit</div>
+      <button class="modal-close" onclick="closeModal('modalProduct')">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Nom du produit *</label>
+        <input type="text" id="mpNom" placeholder="ex: Tymbark Apple 1L">
+      </div>
+      <div class="form-group">
+        <label>Référence / SKU</label>
+        <input type="text" id="mpRef" placeholder="ex: TYM-APL-1L">
+      </div>
+      <div class="form-group">
+        <label>Fournisseur</label>
+        <input type="text" id="mpFournisseur" placeholder="ex: BBG Poland">
+      </div>
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="mpCategorie">
+          <option value="Boissons">Boissons</option>
+          <option value="Snacks">Snacks</option>
+          <option value="Confiserie">Confiserie</option>
+          <option value="Biscuits">Biscuits</option>
+          <option value="Nutrition sportive">Nutrition sportive</option>
+          <option value="Accessoires">Accessoires</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>CRR unitaire (€)</label>
+        <input type="number" id="mpCrr" step="0.001" placeholder="ex: 0.847">
+      </div>
+      <div class="form-group">
+        <label>PV cible (€)</label>
+        <input type="number" id="mpPv" step="0.01" placeholder="ex: 1.50">
+      </div>
+      <div class="form-group">
+        <label>Seuil réappro (unités)</label>
+        <input type="number" id="mpSeuil" placeholder="ex: 48">
+      </div>
+      <div class="form-group">
+        <label>Rotation cible (mois)</label>
+        <select id="mpRotation">
+          <option value="2">2 mois (pâtisserie)</option>
+          <option value="3">3 mois (nouveau SKU)</option>
+          <option value="3.5" selected>3,5 mois (boissons)</option>
+          <option value="4">4 mois (snacks)</option>
+          <option value="5">5 mois (confiserie/biscuits)</option>
+          <option value="6">6 mois (sec/conserves)</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="mpNotes" rows="2" placeholder="Halal, format single-serve, etc."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modalProduct')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Créer le produit</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL LOTS -->
+<div class="modal-overlay" id="modalLots">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalLotsTitle">Lots FIFO</div>
+      <button class="modal-close" onclick="closeModal('modalLots')">×</button>
+    </div>
+    <div class="table-wrap" style="padding:16px;">
+      <table>
+        <thead><tr><th>Lot</th><th>Date entrée</th><th>DLC</th><th>Qté initiale</th><th>Qté restante</th><th>CRR</th><th>Valeur</th></tr></thead>
+        <tbody id="modalLotsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  products: [],
+  lots: [],      // { id, productId, lot, dateEntree, dlc, qtyInitiale, qtyRestante, crr, facture, fournisseur }
+  mouvements: [] // { id, type, productId, lot, qty, station, crr, prix, bl, date, notes }
+};
+
+function loadState() {
+  try {
+    const s = localStorage.getItem('inca_stock_v2');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+function saveState() {
+  localStorage.setItem('inca_stock_v2', JSON.stringify(state));
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// Set default dates
+const today = new Date().toISOString().slice(0,10);
+document.getElementById('entreeDate').value = today;
+document.getElementById('sortieDate').value = today;
+const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10);
+document.getElementById('exportFrom').value = firstDay;
+document.getElementById('exportTo').value = today;
+
+refreshAll();
+
+// ============================================================
+// TABS
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'stock') renderStockTable();
+  if (name === 'mouvements') renderMouvements();
+  if (name === 'export') renderExportVal();
+}
+
+// ============================================================
+// REFRESH ALL
+// ============================================================
+function refreshAll() {
+  populateProductSelects();
+  populateFournisseurFilter();
+  renderDashboard();
+  renderStockTable();
+  renderEntreeHist();
+  renderSortieHist();
+  renderMouvements();
+  renderExportVal();
+}
+
+// ============================================================
+// PRODUCT HELPERS
+// ============================================================
+function getProductStock(productId) {
+  return state.lots.filter(l => l.productId === productId).reduce((s,l) => s + l.qtyRestante, 0);
+}
+function getProductLots(productId) {
+  return state.lots.filter(l => l.productId === productId && l.qtyRestante > 0).sort((a,b) => new Date(a.dateEntree) - new Date(b.dateEntree));
+}
+function getProductCRR(productId) {
+  const lots = state.lots.filter(l => l.productId === productId && l.qtyRestante > 0);
+  if (!lots.length) {
+    const p = state.products.find(x => x.id === productId);
+    return p ? p.crr : 0;
+  }
+  const total = lots.reduce((s,l) => s + l.qtyRestante, 0);
+  const weighted = lots.reduce((s,l) => s + l.qtyRestante * l.crr, 0);
+  return total > 0 ? weighted / total : 0;
+}
+function getNextDLC(productId) {
+  const lots = getProductLots(productId);
+  if (!lots.length) return null;
+  const withDlc = lots.filter(l => l.dlc).sort((a,b) => new Date(a.dlc) - new Date(b.dlc));
+  return withDlc.length ? withDlc[0].dlc : null;
+}
+function daysUntil(dateStr) {
+  if (!dateStr) return null;
+  return Math.floor((new Date(dateStr) - new Date()) / 86400000);
+}
+function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR'); }
+function fmtEur(n) { return (n||0).toFixed(2).replace('.',',')+' €'; }
+function fmtQty(n) { return (n||0).toLocaleString('fr-FR'); }
+
+// ============================================================
+// POPULATE SELECTS
+// ============================================================
+function populateProductSelects() {
+  const opts = '<option value="">— Sélectionner —</option>' + state.products.map(p => `<option value="${p.id}">${p.nom} ${p.ref ? '('+p.ref+')' : ''}</option>`).join('');
+  ['entreeProduct','sortieProduct'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = opts;
+  });
+}
+function populateFournisseurFilter() {
+  const fournisseurs = [...new Set(state.products.map(p => p.fournisseur).filter(Boolean))];
+  const el = document.getElementById('stockFournisseur');
+  if (el) el.innerHTML = '<option value="all">Tous fournisseurs</option>' + fournisseurs.map(f => `<option value="${f}">${f}</option>`).join('');
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  // Stats
+  const totalProduits = state.products.length;
+  const totalStock = state.products.reduce((s,p) => s + getProductStock(p.id), 0);
+  const totalValeur = state.products.reduce((s,p) => s + getProductStock(p.id) * getProductCRR(p.id), 0);
+  const alertsDlc = state.lots.filter(l => { const d = daysUntil(l.dlc); return d !== null && d <= 60 && d >= 0 && l.qtyRestante > 0; }).length;
+  const alertsReappro = state.products.filter(p => p.seuil && getProductStock(p.id) <= p.seuil).length;
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card blue"><div class="stat-label">Références actives</div><div class="stat-value">${totalProduits}</div><div class="stat-sub">produits en catalogue</div></div>
+    <div class="stat-card"><div class="stat-label">Unités en stock</div><div class="stat-value">${fmtQty(totalStock)}</div><div class="stat-sub">toutes références</div></div>
+    <div class="stat-card green"><div class="stat-label">Valeur stock (CRR)</div><div class="stat-value">${fmtEur(totalValeur)}</div><div class="stat-sub">coût atterri</div></div>
+    <div class="stat-card ${alertsDlc>0?'orange':''}"><div class="stat-label">Lots DLC < 60j</div><div class="stat-value">${alertsDlc}</div><div class="stat-sub">lots à surveiller</div></div>
+    <div class="stat-card ${alertsReappro>0?'red':''}"><div class="stat-label">Réappro nécessaire</div><div class="stat-value">${alertsReappro}</div><div class="stat-sub">sous le seuil</div></div>
+  `;
+
+  // Alerts bar
+  let chips = '';
+  if (alertsDlc > 0) chips += `<div class="alert-chip red">🚨 ${alertsDlc} lot(s) DLC < 60 jours</div>`;
+  if (alertsReappro > 0) chips += `<div class="alert-chip orange">⚡ ${alertsReappro} produit(s) à réapprovisionner</div>`;
+  const expired = state.lots.filter(l => { const d = daysUntil(l.dlc); return d !== null && d < 0 && l.qtyRestante > 0; });
+  if (expired.length) chips += `<div class="alert-chip red">❌ ${expired.length} lot(s) PÉRIMÉS en stock</div>`;
+  document.getElementById('alertsBar').innerHTML = chips || '<span style="font-size:13px;color:var(--green);font-weight:600;">✅ Aucune alerte</span>';
+
+  // DLC alerts table
+  const dlcLots = state.lots.filter(l => {
+    const d = daysUntil(l.dlc);
+    return d !== null && d <= 60 && l.qtyRestante > 0;
+  }).sort((a,b) => new Date(a.dlc) - new Date(b.dlc)).slice(0,10);
+  const p_map = Object.fromEntries(state.products.map(p => [p.id, p]));
+  document.getElementById('dlcAlertTable').innerHTML = dlcLots.length ? dlcLots.map(l => {
+    const d = daysUntil(l.dlc);
+    const cls = d < 0 ? 'dlc-expired' : d < 14 ? 'dlc-critical' : d < 30 ? 'dlc-warn' : 'dlc-ok';
+    return `<tr><td>${p_map[l.productId]?.nom||'?'}</td><td><span class="badge badge-gray">${l.lot||'—'}</span></td><td>${fmtQty(l.qtyRestante)}</td><td>${fmtDate(l.dlc)}</td><td class="${cls}">${d < 0 ? 'PÉRIMÉ' : d+' j'}</td></tr>`;
+  }).join('') : '<tr><td colspan="5" class="empty"><div style="padding:20px;text-align:center;color:var(--green);">✅ Aucune alerte DLC</div></td></tr>';
+
+  // Reappro table
+  const reappro = state.products.filter(p => p.seuil).map(p => ({p, stock: getProductStock(p.id)})).sort((a,b) => (a.stock/a.p.seuil) - (b.stock/b.p.seuil)).slice(0,8);
+  document.getElementById('reapproTable').innerHTML = reappro.length ? reappro.map(({p, stock}) => {
+    const pct = Math.min(100, Math.round(stock / p.seuil * 100));
+    const cls = pct <= 50 ? 'badge-red' : pct <= 100 ? 'badge-orange' : 'badge-green';
+    return `<tr><td>${p.nom}</td><td><div class="stock-qty">${fmtQty(stock)}</div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pct<=50?'var(--red)':pct<=100?'var(--orange)':'var(--green)'}"></div></div></td><td>${fmtQty(p.seuil)}</td><td><span class="badge ${cls}">${pct<=100?'RÉAPPRO':'OK'}</span></td></tr>`;
+  }).join('') : '<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text3);">Définir des seuils dans les produits</td></tr>';
+
+  // Top stock value
+  const topStock = state.products.map(p => ({p, stock: getProductStock(p.id), crr: getProductCRR(p.id)}))
+    .filter(x => x.stock > 0).sort((a,b) => (b.stock*b.crr) - (a.stock*a.crr)).slice(0,10);
+  document.getElementById('topStockTable').innerHTML = topStock.length ? topStock.map(({p, stock, crr}) =>
+    `<tr><td><strong>${p.nom}</strong></td><td><span class="tag">${p.fournisseur||'—'}</span></td><td>${fmtQty(stock)}</td><td>${fmtEur(crr)}</td><td><strong>${fmtEur(stock*crr)}</strong></td><td><span class="badge badge-blue">${p.rotation||3.5} mois</span></td></tr>`
+  ).join('') : '<tr><td colspan="6" class="empty"><div style="padding:20px;text-align:center;color:var(--text3);">Aucun stock enregistré</div></td></tr>';
+}
+
+// ============================================================
+// STOCK TABLE
+// ============================================================
+function renderStockTable() {
+  const search = (document.getElementById('stockSearch')?.value||'').toLowerCase();
+  const filter = document.getElementById('stockFilter')?.value||'all';
+  const fourn = document.getElementById('stockFournisseur')?.value||'all';
+
+  let prods = state.products.filter(p => {
+    if (search && !p.nom.toLowerCase().includes(search) && !(p.ref||'').toLowerCase().includes(search)) return false;
+    if (fourn !== 'all' && p.fournisseur !== fourn) return false;
+    const stock = getProductStock(p.id);
+    const nextDlc = getNextDLC(p.id);
+    const days = daysUntil(nextDlc);
+    if (filter === 'alert' && !(p.seuil && stock <= p.seuil)) return false;
+    if (filter === 'dlc' && !(days !== null && days <= 60)) return false;
+    if (filter === 'zero' && stock > 0) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('stockTable');
+  if (!prods.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Aucun produit${state.products.length===0?' — commencez par créer un produit':''}</div>${state.products.length===0?'<button class="btn btn-primary" style="margin-top:12px;" onclick="showAddProductModal()">+ Créer un produit</button>':''}</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = prods.map(p => {
+    const stock = getProductStock(p.id);
+    const crr = getProductCRR(p.id);
+    const valeur = stock * crr;
+    const nextDlc = getNextDLC(p.id);
+    const days = daysUntil(nextDlc);
+    const dlcCls = days === null ? '' : days < 0 ? 'dlc-expired' : days < 14 ? 'dlc-critical' : days < 30 ? 'dlc-warn' : days < 60 ? 'dlc-ok' : '';
+    const dlcTxt = days === null ? '—' : days < 0 ? 'PÉRIMÉ' : days+' j ('+fmtDate(nextDlc)+')';
+    const pct = p.seuil ? Math.min(100, Math.round(stock/p.seuil*100)) : null;
+    const statusBadge = stock === 0 ? '<span class="badge badge-gray">Épuisé</span>' :
+      p.seuil && stock <= p.seuil ? '<span class="badge badge-red">⚡ Réappro</span>' :
+      days !== null && days < 0 ? '<span class="badge badge-red">❌ Périmé</span>' :
+      days !== null && days < 14 ? '<span class="badge badge-orange">⚠️ Urgent</span>' :
+      '<span class="badge badge-green">✅ OK</span>';
+
+    return `<tr>
+      <td><strong>${p.nom}</strong><br><span style="font-size:11px;color:var(--text3);">${p.ref||''}</span></td>
+      <td><span class="tag">${p.fournisseur||'—'}</span></td>
+      <td><span class="badge badge-blue">${p.categorie||'—'}</span></td>
+      <td>
+        <div class="stock-level">
+          <span class="stock-qty" style="color:${stock===0?'var(--red)':stock<=(p.seuil||0)?'var(--orange)':'var(--text)'}">${fmtQty(stock)}</span>
+          ${pct!==null?`<div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${pct<=50?'var(--red)':pct<=100?'var(--orange)':'var(--green)'}"></div></div>`:''}
+        </div>
+      </td>
+      <td><strong>${fmtEur(valeur)}</strong><br><span style="font-size:11px;color:var(--text3);">${fmtEur(crr)}/u</span></td>
+      <td class="${dlcCls}" style="font-size:12px;">${dlcTxt}</td>
+      <td><span class="badge badge-gray">${p.rotation||'3.5'} mois</span></td>
+      <td>${statusBadge}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm btn-icon" title="Voir les lots" onclick="showLots('${p.id}')">📋</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ============================================================
+// SHOW LOTS
+// ============================================================
+function showLots(productId) {
+  const p = state.products.find(x => x.id === productId);
+  document.getElementById('modalLotsTitle').textContent = `Lots FIFO — ${p?.nom||''}`;
+  const lots = state.lots.filter(l => l.productId === productId).sort((a,b) => new Date(a.dateEntree) - new Date(b.dateEntree));
+  document.getElementById('modalLotsBody').innerHTML = lots.length ? lots.map((l,i) => {
+    const days = daysUntil(l.dlc);
+    const dlcCls = days === null ? '' : days < 0 ? 'dlc-expired' : days < 30 ? 'dlc-critical' : 'dlc-ok';
+    return `<tr style="${l.qtyRestante===0?'opacity:0.4':''}">
+      <td><span class="badge badge-gray">${l.lot||'—'}</span>${i===0&&l.qtyRestante>0?' <span class="fifo-badge">FIFO NEXT</span>':''}</td>
+      <td>${fmtDate(l.dateEntree)}</td>
+      <td class="${dlcCls}">${fmtDate(l.dlc)} ${days!==null?(days<0?'❌':(days<30?'⚠️':'')):''}</td>
+      <td>${fmtQty(l.qtyInitiale)}</td>
+      <td><strong>${fmtQty(l.qtyRestante)}</strong></td>
+      <td>${fmtEur(l.crr)}</td>
+      <td>${fmtEur(l.qtyRestante * l.crr)}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text3);">Aucun lot</td></tr>';
+  document.getElementById('modalLots').classList.add('show');
+}
+
+// ============================================================
+// MODAL PRODUCT
+// ============================================================
+function showAddProductModal() { document.getElementById('modalProduct').classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function saveProduct() {
+  const nom = document.getElementById('mpNom').value.trim();
+  if (!nom) { alert('Nom obligatoire'); return; }
+  const p = {
+    id: genId(), nom,
+    ref: document.getElementById('mpRef').value.trim(),
+    fournisseur: document.getElementById('mpFournisseur').value.trim(),
+    categorie: document.getElementById('mpCategorie').value,
+    crr: parseFloat(document.getElementById('mpCrr').value)||0,
+    pv: parseFloat(document.getElementById('mpPv').value)||0,
+    seuil: parseInt(document.getElementById('mpSeuil').value)||0,
+    rotation: parseFloat(document.getElementById('mpRotation').value)||3.5,
+    notes: document.getElementById('mpNotes').value.trim()
+  };
+  state.products.push(p);
+  saveState(); refreshAll(); closeModal('modalProduct');
+  document.getElementById('mpNom').value=''; document.getElementById('mpRef').value=''; document.getElementById('mpFournisseur').value=''; document.getElementById('mpCrr').value=''; document.getElementById('mpPv').value=''; document.getElementById('mpSeuil').value=''; document.getElementById('mpNotes').value='';
+}
+
+// ============================================================
+// ENTRÉE
+// ============================================================
+function fillEntreeProduct() {
+  const pid = document.getElementById('entreeProduct').value;
+  const p = state.products.find(x => x.id === pid);
+  if (p) {
+    if (p.crr) document.getElementById('entreeCrr').value = p.crr;
+    if (p.fournisseur) document.getElementById('entreeFournisseur').value = p.fournisseur;
+  }
+}
+function clearEntreeForm() {
+  ['entreeProduct','entreeQty','entreeLot','entreeDlc','entreeCrr','entreeFournisseur','entreeFacture','entreeNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('entreeDate').value = new Date().toISOString().slice(0,10);
+}
+function saveEntree() {
+  const pid = document.getElementById('entreeProduct').value;
+  const qty = parseInt(document.getElementById('entreeQty').value);
+  const crr = parseFloat(document.getElementById('entreeCrr').value);
+  if (!pid || !qty || !crr) { alert('Produit, quantité et CRR sont obligatoires'); return; }
+  const lot = {
+    id: genId(), productId: pid,
+    lot: document.getElementById('entreeLot').value.trim() || 'LOT-'+Date.now().toString(36).toUpperCase(),
+    dateEntree: document.getElementById('entreeDate').value || today,
+    dlc: document.getElementById('entreeDlc').value || null,
+    qtyInitiale: qty, qtyRestante: qty, crr,
+    fournisseur: document.getElementById('entreeFournisseur').value.trim(),
+    facture: document.getElementById('entreeFacture').value.trim()
+  };
+  state.lots.push(lot);
+  const mouv = {
+    id: genId(), type: 'entree', productId: pid,
+    lot: lot.lot, qty, station: null, crr, prix: null, bl: lot.facture,
+    date: lot.dateEntree, notes: document.getElementById('entreeNotes').value.trim()
+  };
+  state.mouvements.unshift(mouv);
+  saveState(); refreshAll(); clearEntreeForm();
+  showToast('✅ Entrée enregistrée — '+qty+' unités en stock');
+}
+function renderEntreeHist() {
+  const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
+  const rows = state.mouvements.filter(m => m.type==='entree').slice(0,20);
+  document.getElementById('entreeHistTable').innerHTML = rows.length ? rows.map(m =>
+    `<tr><td>${fmtDate(m.date)}</td><td>${pmap[m.productId]?.nom||'?'}</td><td><span class="badge badge-gray">${m.lot||'—'}</span></td><td><strong>${fmtQty(m.qty)}</strong></td><td>${fmtEur(m.crr)}</td><td><strong>${fmtEur(m.qty*m.crr)}</strong></td><td style="font-size:12px;">${m.bl||'—'}</td><td class="dlc-ok">${m.dlc?fmtDate(m.dlc):'—'}</td></tr>`
+  ).join('') : '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">Aucune entrée enregistrée</td></tr>';
+}
+
+// ============================================================
+// SORTIE (FIFO)
+// ============================================================
+function fillSortieInfo() {
+  const pid = document.getElementById('sortieProduct').value;
+  const p = state.products.find(x => x.id === pid);
+  if (p && p.pv) document.getElementById('sortiePrix').value = p.pv;
+  updateSortieCout();
+}
+function updateSortieCout() {
+  const pid = document.getElementById('sortieProduct').value;
+  const qty = parseInt(document.getElementById('sortieQty').value)||0;
+  const pv = parseFloat(document.getElementById('sortiePrix').value)||0;
+  if (!pid || !qty) { document.getElementById('sortieInfoBox').style.display='none'; return; }
+  const stock = getProductStock(pid);
+  const crr = getProductCRR(pid);
+  const marge = pv > 0 ? ((pv - crr)/crr*100).toFixed(1) : null;
+  document.getElementById('sortieMargeInfo').value = marge ? marge+'%' : '—';
+  const box = document.getElementById('sortieInfoBox');
+  if (qty > stock) {
+    box.style.display='block'; box.style.background='var(--red-light)'; box.style.borderColor='var(--red)'; box.style.color='var(--red)';
+    box.innerHTML = `⚠️ Stock insuffisant : ${fmtQty(stock)} unités disponibles, vous demandez ${fmtQty(qty)}`;
+  } else {
+    box.style.display='block'; box.style.background='var(--accent-light)'; box.style.borderColor='var(--accent)'; box.style.color='var(--accent)';
+    box.innerHTML = `📦 Sortie FIFO : ${fmtQty(qty)} × ${fmtEur(crr)} CRR = <strong>${fmtEur(qty*crr)}</strong> coût${pv>0?' | PV : '+fmtEur(qty*pv)+' | Marge : '+marge+'%':''}`;
+  }
+}
+function clearSortieForm() {
+  ['sortieProduct','sortieQty','sortiePrix','sortieBL','sortieNotes'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('sortieDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('sortieStation').value = 'OLA';
+  document.getElementById('sortieInfoBox').style.display = 'none';
+}
+function saveSortie() {
+  const pid = document.getElementById('sortieProduct').value;
+  let qtyToRemove = parseInt(document.getElementById('sortieQty').value);
+  if (!pid || !qtyToRemove) { alert('Produit et quantité obligatoires'); return; }
+  const stock = getProductStock(pid);
+  if (qtyToRemove > stock) { alert('Stock insuffisant : '+fmtQty(stock)+' unités disponibles'); return; }
+
+  // FIFO deduction
+  const fifoLots = state.lots.filter(l => l.productId === pid && l.qtyRestante > 0).sort((a,b) => new Date(a.dateEntree) - new Date(b.dateEntree));
+  let remaining = qtyToRemove;
+  const crrMoyen = getProductCRR(pid);
+  for (const lot of fifoLots) {
+    if (remaining <= 0) break;
+    const take = Math.min(lot.qtyRestante, remaining);
+    lot.qtyRestante -= take;
+    remaining -= take;
+  }
+
+  const mouv = {
+    id: genId(), type: 'sortie', productId: pid,
+    lot: 'FIFO', qty: qtyToRemove,
+    station: document.getElementById('sortieStation').value,
+    crr: crrMoyen,
+    prix: parseFloat(document.getElementById('sortiePrix').value)||null,
+    bl: document.getElementById('sortieBL').value.trim(),
+    date: document.getElementById('sortieDate').value || today,
+    notes: document.getElementById('sortieNotes').value.trim()
+  };
+  state.mouvements.unshift(mouv);
+  saveState(); refreshAll(); clearSortieForm();
+  showToast('📤 Sortie FIFO enregistrée — '+fmtQty(qtyToRemove)+' unités');
+}
+function renderSortieHist() {
+  const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
+  const rows = state.mouvements.filter(m => m.type==='sortie').slice(0,20);
+  document.getElementById('sortieHistTable').innerHTML = rows.length ? rows.map(m => {
+    const marge = m.prix && m.crr ? ((m.prix - m.crr)/m.crr*100).toFixed(1)+'%' : '—';
+    const margeColor = m.prix && m.crr ? (m.prix >= m.crr*1.08 ? 'var(--green)' : 'var(--orange)') : 'var(--text3)';
+    return `<tr><td>${fmtDate(m.date)}</td><td>${pmap[m.productId]?.nom||'?'}</td><td><span class="badge badge-blue">${m.station||'—'}</span></td><td>${fmtQty(m.qty)}</td><td>${fmtEur(m.crr)}</td><td>${m.prix?fmtEur(m.prix):'—'}</td><td style="font-weight:700;color:${margeColor}">${marge}</td><td style="font-size:12px;">${m.bl||'—'}</td></tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">Aucune sortie enregistrée</td></tr>';
+}
+
+// ============================================================
+// MOUVEMENTS
+// ============================================================
+function renderMouvements() {
+  const search = (document.getElementById('mouvSearch')?.value||'').toLowerCase();
+  const type = document.getElementById('mouvType')?.value||'all';
+  const station = document.getElementById('mouvStation')?.value||'all';
+  const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
+
+  const rows = state.mouvements.filter(m => {
+    if (type!=='all' && m.type!==type) return false;
+    if (station!=='all' && m.station!==station) return false;
+    const pnom = pmap[m.productId]?.nom||'';
+    if (search && !pnom.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  document.getElementById('mouvTable').innerHTML = rows.length ? rows.map(m => {
+    const badge = m.type==='entree' ? '<span class="badge badge-green">➕ Entrée</span>' : '<span class="badge badge-red">➖ Sortie</span>';
+    const valeur = m.qty * m.crr;
+    return `<tr>
+      <td style="font-size:12px;">${fmtDate(m.date)}</td>
+      <td>${badge}</td>
+      <td>${pmap[m.productId]?.nom||'?'}</td>
+      <td><span class="badge badge-gray" style="font-size:10px;">${m.lot||'—'}</span></td>
+      <td><strong>${fmtQty(m.qty)}</strong></td>
+      <td>${m.station?`<span class="badge badge-blue">${m.station}</span>`:'—'}</td>
+      <td>${fmtEur(m.crr)}</td>
+      <td>${fmtEur(valeur)}</td>
+      <td style="font-size:12px;">${m.bl||'—'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3);">Aucun mouvement</td></tr>';
+}
+
+// ============================================================
+// EXPORT PENNYLANE
+// ============================================================
+function renderExportVal() {
+  const rows = state.products.map(p => ({p, stock: getProductStock(p.id), crr: getProductCRR(p.id)})).filter(x => x.stock > 0).sort((a,b) => b.stock*b.crr - a.stock*a.crr);
+  const total = rows.reduce((s,r) => s + r.stock*r.crr, 0);
+  document.getElementById('exportTotal').textContent = fmtEur(total);
+  document.getElementById('exportValTable').innerHTML = rows.length ? rows.map(({p, stock, crr}) =>
+    `<tr><td>${p.nom}</td><td>${fmtQty(stock)}</td><td>${fmtEur(crr)}</td><td><strong>${fmtEur(stock*crr)}</strong></td><td style="font-size:12px;color:var(--text2);">337 — Stocks marchandises</td></tr>`
+  ).join('') : '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);">Aucun stock</td></tr>';
+}
+function generateExport() {
+  const from = document.getElementById('exportFrom').value;
+  const to = document.getElementById('exportTo').value;
+  const type = document.getElementById('exportType').value;
+  const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
+
+  let rows = state.mouvements.filter(m => (!from || m.date >= from) && (!to || m.date <= to));
+  if (type === 'achats') rows = rows.filter(m => m.type==='entree');
+  if (type === 'ventes') rows = rows.filter(m => m.type==='sortie');
+
+  const header = 'Date;Type;Produit;Lot;Qté;Station;CRR_unitaire;Valeur;Référence;Compte_Pennylane';
+  const lines = rows.map(m => {
+    const pnom = pmap[m.productId]?.nom||'';
+    const compte = m.type==='entree' ? '607 - Achats marchandises' : '707 - Ventes marchandises';
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+  });
+
+  const preview = [header, ...lines.slice(0,15)].join('\n') + (lines.length > 15 ? '\n...' : '');
+  document.getElementById('exportPreview').textContent = preview;
+  document.getElementById('exportPreviewSection').style.display = 'block';
+  renderExportVal();
+}
+function exportPennylane() {
+  const from = document.getElementById('exportFrom')?.value;
+  const to = document.getElementById('exportTo')?.value;
+  const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
+  const rows = state.mouvements.filter(m => (!from || m.date >= from) && (!to || m.date <= to));
+  const header = 'Date;Type;Produit;Lot;Quantite;Station;CRR_unitaire;Valeur_EUR;Reference;Compte_Pennylane\n';
+  const lines = rows.map(m => {
+    const pnom = pmap[m.productId]?.nom||'';
+    const compte = m.type==='entree' ? '607' : '707';
+    return [m.date, m.type==='entree'?'ENTREE':'SORTIE', pnom, m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||'', compte].join(';');
+  }).join('\n');
+  const blob = new Blob(['\uFEFF'+header+lines], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `INCA_IMPORT_Stock_${from||'all'}_${to||'all'}.csv`;
+  a.click();
+}
+function exportStockCSV() {
+  const header = 'Produit;Fournisseur;Categorie;Qty_stock;CRR_moyen;Valeur_EUR;Prochaine_DLC;Seuil_reappro\n';
+  const lines = state.products.map(p => {
+    const stock = getProductStock(p.id);
+    const crr = getProductCRR(p.id);
+    return [p.nom, p.fournisseur||'', p.categorie||'', stock, crr.toFixed(3), (stock*crr).toFixed(2), getNextDLC(p.id)||'', p.seuil||''].join(';');
+  }).join('\n');
+  const blob = new Blob(['\uFEFF'+header+lines], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'INCA_IMPORT_Inventaire.csv'; a.click();
+}
+function exportMouvCSV() {
+  const pmap = Object.fromEntries(state.products.map(p => [p.id,p]));
+  const header = 'Date;Type;Produit;Lot;Qte;Station;CRR;Valeur;Reference\n';
+  const lines = state.mouvements.map(m => [m.date, m.type, pmap[m.productId]?.nom||'', m.lot||'', m.qty, m.station||'', m.crr.toFixed(3), (m.qty*m.crr).toFixed(2), m.bl||''].join(';')).join('\n');
+  const blob = new Blob(['\uFEFF'+header+lines], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'INCA_IMPORT_Mouvements.csv'; a.click();
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;background:#1a1f36;color:white;padding:14px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);animation:slideIn 0.3s ease;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if(e.target===el) el.classList.remove('show'); }));
+</script>
+</body>
+</html>
